@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ChatWindow from './components/Chat/ChatWindow';
 import SVGPreview from './components/Preview/SVGPreview';
+import Instructions from './components/Preview/Instructions';
 import { Sparkles } from 'lucide-react';
 import './styles/index.css';
 import './styles/layout.css';
 
 function App() {
+  const [activeTab, setActiveTab] = useState('2d');
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -16,21 +19,28 @@ function App() {
       </header>
       
       <main className="app-main">
-        {/* Left Side: Chat */}
         <div className="chat-panel">
           <ChatWindow />
         </div>
         
-        {/* Right Side: Preview */}
         <div className="preview-panel">
           <div className="preview-tabs">
-            <div className="preview-tab active">
+            <div 
+              className={`preview-tab ${activeTab === '2d' ? 'active' : ''}`}
+              onClick={() => setActiveTab('2d')}
+            >
               2D 도안 미리보기
               <div className="preview-tab-indicator" />
             </div>
-            <div className="preview-tab">조립 설명서</div>
+            <div 
+              className={`preview-tab ${activeTab === 'instructions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('instructions')}
+            >
+              조립 설명서
+              <div className="preview-tab-indicator" />
+            </div>
           </div>
-          <SVGPreview />
+          {activeTab === '2d' ? <SVGPreview /> : <Instructions />}
         </div>
       </main>
     </div>

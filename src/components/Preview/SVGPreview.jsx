@@ -7,16 +7,14 @@ import { createSVG, svgToString } from '../../generators/svgBuilder';
 import '../../styles/preview.css';
 
 export default function SVGPreview() {
-  const { cardParams } = useCardStore();
+  const { cardParams, isTyping } = useCardStore();
   const containerRef = useRef(null);
 
   useEffect(() => {
     if (!cardParams || !containerRef.current) return;
 
-    // Based on AI's decided mechanism, build the SVG
-    const svg = createSVG(210, 297); // A4
+    const svg = createSVG(210, 297); 
     
-    // Add mechanism based on params
     if (cardParams.mechanism === 'straw-rocket') {
       generateStrawRocket(svg, { theme: cardParams.theme });
     } else if (cardParams.mechanism === 'v-fold') {
@@ -24,7 +22,6 @@ export default function SVGPreview() {
     } else if (cardParams.mechanism === 'box-popup') {
       generateBoxPopup(svg, {});
     } else {
-      // Default placeholder
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', 105);
       text.setAttribute('y', 148);
@@ -40,18 +37,22 @@ export default function SVGPreview() {
   return (
     <div className="preview-content">
       <div className="svg-preview-container">
-        {!cardParams ? (
+        {isTyping ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
+            <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '4px' }}></div>
+            <div>AI가 도안을 열심히 설계하고 있어요...</div>
+          </div>
+        ) : !cardParams ? (
           <div style={{ color: 'var(--text-secondary)' }}>
             채팅을 통해 만들고 싶은 작품을 결정하면 이곳에 도안이 표시됩니다.
           </div>
         ) : (
           <div className="svg-paper" ref={containerRef} style={{ width: '210mm', height: '297mm' }}>
-            {/* SVG will be injected here */}
           </div>
         )}
       </div>
       
-      {cardParams && (
+      {cardParams && !isTyping && (
         <button className="btn-download download-overlay">
           PDF로 다운로드
         </button>
