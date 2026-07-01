@@ -6,96 +6,122 @@ export async function getContourPath(imgUrl, xOffset, yOffset, width, height, ma
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      // Downscale slightly for performance and noise reduction
+      const scale = 0.5;
+      const w = Math.floor(width * scale);
+      const h = Math.floor(height * scale);
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, 0, 0, w, h);
       
       let data;
       try {
-        data = ctx.getImageData(0, 0, width, height).data;
+        data = ctx.getImageData(0, 0, w, h).data;
       } catch (e) {
-        // CORS error fallback
         resolve(fallbackPath);
         return;
       }
 
-      // Find extremities of non-white pixels
-      let minX = width, maxX = 0, minY = height, maxY = 0;
-      // Also diagonals: x+y and x-y
-      let minSum = width+height, maxSum = 0;
-      let minDiff = width, maxDiff = -height;
-      
-      let p_minSum = [0,0], p_maxSum = [0,0], p_minDiff = [0,0], p_maxDiff = [0,0];
-      let p_minX = [0,0], p_maxX = [0,0], p_minY = [0,0], p_maxY = [0,0];
-
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const idx = (y * width + x) * 4;
-          const r = data[idx];
-          const g = data[idx+1];
-          const b = data[idx+2];
-          const a = data[idx+3];
-          
-          // Consider pixel empty if it's transparent or very close to white
+      // Create binary mask
+      const mask = new Uint8Array(w * h);
+      let startX = -1, startY = -1;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const r = data[idx], g = data[idx+1], b = data[idx+2], a = data[idx+3];
           const isWhite = (r > 240 && g > 240 && b > 240) || a < 50;
-          
           if (!isWhite) {
-            if (x < minX) { minX = x; p_minX = [x,y]; }
-            if (x > maxX) { maxX = x; p_maxX = [x,y]; }
-            if (y < minY) { minY = y; p_minY = [x,y]; }
-            if (y > maxY) { maxY = y; p_maxY = [x,y]; }
-            
-            if (x+y < minSum) { minSum = x+y; p_minSum = [x,y]; }
-            if (x+y > maxSum) { maxSum = x+y; p_maxSum = [x,y]; }
-            
-            if (x-y < minDiff) { minDiff = x-y; p_minDiff = [x,y]; }
-            if (x-y > maxDiff) { maxDiff = x-y; p_maxDiff = [x,y]; }
+            mask[y * w + x] = 1;
+            if (startX === -1) { startX = x; startY = y; }
           }
         }
       }
 
-      if (minX === width) { // Image is blank/all white
-        resolve(fallbackPath);
-        return;
+      if (startX === -1) { resolve(fallbackPath); return; }
+
+      // Moore Neighborhood Tracing
+      const dirs = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]];
+      let boundary = [];
+      let cx = startX, cy = startY;
+      let dir = 7; // Start looking "up-left"
+      
+      let iters = 0;
+      do {
+        boundary.push([cx, cy]);
+        let found = false;
+        // Search neighbors clockwise starting from (dir + 2) % 8
+        for (let i = 0; i < 8; i++) {
+          let ndir = (dir + 2 + i) % 8;
+          let nx = cx + dirs[ndir][0];
+          let ny = cy + dirs[ndir][1];
+          if (nx >= 0 && nx < w && ny >= 0 && ny < h && mask[ny * w + nx]) {
+            cx = nx; cy = ny;
+            dir = ndir;
+            found = true;
+            break;
+          }
+        }
+        if (!found) break; // Isolated pixel
+        iters++;
+        if (iters > 10000) break; // Safety break
+      } while (cx !== startX || cy !== startY);
+
+      if (boundary.length < 10) { resolve(fallbackPath); return; }
+
+      // Simplify polygon (keep every Nth point to smooth and reduce jaggedness)
+      const step = Math.max(2, Math.floor(boundary.length / 40));
+      let simple = [];
+      for (let i = 0; i < boundary.length; i += step) {
+        simple.push(boundary[i]);
       }
 
-      // Create 8-point polygon based on the extremes, ordered clockwise starting from Top-Left
-      // p_minSum (TL), p_minY (Top), p_maxDiff (TR), p_maxX (Right), 
-      // p_maxSum (BR), p_maxY (Bottom), p_minDiff (BL), p_minX (Left)
-      
-      // To create margin, we expand outward from the center
-      const centerX = width / 2;
-      const centerY = height / 2;
-      
-      const expand = (pt) => {
-        let dx = pt[0] - centerX;
-        let dy = pt[1] - centerY;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist === 0) return [pt[0] + xOffset, pt[1] + yOffset];
-        // Normalize and scale by margin
-        let nx = dx / dist;
-        let ny = dy / dist;
-        return [pt[0] + nx * margin + xOffset, pt[1] + ny * margin + yOffset];
-      };
-
-      const pts = [
-        expand(p_minSum),
-        expand(p_minY),
-        expand(p_maxDiff),
-        expand(p_maxX),
-        expand(p_maxSum),
-        expand(p_maxY),
-        expand(p_minDiff),
-        expand(p_minX)
-      ];
-
-      // Draw SVG smooth path (Catmull-Rom or simple quadratic bezier connecting midpoints)
-      let path = `M ${pts[0][0]} ${pts[0][1]}`;
-      for (let i = 1; i < pts.length; i++) {
-         path += ` L ${pts[i][0]} ${pts[i][1]}`;
+      // Offset (Inflate) and scale back up
+      const scaledMargin = margin; 
+      let inflated = [];
+      const n = simple.length;
+      for (let i = 0; i < n; i++) {
+        let pPrev = simple[(i - 1 + n) % n];
+        let pCurr = simple[i];
+        let pNext = simple[(i + 1) % n];
+        
+        let dx = pNext[0] - pPrev[0];
+        let dy = pNext[1] - pPrev[1];
+        let len = Math.sqrt(dx*dx + dy*dy);
+        if (len === 0) continue;
+        
+        // Normal vector (rotate 90 deg)
+        let nx = -dy / len;
+        let ny = dx / len;
+        
+        // Scale back up to original size and apply offset
+        let finalX = (pCurr[0] / scale) + nx * scaledMargin + xOffset;
+        let finalY = (pCurr[1] / scale) + ny * scaledMargin + yOffset;
+        inflated.push([finalX, finalY]);
       }
-      path += ` Z`;
+
+      // Convert to SVG Path using Catmull-Rom or simple Bezier
+      // We will use simple quadratic curves between midpoints for natural rounded corners
+      let path = "";
+      if (inflated.length > 2) {
+        // midpoints
+        let mids = [];
+        for (let i = 0; i < inflated.length; i++) {
+          let p1 = inflated[i];
+          let p2 = inflated[(i + 1) % inflated.length];
+          mids.push([(p1[0]+p2[0])/2, (p1[1]+p2[1])/2]);
+        }
+        
+        path = `M ${mids[0][0]} ${mids[0][1]}`;
+        for (let i = 0; i < inflated.length; i++) {
+          let pControl = inflated[(i + 1) % inflated.length];
+          let pEnd = mids[(i + 1) % inflated.length];
+          path += ` Q ${pControl[0]} ${pControl[1]} ${pEnd[0]} ${pEnd[1]}`;
+        }
+        path += ` Z`;
+      } else {
+        resolve(fallbackPath); return;
+      }
       
       resolve(path);
     };

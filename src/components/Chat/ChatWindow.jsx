@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { SendHorizonal, Bot, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import '../../styles/chat.css';
 
 export default function ChatWindow() {
@@ -126,7 +128,9 @@ export default function ChatWindow() {
               {msg.role === 'ai' ? <Bot size={20} /> : <User size={20} />}
             </div>
             <div>
-              <div className="message-bubble">{msg.content}</div>
+              <div className="message-bubble">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              </div>
               {msg.options && (
                 <div className="message-actions">
                   {msg.options.map((opt, idx) => (

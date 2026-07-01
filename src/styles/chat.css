@@ -151,33 +151,55 @@
 }
 
 select.chat-input option {
-  background-color: #1a1a2e;
-  color: #ffffff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .chat-send-btn {
-  position: absolute;
-  right: 6px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
   background: var(--accent-gradient);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   cursor: pointer;
   transition: all var(--transition-fast);
-  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .chat-send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: var(--text-muted);
+}
+
+/* Markdown Table Styles */
+.message-bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.9em;
+}
+
+.message-bubble th, .message-bubble td {
+  border: 1px solid var(--border-glass);
+  padding: 8px;
+  text-align: left;
+}
+
+.message-bubble th {
+  background-color: var(--bg-glass-hover);
+  font-weight: bold;
+}
+
+.message-bubble tr:nth-child(even) {
+  background-color: var(--bg-glass);
 }
