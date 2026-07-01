@@ -58,8 +58,9 @@ export default function ChatWindow() {
           <div className="chat-message ai">
             <div className="message-avatar"><Bot size={20} /></div>
             <div className="message-bubble">
-              안녕하세요! MyPopWorld입니다. 어떤 종류의 만들기를 하고 싶으신가요?<br/><br/>
-              예: "친구 생일 축하 카드를 V-폴드로 만들래" 또는 "빨대에 꽂아서 부는 나비 장난감을 만들고 싶어!"
+              안녕하세요! 재미있는 종이 공예 장난감과 팝업 카드를 만들어주는 MyPopWorld입니다. ✨<br/><br/>
+              어떤 주제로 만들기를 하고 싶으신가요? 그리고 이 만들기를 할 <b>아이의 연령대(몇 살)</b>를 먼저 알려주시면, 딱 맞는 재미있는 아이디어들을 추천해 드릴게요!<br/><br/>
+              (예: "7살 아이랑 노아의 방주 이야기를 주제로 만들고 싶어")
             </div>
           </div>
         )}
