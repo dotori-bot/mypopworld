@@ -64,7 +64,12 @@ export default function Instructions() {
               <div className="step-content">
                 <h4>오리기</h4>
                 <p>검은색 실선을 따라 팝업 조각들을 모두 오려주세요.</p>
-                <Scissors className="step-icon" />
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="100" height="60" viewBox="0 0 100 60">
+                    <rect x="20" y="10" width="60" height="40" fill="none" stroke="black" strokeWidth="2" strokeDasharray="4 2" />
+                    <path d="M10 50 L30 30 M30 50 L10 30" stroke="var(--primary-main)" strokeWidth="2" /> {/* Scissors icon hint */}
+                  </svg>
+                </div>
               </div>
             </div>
             <div className="instruction-step card">
@@ -72,7 +77,16 @@ export default function Instructions() {
               <div className="step-content">
                 <h4>접기</h4>
                 <p>빨간 점선은 산접기(볼록하게), 파란 점선은 골접기(오목하게) 해줍니다.</p>
-                <Tent className="step-icon" />
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+                  <svg width="60" height="40" viewBox="0 0 60 40">
+                    <path d="M10 30 L30 10 L50 30" fill="none" stroke="red" strokeWidth="2" strokeDasharray="5 5" />
+                    <text x="30" y="38" fontSize="10" textAnchor="middle" fill="currentColor">산접기(Mountain)</text>
+                  </svg>
+                  <svg width="60" height="40" viewBox="0 0 60 40">
+                    <path d="M10 10 L30 30 L50 10" fill="none" stroke="blue" strokeWidth="2" strokeDasharray="5 5" />
+                    <text x="30" y="38" fontSize="10" textAnchor="middle" fill="currentColor">골접기(Valley)</text>
+                  </svg>
+                </div>
               </div>
             </div>
             <div className="instruction-step card">
@@ -80,7 +94,15 @@ export default function Instructions() {
               <div className="step-content">
                 <h4>풀칠하여 조립하기</h4>
                 <p>안내된 풀칠 기호에 맞춰 배경 카드에 팝업 조각을 붙여주세요.</p>
-                <Palette className="step-icon" />
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="100" height="80" viewBox="0 0 100 80">
+                    {/* Isometric card open */}
+                    <path d="M20 60 L50 75 L80 60 L50 10 Z" fill="var(--bg-glass)" stroke="currentColor" strokeWidth="1" />
+                    <path d="M20 60 L50 75 L50 45 L20 30 Z" fill="rgba(255,255,255,0.1)" stroke="currentColor" strokeWidth="1" />
+                    {/* Pop-up mechanism abstract */}
+                    <path d="M40 50 L60 60 L60 30 L40 20 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                  </svg>
+                </div>
               </div>
             </div>
           </>
