@@ -17,6 +17,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@svgdotjs/svg.js": "^3.2.5",
+    "@vitejs/plugin-react": "^6.0.3",
     "gsap": "^3.15.0",
     "i18next": "^26.3.4",
     "i18next-browser-languagedetector": "^8.2.1",
