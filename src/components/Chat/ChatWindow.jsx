@@ -7,16 +7,14 @@ export default function ChatWindow() {
   const { messages, addMessage, isTyping, setTyping, setCardParams } = useCardStore();
   const [input, setInput] = useState('');
 
-  const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
+  const sendMessage = async (text) => {
+    if (!text.trim() || isTyping) return;
 
-    const userMsg = { role: 'user', content: input };
+    const userMsg = { role: 'user', content: text };
     addMessage(userMsg);
-    setInput('');
     setTyping(true);
 
     try {
-      // API call to our Vercel Serverless Function
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,31 +22,38 @@ export default function ChatWindow() {
       });
       
       const data = await res.json();
-      
       if (data.error) throw new Error(data.error);
 
-      // Parse JSON out of the AI response if it exists
       let content = data.text;
+      let options = null;
       const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
       
       if (jsonMatch) {
         try {
           const params = JSON.parse(jsonMatch[1]);
-          setCardParams(params);
-          // Remove JSON from displayed text
+          if (params.options) {
+            options = params.options;
+          } else {
+            setCardParams(params);
+          }
           content = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
         } catch (e) {
           console.error("Failed to parse JSON from AI response", e);
         }
       }
 
-      addMessage({ role: 'ai', content });
+      addMessage({ role: 'ai', content, options });
     } catch (error) {
       console.error(error);
       addMessage({ role: 'ai', content: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.' });
     } finally {
       setTyping(false);
     }
+  };
+
+  const handleSend = () => {
+    sendMessage(input);
+    setInput('');
   };
 
   return (
@@ -70,7 +75,18 @@ export default function ChatWindow() {
             <div className="message-avatar">
               {msg.role === 'ai' ? <Bot size={20} /> : <User size={20} />}
             </div>
-            <div className="message-bubble">{msg.content}</div>
+            <div>
+              <div className="message-bubble">{msg.content}</div>
+              {msg.options && (
+                <div className="message-actions">
+                  {msg.options.map((opt, idx) => (
+                    <button key={idx} className="quick-action-btn" onClick={() => sendMessage(opt)}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ))}
         
