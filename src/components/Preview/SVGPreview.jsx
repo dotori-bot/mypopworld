@@ -27,6 +27,15 @@ export default function SVGPreview() {
       generateVFold(svg1, {});
     } else if (cardParams.mechanism === 'box-popup') {
       generateBoxPopup(svg1, {});
+    } else if (cardParams.mechanism === 'pull-tab') {
+      // Basic pull tab placeholder since full generator isn't linked
+      addRect(svg1, 50, 100, 100, 20, getLineStyle('CUT', true));
+      addRect(svg1, 60, 90, 80, 40, getLineStyle('MOUNTAIN_FOLD', true));
+      addText(svg1, 100, 115, '풀탭 (Pull Tab) 장치', 4, 'middle');
+    } else if (cardParams.mechanism === 'parallel-fold') {
+      addRect(svg1, 50, 100, 100, 60, getLineStyle('CUT', true));
+      addRect(svg1, 50, 130, 100, 1, getLineStyle('MOUNTAIN_FOLD', true));
+      addText(svg1, 100, 135, '평행 접기 (Parallel Fold)', 4, 'middle');
     } else {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', 105);
@@ -38,7 +47,8 @@ export default function SVGPreview() {
     
     // --- Page 2: Themed Decoration using Pollinations.ai ---
     const svg2 = createSVG(210, 297);
-    const themeQuery = encodeURIComponent(`${cardParams.theme} simple cute cartoon vector isolated on pure white background for kids sticker`);
+    const queryText = cardParams.imagePrompt ? cardParams.imagePrompt : cardParams.theme;
+    const themeQuery = encodeURIComponent(`${queryText} simple cute cartoon vector isolated on pure white background for kids sticker`);
     const imgUrl = `https://image.pollinations.ai/prompt/${themeQuery}?width=512&height=512&nologo=true`;
     
     const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');

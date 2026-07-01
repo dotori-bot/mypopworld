@@ -49,10 +49,12 @@ export default async function handler(req, res) {
 - 아이디어 3: 빨대에 끼우고 불면 슝~ 날아가는 비둘기 로켓 (내부 매핑: straw-rocket)
 
 사용자가 최종적으로 아이디어를 선택하여 도안을 생성할 단계가 되면, 답변 마지막에 반드시 아래 형식의 JSON 블록을 포함하세요.
+\`imagePrompt\`는 이미지 생성기에 전달될 영문 프롬프트입니다. 주제의 핵심 사물이나 장면을 구체적이고 귀여운 카툰 스타일로 영어로 묘사해야 합니다. (예: "A cute wooden Noah's Ark boat on waves", "A happy yellow dinosaur")
 
 \`\`\`json
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
+  "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
   "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket",
   "difficulty": "easy | medium | hard"
 }

@@ -64,8 +64,37 @@ export default function ChatWindow() {
             <div className="message-avatar"><Bot size={20} /></div>
             <div className="message-bubble">
               안녕하세요! 재미있는 종이 공예 장난감과 팝업 카드를 만들어주는 MyPopWorld입니다. ✨<br/><br/>
-              어떤 주제로 만들기를 하고 싶으신가요? 그리고 이 만들기를 할 <b>아이의 연령대(몇 살)</b>를 먼저 알려주시면, 딱 맞는 재미있는 아이디어들을 추천해 드릴게요!<br/><br/>
-              (예: "7살 아이랑 노아의 방주 이야기를 주제로 만들고 싶어")
+              어떤 주제로 만들기를 하고 싶으신가요? 아이의 연령대와 주제를 입력해주시면 딱 맞는 아이디어를 추천해 드릴게요!
+              
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  placeholder="원하는 주제 (예: 노아의 방주, 공룡)" 
+                  className="chat-input"
+                  id="init-theme"
+                  style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box' }}
+                />
+                <select 
+                  className="chat-input" 
+                  id="init-age"
+                  style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box', backgroundColor: 'var(--bg-glass)' }}
+                >
+                  <option value="4~6세">4~6세 (유아)</option>
+                  <option value="7~9세" selected>7~9세 (초등 저학년)</option>
+                  <option value="10세 이상">10세 이상 (초등 고학년)</option>
+                </select>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ alignSelf: 'flex-start', marginTop: '4px' }}
+                  onClick={() => {
+                    const theme = document.getElementById('init-theme').value;
+                    const age = document.getElementById('init-age').value;
+                    if(theme) sendMessage(`${age} 아이를 위한 '${theme}' 주제로 재미있는 팝업이나 장난감 아이디어를 추천해줘!`);
+                  }}
+                >
+                  아이디어 추천받기 ✨
+                </button>
+              </div>
             </div>
           </div>
         )}
