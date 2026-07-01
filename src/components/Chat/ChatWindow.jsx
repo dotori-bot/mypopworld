@@ -67,13 +67,6 @@ export default function ChatWindow() {
               어떤 주제로 만들기를 하고 싶으신가요? 아이의 연령대와 주제를 입력해주시면 딱 맞는 아이디어를 추천해 드릴게요!
               
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  placeholder="원하는 주제 (예: 노아의 방주, 공룡)" 
-                  className="chat-input"
-                  id="init-theme"
-                  style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box' }}
-                />
                 <select 
                   className="chat-input" 
                   id="init-age"
@@ -83,16 +76,35 @@ export default function ChatWindow() {
                   <option value="7~9세" selected>7~9세 (초등 저학년)</option>
                   <option value="10세 이상">10세 이상 (초등 고학년)</option>
                 </select>
+                <input 
+                  type="text" 
+                  placeholder="주제 (예: 노아의 방주, 공룡)" 
+                  className="chat-input"
+                  id="init-theme"
+                  style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box' }}
+                />
+                <input 
+                  type="text" 
+                  placeholder="구체적인 아이디어가 있다면 적어주세요 (선택사항)" 
+                  className="chat-input"
+                  id="init-idea"
+                  style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box' }}
+                />
                 <button 
                   className="btn btn-primary" 
                   style={{ alignSelf: 'flex-start', marginTop: '4px' }}
                   onClick={() => {
                     const theme = document.getElementById('init-theme').value;
                     const age = document.getElementById('init-age').value;
-                    if(theme) sendMessage(`${age} 아이를 위한 '${theme}' 주제로 재미있는 팝업이나 장난감 아이디어를 추천해줘!`);
+                    const idea = document.getElementById('init-idea').value;
+                    if(theme) {
+                       let prompt = `${age} 아이를 위한 '${theme}' 주제로 재미있는 팝업이나 장난감 아이디어를 제안해줘.`;
+                       if (idea) prompt += ` 특히 나는 이런 걸 만들고 싶어: ${idea}. 이 아이디어를 우선적으로 포함해서 제안해줘.`;
+                       sendMessage(prompt);
+                    }
                   }}
                 >
-                  아이디어 추천받기 ✨
+                  아이디어 제안받기
                 </button>
               </div>
             </div>
