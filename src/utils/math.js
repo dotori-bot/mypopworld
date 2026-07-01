@@ -1,0 +1,211 @@
+/**
+ * @fileoverview Math utilities for popup card geometry calculations.
+ * Provides trigonometric helpers, coordinate transforms, collision detection,
+ * and popup-specific formulas used across all mechanism generators.
+ * @module utils/math
+ */
+
+/**
+ * Convert degrees to radians.
+ * @param {number} deg - Angle in degrees
+ * @returns {number} Angle in radians
+ */
+export function degToRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+/**
+ * Convert radians to degrees.
+ * @param {number} rad - Angle in radians
+ * @returns {number} Angle in degrees
+ */
+export function radToDeg(rad) {
+  return (rad * 180) / Math.PI;
+}
+
+/**
+ * Convert polar coordinates to Cartesian.
+ * @param {number} cx - Center X
+ * @param {number} cy - Center Y
+ * @param {number} r  - Radius
+ * @param {number} angleDeg - Angle in degrees (0 = right, clockwise)
+ * @returns {{ x: number, y: number }}
+ */
+export function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = degToRad(angleDeg - 90); // -90 so 0° points up
+  return {
+    x: cx + r * Math.cos(rad),
+    y: cy + r * Math.sin(rad),
+  };
+}
+
+/**
+ * Calculate the V-fold popup angle β from the card opening angle α.
+ *
+ * Formula: β = 2 × arcsin(k × sin(α / 2))
+ *
+ * @param {number} cardAngle - Card opening angle α in degrees (0 = closed, 180 = flat)
+ * @param {number} [k=1]    - Asymmetry factor (1 = symmetric V-fold)
+ * @returns {number} V-fold angle β in degrees
+ */
+export function calculateVFoldAngle(cardAngle, k = 1) {
+  const halfAlpha = degToRad(cardAngle) / 2;
+  const sinVal = k * Math.sin(halfAlpha);
+  // Clamp to valid arcsin domain [-1, 1]
+  const clamped = clamp(sinVal, -1, 1);
+  return radToDeg(2 * Math.asin(clamped));
+}
+
+/**
+ * Calculate popup height from arm length and V-fold angle.
+ *
+ * Formula: h = L × sin(β / 2)
+ *
+ * @param {number} armLength - Arm length L in mm
+ * @param {number} angle     - V-fold angle β in degrees
+ * @returns {number} Popup height h in mm
+ */
+export function calculatePopupHeight(armLength, angle) {
+  const halfBeta = degToRad(angle) / 2;
+  return armLength * Math.sin(halfBeta);
+}
+
+/**
+ * Calculate parallel-fold popup height at a given card opening angle.
+ *
+ * Formula: height(α) = d × sin(α / 2)
+ *
+ * @param {number} depth     - Cut depth d in mm
+ * @param {number} cardAngle - Card opening angle α in degrees
+ * @returns {number} Popup height in mm
+ */
+export function calculateParallelFoldHeight(depth, cardAngle) {
+  const halfAlpha = degToRad(cardAngle) / 2;
+  return depth * Math.sin(halfAlpha);
+}
+
+/**
+ * Clamp a value between min and max.
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+export function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+/**
+ * Linear interpolation between two values.
+ * @param {number} a - Start value
+ * @param {number} b - End value
+ * @param {number} t - Interpolation factor [0, 1]
+ * @returns {number}
+ */
+export function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+/**
+ * Calculate Euclidean distance between two points.
+ * @param {{ x: number, y: number }} p1
+ * @param {{ x: number, y: number }} p2
+ * @returns {number}
+ */
+export function pointDistance(p1, p2) {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Find intersection point of two line segments.
+ * Each line is { x1, y1, x2, y2 }.
+ *
+ * @param {{ x1: number, y1: number, x2: number, y2: number }} l1
+ * @param {{ x1: number, y1: number, x2: number, y2: number }} l2
+ * @returns {{ x: number, y: number } | null} Intersection point or null if parallel / no intersection
+ */
+export function lineIntersection(l1, l2) {
+  const dx1 = l1.x2 - l1.x1;
+  const dy1 = l1.y2 - l1.y1;
+  const dx2 = l2.x2 - l2.x1;
+  const dy2 = l2.y2 - l2.y1;
+
+  const denom = dx1 * dy2 - dy1 * dx2;
+  if (Math.abs(denom) < 1e-10) return null; // parallel or coincident
+
+  const t = ((l2.x1 - l1.x1) * dy2 - (l2.y1 - l1.y1) * dx2) / denom;
+  const u = ((l2.x1 - l1.x1) * dy1 - (l2.y1 - l1.y1) * dx1) / denom;
+
+  // Check if intersection lies within both segments
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+
+  return {
+    x: l1.x1 + t * dx1,
+    y: l1.y1 + t * dy1,
+  };
+}
+
+/**
+ * Rotate a point around a center by a given angle.
+ * @param {{ x: number, y: number }} point  - Point to rotate
+ * @param {{ x: number, y: number }} center - Center of rotation
+ * @param {number} angleDeg - Rotation angle in degrees (positive = clockwise)
+ * @returns {{ x: number, y: number }}
+ */
+export function rotatePoint(point, center, angleDeg) {
+  const rad = degToRad(angleDeg);
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = point.x - center.x;
+  const dy = point.y - center.y;
+  return {
+    x: center.x + dx * cos - dy * sin,
+    y: center.y + dx * sin + dy * cos,
+  };
+}
+
+/**
+ * Generate an SVG arc path descriptor for an arc segment.
+ * @param {number} cx - Center X
+ * @param {number} cy - Center Y
+ * @param {number} r  - Radius
+ * @param {number} startAngle - Start angle in degrees
+ * @param {number} endAngle   - End angle in degrees
+ * @returns {string} SVG path "d" fragment: "M ... A ..."
+ */
+export function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  return [
+    'M', start.x.toFixed(2), start.y.toFixed(2),
+    'A', r, r, 0, largeArcFlag, 0, end.x.toFixed(2), end.y.toFixed(2),
+  ].join(' ');
+}
+
+/**
+ * Calculate the midpoint between two points.
+ * @param {{ x: number, y: number }} p1
+ * @param {{ x: number, y: number }} p2
+ * @returns {{ x: number, y: number }}
+ */
+export function midpoint(p1, p2) {
+  return {
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
+  };
+}
+
+/**
+ * Round a number to a fixed number of decimal places.
+ * Useful for keeping SVG coordinates clean.
+ * @param {number} value
+ * @param {number} [decimals=2]
+ * @returns {number}
+ */
+export function round(value, decimals = 2) {
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+}

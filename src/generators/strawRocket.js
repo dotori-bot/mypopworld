@@ -1,0 +1,79 @@
+import { addPath, addPolygon, addRect, getLineStyle, addText, addGroup } from './svgBuilder';
+
+/**
+ * Generates an SVG group for a Straw Rocket mechanism
+ * A straw rocket consists of a small rectangular paper tube that fits over a straw,
+ * sealed at the top, with decorations attached to the front/back.
+ */
+export const generateStrawRocket = (svg, options = {}) => {
+  const {
+    cx = 105,      // Center X position
+    cy = 148,      // Center Y position 
+    isColor = true,
+    theme = 'rocket' // rocket, butterfly, bird, etc.
+  } = options;
+
+  const g = addGroup(svg, 'straw-rocket-group');
+  
+  const cutStyle = getLineStyle('CUT', isColor);
+  const mountainStyle = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const glueStyle = getLineStyle('GLUE_TAB', isColor);
+
+  // 1. The Tube (Fits a standard 6mm straw)
+  // Tube width needs to wrap around 6mm straw = circumference ≈ 19mm
+  // We'll make it 25mm to have a loose fit + glue tab
+  const tubeWidth = 25; 
+  const tubeHeight = 40;
+  const tabWidth = 6;
+  const tubeX = cx - (tubeWidth + tabWidth) / 2;
+  const tubeY = cy + 20; // Place below the decoration
+
+  // Tube Outline (Cut)
+  addRect(g, tubeX, tubeY, tubeWidth + tabWidth, tubeHeight, cutStyle);
+  
+  // Tube fold line (separating main tube body from glue tab)
+  addPath(g, `M ${tubeX + tubeWidth} ${tubeY} L ${tubeX + tubeWidth} ${tubeY + tubeHeight}`, mountainStyle);
+  
+  // Tube glue tab indicator
+  addPolygon(g, [
+    [tubeX + tubeWidth, tubeY],
+    [tubeX + tubeWidth + tabWidth, tubeY],
+    [tubeX + tubeWidth + tabWidth, tubeY + tubeHeight],
+    [tubeX + tubeWidth, tubeY + tubeHeight]
+  ], glueStyle);
+  addText(g, tubeX + tubeWidth + 1, tubeY + tubeHeight / 2 + 1, '풀칠 (Glue)', 2);
+
+  // Top Seal Tab (to close the top of the tube so air pushes it)
+  const sealHeight = 8;
+  addPath(g, `M ${tubeX} ${tubeY} L ${tubeX} ${tubeY - sealHeight} L ${tubeX + tubeWidth} ${tubeY - sealHeight} L ${tubeX + tubeWidth} ${tubeY}`, cutStyle);
+  addPath(g, `M ${tubeX} ${tubeY} L ${tubeX + tubeWidth} ${tubeY}`, mountainStyle);
+  addPolygon(g, [
+    [tubeX, tubeY - sealHeight],
+    [tubeX + tubeWidth, tubeY - sealHeight],
+    [tubeX + tubeWidth, tubeY],
+    [tubeX, tubeY]
+  ], glueStyle);
+  addText(g, tubeX + tubeWidth/2, tubeY - 2, '접고 풀칠 (Seal Top)', 2, 'middle');
+
+  // 2. The Decoration Silhouettes (Front and Back)
+  const decWidth = 60;
+  const decHeight = 50;
+  const decY = cy - 40;
+  
+  // Front Decoration
+  const frontX = cx - decWidth - 5;
+  addRect(g, frontX, decY, decWidth, decHeight, cutStyle); // Placeholder box
+  addText(g, frontX + decWidth/2, decY + decHeight/2, `[${theme} 앞면]`, 4, 'middle');
+  addText(g, frontX + decWidth/2, decY + decHeight/2 + 6, '여기에 튜브 부착', 2, 'middle');
+  
+  // Back Decoration (Mirror)
+  const backX = cx + 5;
+  addRect(g, backX, decY, decWidth, decHeight, cutStyle); // Placeholder box
+  addText(g, backX + decWidth/2, decY + decHeight/2, `[${theme} 뒷면]`, 4, 'middle');
+
+  // Instruction text
+  addText(g, cx, cy - 60, "💡 빨대 로켓 (Straw Rocket) 도안", 4, 'middle');
+  addText(g, cx, cy - 50, "1. 튜브를 말아서 풀칠합니다. 2. 윗부분을 접어 막습니다. 3. 튜브 앞뒤로 장식을 붙입니다. 4. 빨대를 꽂아 붑니다!", 2.5, 'middle');
+
+  return g;
+};
