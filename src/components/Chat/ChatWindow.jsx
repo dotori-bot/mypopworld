@@ -89,17 +89,26 @@ export default function ChatWindow() {
                   className="chat-input"
                   id="init-idea"
                   style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box' }}
+                  onChange={(e) => {
+                    const btn = document.getElementById('init-btn');
+                    if (btn) btn.innerText = e.target.value.trim() ? '아이디어 구체화하기' : '아이디어 제안받기';
+                  }}
                 />
                 <button 
-                  className="btn btn-primary" 
-                  style={{ alignSelf: 'flex-start', marginTop: '4px' }}
+                  id="init-btn"
+                  className="btn" 
+                  style={{ alignSelf: 'flex-start', marginTop: '4px', background: 'var(--primary-main)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: 'bold' }}
                   onClick={() => {
                     const theme = document.getElementById('init-theme').value;
                     const age = document.getElementById('init-age').value;
-                    const idea = document.getElementById('init-idea').value;
+                    const idea = document.getElementById('init-idea').value.trim();
                     if(theme) {
-                       let prompt = `${age} 아이를 위한 '${theme}' 주제로 재미있는 팝업이나 장난감 아이디어를 제안해줘.`;
-                       if (idea) prompt += ` 특히 나는 이런 걸 만들고 싶어: ${idea}. 이 아이디어를 우선적으로 포함해서 제안해줘.`;
+                       let prompt = '';
+                       if (idea) {
+                         prompt = `${age} 아이가 '${theme}' 주제로 '${idea}'라는 구체적인 아이디어를 만들고 싶어 해. 이 아이디어를 실제로 구현할 수 있는 서로 다른 종이 공학 기법(메커니즘) 2~3가지를 제안해줘. (예: V-폴드로 입체적으로 세우기, 풀탭으로 움직이게 하기 등). 각 제안을 비교하기 쉽게 마크다운 표(Table)로 정리해서 보여줘.`;
+                       } else {
+                         prompt = `${age} 아이를 위한 '${theme}' 주제로 재미있는 팝업이나 장난감 아이디어를 제안해줘. 각 제안을 마크다운 표(Table)로 정리해서 보여줘.`;
+                       }
                        sendMessage(prompt);
                     }
                   }}
