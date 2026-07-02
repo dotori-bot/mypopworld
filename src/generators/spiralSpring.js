@@ -153,9 +153,12 @@ export function resolveSpiralGeometry(opts = {}) {
   const faceH = card.height - PRINT.MARGIN;   // printable depth spine → free edge
   const overflowBound = card.height - PRINT.MARGIN; // hard decoration ceiling
 
+  // NaN-safe numeric intake (?? only guards null/undefined, not NaN/garbage).
+  const numOr = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
   const r0 = L.HUB_R;
-  const w = clamp(round(opts.pitch ?? 6), L.PITCH_MIN, L.PITCH_MAX);
-  let turns = clamp(Math.round(opts.turns ?? 5), L.TURNS_MIN, L.TURNS_MAX);
+  const w = clamp(round(numOr(opts.pitch, 6)), L.PITCH_MIN, L.PITCH_MAX);
+  let turns = clamp(Math.round(numOr(opts.turns, 5)), L.TURNS_MIN, L.TURNS_MAX);
 
   // Fit: 2·R_outer + b ≤ faceH with b = 0.45·(R_outer − r0) ⇒ 2.45·R_outer ≤ faceH + 0.45·r0.
   const rOuterFit = (faceH + 0.45 * r0) / 2.45;
@@ -173,7 +176,7 @@ export function resolveSpiralGeometry(opts = {}) {
 
   const hStand = 2 * b;                            // estimated standing height
 
-  const decos = clamp(Math.round(opts.decorations ?? 4), L.DECOS_MIN, L.DECOS_MAX);
+  const decos = clamp(Math.round(numOr(opts.decorations, 4)), L.DECOS_MIN, L.DECOS_MAX);
   const decoList = [];
   for (let i = 1; i <= decos; i++) {
     const f = i / decos;                           // fraction along strip from hub
