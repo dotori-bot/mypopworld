@@ -287,6 +287,76 @@ export default function Instructions() {
           </>
         );
 
+      case 'spiral-spring':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>소용돌이 오리기</h4>
+                <p>동그란 판을 오리고, 안쪽 소용돌이(스파이럴) 선도 끝까지 오려주세요. 다 오리면 돌돌 말린 종이 스프링이 됩니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="35" cy="30" r="24" fill="none" stroke="var(--text-primary)" strokeWidth="2" />
+                    <path d="M35 30 m0 -4 a4 4 0 1 1 -0.1 0 M35 12 a18 18 0 1 1 -0.1 0 M35 6 a24 24 0 0 1 22 22"
+                          fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <path d="M75 50 L90 35 M90 50 L75 35" stroke="var(--primary-main)" strokeWidth="2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>가운데(①)와 바깥 끝(②)만 붙이기</h4>
+                <p>가운데 원(①)은 아래 종이면에, 소용돌이 바깥쪽 끝(②)만 위 종이면의 ‘②붙이기’ 자리에 붙이세요. 이 두 곳만 붙이고, 돌돌 말린 띠의 나머지는 절대 어디에도 붙이지 마세요! 붙으면 늘어나지 않아요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <path d="M15 45 L50 55 L85 45" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <circle cx="50" cy="50" r="3" fill="green" />
+                    <text x="50" y="59" fontSize="6" textAnchor="middle" fill="green">① 가운데</text>
+                    <circle cx="50" cy="18" r="3" fill="green" />
+                    <text x="50" y="12" fontSize="6" textAnchor="middle" fill="green">② 바깥 끝</text>
+                    <path d="M50 47 Q60 32 50 21" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" strokeDasharray="2 2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>번호 자리에만, 표시된 크기 안에서 장식 붙이기</h4>
+                <p>①②③④ 번호가 찍힌 자리에만 행성·인형 같은 장식을 붙이세요. 옆에 적힌 ‘최대 반지름’보다 큰 장식은 붙이지 마세요. 그보다 크면 카드를 열 때 장식이 종이 밖으로 삐져나옵니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="40" cy="30" r="10" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" />
+                    <circle cx="40" cy="30" r="1.8" fill="var(--text-primary)" />
+                    <text x="40" y="45" fontSize="6" textAnchor="middle" fill="var(--text-secondary)">최대 크기 OK</text>
+                    <circle cx="78" cy="30" r="17" fill="none" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
+                    <path d="M70 22 L86 38 M86 22 L70 38" stroke="red" strokeWidth="2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>열면 둥실 떠오르기</h4>
+                <p>카드를 닫으면 스프링이 납작하게 돌돌 말리고, 열면 소용돌이가 위로 쭉 늘어나며 장식들이 서로 다른 높이로 떠오릅니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <path d="M20 65 L50 72 L80 55 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M50 68 C30 58 70 50 45 42 C25 36 65 30 44 22" fill="none" stroke="var(--text-primary)" strokeWidth="2" />
+                    <circle cx="47" cy="55" r="6" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <circle cx="52" cy="40" r="7" fill="gold" stroke="orange" strokeWidth="1" />
+                    <circle cx="46" cy="24" r="6" fill="#7ec8e3" stroke="var(--primary-main)" strokeWidth="1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>

@@ -15,6 +15,7 @@ import { renderStrawRocket } from './strawRocket.js';
 import { renderAccordion } from './accordionPopup.js';
 import { renderVolvelle } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
+import { renderSpiralSpring } from './spiralSpring.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -64,6 +65,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderFlipDisc(params),
     defaultParams: { R: 42, pages: 4 },
     instructionStyle: 'flip-disc',
+  },
+  'spiral-spring': {
+    labelKo: '달팽이 스프링 (늘어나며 떠오르는 팝업)',
+    render: (params) => renderSpiralSpring(params),
+    defaultParams: { turns: 5, pitch: 6, decorations: 4 },
+    instructionStyle: 'spiral-spring',
   },
 };
 
@@ -127,6 +134,17 @@ export const INSTRUCTION_TEXT = {
       '오른쪽 반원을 한 장씩 왼쪽으로 넘기면 접시 그림이 짠! 하고 다른 요리로 바뀝니다. 넘김판 가장자리의 작은 손잡이(돌기)를 잡으면 한 장씩 넘기기 쉬워요.',
     ],
     tips: '반원 조각끼리 붙지 않고 왼쪽 네모(경첩)만 붙는 것이 핵심입니다. 왼쪽 반쪽과 오른쪽 반원의 곧은 변이 정확히 맞닿아야 동그라미가 예쁘게 이어져요.',
+  },
+  'spiral-spring': {
+    title: '달팽이 스프링 팝업 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 동그란 판을 오리고, 안쪽 소용돌이(스파이럴) 선도 끝까지 오려주세요. 다 오리면 돌돌 말린 종이 스프링이 됩니다.',
+      '가운데 초록색 원(①)에 풀을 발라 아래쪽 종이면에 붙여주세요. 소용돌이의 바깥쪽 끝(②)만 위쪽 종이면의 ‘②붙이기’ 자리에 붙입니다. 중요: 이 두 곳(가운데·바깥 끝)만 붙이고, 돌돌 말린 띠의 나머지 부분은 어디에도 붙이지 마세요! 붙으면 늘어나지 않아요.',
+      '①②③④ 번호가 찍힌 자리에만 행성이나 인형 같은 평면 장식을 붙여주세요. 옆에 적힌 ‘최대 반지름’보다 큰 장식은 붙이지 마세요. 그보다 크면 카드를 열었을 때 장식이 종이 밖으로 삐져나옵니다.',
+      '카드를 닫으면 스프링이 납작하게 돌돌 말리고, 열면 소용돌이가 위로 쭉 늘어나면서 장식들이 서로 다른 높이로 둥실 떠오릅니다.',
+    ],
+    tips: '번호가 찍힌 안전한 자리에만, 표시된 최대 크기 안에서 장식을 붙이는 것이 핵심입니다. 잘 안 늘어나면 스프링을 살짝 반대로 당겨 말린 자국을 풀어 주세요.',
   },
 };
 
