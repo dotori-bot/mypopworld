@@ -16,6 +16,7 @@ import { renderAccordion } from './accordionPopup.js';
 import { renderVolvelle } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
+import { renderRisingSlide } from './risingSlide.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -71,6 +72,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderSpiralSpring(params),
     defaultParams: { turns: 5, pitch: 6, decorations: 4 },
     instructionStyle: 'spiral-spring',
+  },
+  'rising-slide': {
+    labelKo: '빛줄기 상승 슬라이드 (당기면 그림이 위로 올라가는 장치)',
+    render: (params) => renderRisingSlide(params),
+    defaultParams: { riseFraction: 0.62, sliderWidth: 12, grip: 20 },
+    instructionStyle: 'rising-slide',
   },
 };
 
@@ -145,6 +152,17 @@ export const INSTRUCTION_TEXT = {
       '카드를 닫으면 스프링이 납작하게 돌돌 말리고, 열면 소용돌이가 위로 쭉 늘어나면서 장식들이 서로 다른 높이로 둥실 떠오릅니다.',
     ],
     tips: '번호가 찍힌 안전한 자리에만, 표시된 최대 크기 안에서 장식을 붙이는 것이 핵심입니다. 잘 안 늘어나면 스프링을 살짝 반대로 당겨 말린 자국을 풀어 주세요.',
+  },
+  'rising-slide': {
+    title: '빛줄기 상승 슬라이드 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 앞면 카드의 세로 슬롯(길쭉한 구멍), 긴 슬라이더 조각, 멈춤 띠 2개, 작은 그림을 오려주세요. 빛줄기·하늘 같은 배경은 앞면에 그대로 인쇄된 그림이라 오리지 않습니다.',
+      '슬라이더를 카드 뒤에 대고, 맨 아래 산접기(빨간 점선) 자리의 작은 탭을 앞으로 접어 슬롯을 통과시킨 뒤 앞면으로 나온 탭에 작은 그림을 붙여주세요. 그림과 슬라이더가 슬롯보다 넓어 카드를 앞뒤로 꽉 물어 빠지지 않습니다.',
+      '중요(안전 장치): 슬롯 바로 위 뒷면에 ① 위 멈춤 띠를, 아래쪽에 ② 안내 띠를 다리처럼 얹어 양 끝 초록색 부분만 카드에 붙여주세요. 가운데는 붙이지 마세요(슬라이더가 그 아래로 지나갑니다). 슬라이더 옆에 튀어나온 넓은 ‘멈춤 날개’가 이 위 멈춤 띠에 걸려서, 손잡이를 세게 당겨도 위로 쏙 빠지지 않습니다.',
+      '카드 위로 나온 손잡이를 잡고 위로 당기면 그림이 빛줄기를 따라 스르륵 올라갑니다. 끝까지 올라가면 멈춤 날개가 딱 걸려 멈춥니다. 손을 놓고 살살 내리면 그림이 다시 빛 속으로 숨어요.',
+    ],
+    tips: '멈춤 날개가 멈춤 띠 아래에서만 지나다니고, 맨 위에서 확실히 걸리는지 확인하세요. 너무 뻑뻑하면 안내 띠를 아주 살짝 느슨하게(가운데를 조금 더 띄워) 붙이고, 너무 헐거우면 멈춤 띠 양 끝을 꼼꼼히 눌러 붙여 주세요.',
   },
 };
 

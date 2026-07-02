@@ -47,6 +47,7 @@ export const MECHANISMS = {
   PARALLEL_FOLD: 'parallel-fold',
   PULL_TAB: 'pull-tab',
   STRAW_ROCKET: 'straw-rocket',
+  RISING_SLIDE: 'rising-slide',
 };
 
 // SVG namespace

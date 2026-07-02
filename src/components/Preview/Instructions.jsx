@@ -357,6 +357,97 @@ export default function Instructions() {
           </>
         );
 
+      case 'rising-slide':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>슬롯·슬라이더·멈춤 띠 오리기</h4>
+                <p>앞면의 세로 슬롯(길쭉한 구멍), 긴 슬라이더 조각, 멈춤 띠 2개, 작은 그림을 실선대로 오려주세요. 빛줄기·하늘 배경은 인쇄된 그림이라 오리지 않습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* card with vertical slot */}
+                    <rect x="14" y="8" width="34" height="44" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="29" y="14" width="4" height="32" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* long slider strip with flange bumps */}
+                    <rect x="66" y="8" width="10" height="44" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="62" y="40" width="4" height="5" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="76" y="40" width="4" height="5" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="71" y="6" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">손잡이</text>
+                    {/* two retainer strips */}
+                    <rect x="90" y="16" width="24" height="6" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <rect x="90" y="30" width="24" height="6" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="102" y="46" fontSize="4.5" textAnchor="middle" fill="green">멈춤 띠 2개</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>그림 탭을 슬롯에 끼우고 그림 붙이기</h4>
+                <p>슬라이더를 카드 뒤에 대고, 맨 아래 탭을 빨간 점선(산접기)으로 앞으로 접어 슬롯을 통과시킨 뒤, 앞으로 나온 탭에 작은 그림을 붙입니다. 그림과 슬라이더가 슬롯보다 넓어 카드를 앞뒤로 꽉 물어요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* side cross-section: card slice with slot, slider behind, tab through, figure front */}
+                    <rect x="46" y="8" width="4" height="44" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="50" y="20" width="4" height="20" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <path d="M50 28 L46 28 L42 30 L42 34 L46 32 Z" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M40 32 l-4 2 l4 2 z" fill="gold" stroke="orange" strokeWidth="0.8" />
+                    <text x="30" y="30" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">그림(앞)</text>
+                    <text x="70" y="30" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">슬라이더(뒤)</text>
+                    <path d="M52 46 l0 5 M50 49 l2 2 l2 -2" stroke="red" strokeWidth="1" fill="none" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>⚠️ 안전 걸림: 위 멈춤 띠 붙이기 (양 끝만!)</h4>
+                <p>슬롯 바로 위 뒷면에 <b>① 위 멈춤 띠</b>를 다리처럼 얹고 <b>양 끝 초록색만</b> 붙입니다. 가운데는 붙이지 마세요 — 슬라이더가 그 아래로 지나가요. 슬라이더 옆의 넓은 <b>멈춤 날개</b>가 이 띠보다 넓어서, 손잡이를 세게 당겨도 위로 <b>쏙 빠지지 않습니다</b>. 아래 ② 안내 띠도 같은 방법으로 붙여 슬라이더가 똑바로 움직이게 합니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="130" viewBox="0 0 100 65" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* slider strip going up through a bridge; wide flange catching under it */}
+                    <rect x="45" y="6" width="10" height="52" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    {/* retainer bridge: glued ends, open middle */}
+                    <rect x="30" y="18" width="10" height="7" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1.2" />
+                    <rect x="60" y="18" width="10" height="7" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1.2" />
+                    <path d="M40 18 L60 18 M40 25 L60 25" stroke="green" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="15" fontSize="4" textAnchor="middle" fill="green">가운데 붙이지 않음</text>
+                    {/* wide flange sitting just below the bridge */}
+                    <rect x="39" y="27" width="22" height="6" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <text x="78" y="31" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">멈춤 날개</text>
+                    {/* up arrow + stop */}
+                    <path d="M50 44 l0 -8 M47 39 l3 -3 l3 3" stroke="red" strokeWidth="1.3" fill="none" />
+                    <text x="50" y="62" fontSize="5" textAnchor="middle" fill="red">당겨도 안 빠짐!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>당기면 위로 스르륵!</h4>
+                <p>카드 위로 나온 손잡이를 잡고 위로 당기면 그림이 빛줄기를 따라 올라갑니다. 끝까지 가면 멈춤 날개가 딱 걸려 멈추고, 손을 놓고 살살 내리면 다시 빛 속으로 숨어요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="30" y="10" width="40" height="58" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* beam */}
+                    <path d="M44 66 L56 66 L52 20 L48 20 Z" fill="rgba(255,215,0,0.25)" stroke="none" />
+                    {/* figure risen near top */}
+                    <path d="M50 22 l3 5 l6 0 l-5 4 l2 6 l-6 -4 l-6 4 l2 -6 l-5 -4 l6 0 z" fill="gold" stroke="orange" strokeWidth="0.8" />
+                    {/* handle up top + pull arrow */}
+                    <rect x="47" y="2" width="6" height="9" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M50 40 l0 -10 M47 34 l3 -4 l3 4" stroke="red" strokeWidth="1.3" fill="none" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>
