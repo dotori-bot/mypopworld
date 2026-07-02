@@ -1,5 +1,6 @@
 import React from 'react';
 import useCardStore from '../../store/useCardStore';
+import { getMechanism } from '../../generators/registry';
 import { Scissors, Palette, Tent, HelpCircle } from 'lucide-react';
 
 export default function Instructions() {
@@ -14,7 +15,9 @@ export default function Instructions() {
   }
 
   const renderSteps = () => {
-    switch (cardParams.mechanism) {
+    const instructionStyle = getMechanism(cardParams.mechanism)?.instructionStyle;
+
+    switch (instructionStyle) {
       case 'straw-rocket':
         return (
           <>
@@ -87,10 +90,7 @@ export default function Instructions() {
           </>
         );
       
-      case 'box-popup':
-      case 'v-fold':
-      case 'parallel-fold':
-      case 'pull-tab':
+      case 'generic':
         return (
           <>
             <div className="instruction-step card">

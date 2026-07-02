@@ -1,4 +1,4 @@
-import { addPath, addPolygon, getLineStyle, addText, addGroup } from './svgBuilder';
+import { addPath, addPolygon, getLineStyle, addText, addGroup, createTemplate } from './svgBuilder';
 
 /**
  * Generates an SVG group for a Box Popup mechanism
@@ -57,3 +57,22 @@ export const generateBoxPopup = (svg, options = {}) => {
 
   return g;
 };
+
+/**
+ * Render Box Popup onto a complete printable SVG template (page outline + spine).
+ * @param {Object} [params={}]
+ * @param {'A4'|'LETTER'} [params.paperSize='A4']
+ * @param {'color'|'bw'} [params.colorMode='color']
+ * @returns {{ svg: SVGSVGElement }}
+ */
+export function renderBoxPopup(params = {}) {
+  const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  generateBoxPopup(contentGroup, {
+    cx: paper.width / 2,
+    cy: spineY,
+    ...opts,
+    isColor: colorMode !== 'bw',
+  });
+  return { svg };
+}

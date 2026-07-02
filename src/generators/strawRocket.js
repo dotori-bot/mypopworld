@@ -1,4 +1,4 @@
-import { addPath, addPolygon, addRect, getLineStyle, addText, addGroup } from './svgBuilder';
+import { addPath, addPolygon, addRect, getLineStyle, addText, addGroup, createTemplate } from './svgBuilder';
 
 /**
  * Generates an SVG group for a Straw Rocket mechanism
@@ -77,3 +77,23 @@ export const generateStrawRocket = (svg, options = {}) => {
 
   return g;
 };
+
+/**
+ * Render Straw Rocket onto a complete printable SVG template (page outline + spine).
+ * @param {Object} [params={}]
+ * @param {'A4'|'LETTER'} [params.paperSize='A4']
+ * @param {'color'|'bw'} [params.colorMode='color']
+ * @param {string} [params.theme='rocket']
+ * @returns {{ svg: SVGSVGElement }}
+ */
+export function renderStrawRocket(params = {}) {
+  const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  generateStrawRocket(contentGroup, {
+    cx: paper.width / 2,
+    cy: spineY,
+    ...opts,
+    isColor: colorMode !== 'bw',
+  });
+  return { svg };
+}
