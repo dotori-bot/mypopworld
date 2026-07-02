@@ -45,6 +45,7 @@ export default async function handler(req, res) {
 - "straw-rocket": 빨대에 종이 뚜껑을 씌워 후~ 불면 날아가는 장난감 (나비, 로켓 등) (난이도: 최하, 4~6세 추천)
 - "accordion": 카드를 열면 지그재그 병풍이 짠 하고 펼쳐지는 무대 (숲, 마을, 성벽 등) (난이도: 중, 6세 이상 추천)
 - "volvelle": 동그란 판을 손가락으로 돌리면 창문 속 그림이 바뀌는 장치 (날씨, 표정, 요일 등) (난이도: 중, 6세 이상 추천)
+- "flip-disc": 동그란 그림을 휙휙 넘기면 반쪽이 다른 그림으로 짠! 바뀌는 도안 (요리 접시, 낮과 밤, 애벌레→나비 등) (난이도: 중~상, 반쪽을 정확히 맞춰야 해서 7세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`

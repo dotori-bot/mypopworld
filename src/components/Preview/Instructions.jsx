@@ -207,6 +207,86 @@ export default function Instructions() {
           </>
         );
 
+      case 'flip-disc':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>고정 반쪽 + 넘김판 오리기</h4>
+                <p>왼쪽 고정 반쪽 1개와 오른쪽 넘김판 여러 장을 실선대로 오려주세요. 넘김판 왼쪽에 붙은 네모(풀칠 자리)는 자르지 말고 남겨둡니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* fixed left half */}
+                    <path d="M30 8 A22 22 0 0 0 30 52 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <text x="20" y="33" fontSize="6" textAnchor="middle" fill="var(--text-secondary)">고정</text>
+                    {/* one flip page: tab + right half + nub */}
+                    <rect x="72" y="8" width="6" height="44" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <path d="M78 8 A22 22 0 0 1 78 52" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M78 8 L78 52" stroke="blue" strokeWidth="1" strokeDasharray="3 1 1 1" />
+                    <path d="M99 42 l4 2 l-2 3 z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>경첩 접었다 펴기</h4>
+                <p>넘김판마다 왼쪽 네모(경첩)를 파란 점선을 따라 뒤로 접었다 폈다 해서 부드러운 접힘 자국을 내주세요. 여기가 책장처럼 넘어가는 부분이에요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <path d="M40 8 A20 20 0 0 1 40 48" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M40 8 L28 12 L28 44 L40 48" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M40 8 L40 48" stroke="blue" strokeWidth="1.5" strokeDasharray="3 1 1 1" />
+                    <path d="M52 16 q10 12 0 24" fill="none" stroke="var(--primary-main)" strokeWidth="1.5" strokeDasharray="2 2" />
+                    <path d="M52 40 l-2 -4 l4 0 z" fill="var(--primary-main)" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>네모(경첩)끼리만 풀칠! 반원은 붙이지 마세요</h4>
+                <p>넘김판을 ①②③ 순서대로 포개고, 왼쪽 네모끼리만 풀칠해 한 묶음으로 붙입니다. 반원 그림 부분은 절대 서로 붙이면 안 돼요. 붙이면 넘겨지지 않아요!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* stacked half discs, fanned */}
+                    <path d="M46 12 A20 20 0 0 1 46 52" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" />
+                    <path d="M44 10 A20 20 0 0 1 44 50" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" />
+                    <path d="M42 8 A20 20 0 0 1 42 48" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    {/* glued tab column */}
+                    <rect x="30" y="8" width="12" height="44" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1.2" />
+                    <text x="36" y="33" fontSize="5" textAnchor="middle" fill="green">풀칠</text>
+                    {/* forbidden marker on the disc faces */}
+                    <text x="60" y="27" fontSize="8" textAnchor="middle" fill="red">✕</text>
+                    <text x="60" y="42" fontSize="5.5" textAnchor="middle" fill="red">반원 붙이기 금지</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>밑판에 붙이고 넘겨보기</h4>
+                <p>묶은 넘김판의 맨 아래 네모를 밑판 가운데 세로선에 붙여 반원이 오른쪽으로 펼쳐지게 하고, 그 위에 왼쪽 고정 반쪽을 덮어 붙입니다. 오른쪽 반원을 한 장씩 왼쪽으로 넘기면 요리가 짠! 하고 바뀝니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* full assembled circle */}
+                    <circle cx="55" cy="30" r="22" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M55 8 L55 52" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    {/* one page lifting */}
+                    <path d="M55 8 A22 22 0 0 1 74 44" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" opacity="0.85" transform="rotate(-24 55 30)" />
+                    <path d="M40 14 q-8 8 0 16" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" strokeDasharray="2 2" />
+                    <path d="M40 30 l-2 -4 l4 0 z" fill="var(--text-secondary)" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>

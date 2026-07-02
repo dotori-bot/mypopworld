@@ -14,6 +14,7 @@ import { renderPullTab } from './pullTab.js';
 import { renderStrawRocket } from './strawRocket.js';
 import { renderAccordion } from './accordionPopup.js';
 import { renderVolvelle } from './volvelle.js';
+import { renderFlipDisc } from './flipDisc.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -57,6 +58,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderVolvelle(params),
     defaultParams: { R: 40, sectors: 6 },
     instructionStyle: 'volvelle',
+  },
+  'flip-disc': {
+    labelKo: '반쪽 넘김판 (넘기면 그림이 바뀌는 접시)',
+    render: (params) => renderFlipDisc(params),
+    defaultParams: { R: 42, pages: 4 },
+    instructionStyle: 'flip-disc',
   },
 };
 
@@ -108,6 +115,18 @@ export const INSTRUCTION_TEXT = {
       '마지막으로 덮개를 맨 위에 덮어 테두리만 붙여주세요. 손잡이 홈으로 돌림판 가장자리를 밀면 창문 속 그림이 바뀝니다.',
     ],
     tips: '너무 꽉 끼면 잘 안 돌고, 너무 헐거우면 그림이 비뚤어져요. 돌림판이 걸리지 않고 살살 돌아가는지 확인하세요.',
+  },
+  'flip-disc': {
+    title: '반쪽 넘김판 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택), 밑판이 될 종이나 카드 1장',
+    steps: [
+      '검은색 실선을 따라 왼쪽 고정 반쪽 1개와 오른쪽 넘김판 여러 장을 모두 오려주세요. 오른쪽 조각의 왼쪽에 붙은 네모(풀칠 자리)는 자르지 말고 남겨둡니다.',
+      '넘김판 조각마다 왼쪽 네모(경첩)를 파란 점선을 따라 뒤로 접었다 폈다 몇 번 해서 부드러운 접힘 자국을 내주세요. (여기가 책장처럼 넘어가는 부분이에요.)',
+      '넘김판들을 순서대로(①②③…) 포개고, 왼쪽 네모끼리만 풀칠해서 한 묶음으로 붙여주세요. 중요: 반원 그림 부분은 절대 서로 붙이지 마세요! 붙이면 넘겨지지 않아요.',
+      '묶은 넘김판의 맨 아래 네모를 밑판(배경) 가운데 세로선에 붙여, 반원들이 오른쪽으로 펼쳐지게 하세요. 그 위에 왼쪽 고정 반쪽을 덮어 붙이면 네모 묶음이 가려지고 동그란 접시가 완성됩니다.',
+      '오른쪽 반원을 한 장씩 왼쪽으로 넘기면 접시 그림이 짠! 하고 다른 요리로 바뀝니다. 넘김판 가장자리의 작은 손잡이(돌기)를 잡으면 한 장씩 넘기기 쉬워요.',
+    ],
+    tips: '반원 조각끼리 붙지 않고 왼쪽 네모(경첩)만 붙는 것이 핵심입니다. 왼쪽 반쪽과 오른쪽 반원의 곧은 변이 정확히 맞닿아야 동그라미가 예쁘게 이어져요.',
   },
 };
 
