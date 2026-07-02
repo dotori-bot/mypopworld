@@ -448,6 +448,84 @@ export default function Instructions() {
           </>
         );
 
+      case 'layered-stage':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>층별 벽 오리기 (양옆 날개는 남기기)</h4>
+                <p>각 층(무대) 벽을 실선대로 오려주세요. 벽 세로 양옆의 초록색 날개(풀칠 자리)는 자르지 말고 남깁니다. 벽의 <b>바깥쪽(먼 쪽) 가로선만</b> 오리고, 척추 쪽 가로선은 그대로 두어야 벽이 카드에 붙어 섭니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* nested bands: 3 walls of increasing depth from a spine line */}
+                    <path d="M10 52 L110 52" stroke="blue" strokeWidth="1.5" strokeDasharray="4 1 1 1" />
+                    <text x="60" y="58" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">척추(가운데 접는 선)</text>
+                    <rect x="30" y="38" width="60" height="14" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <rect x="38" y="24" width="44" height="14" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <rect x="46" y="12" width="28" height="12" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <rect x="26" y="40" width="4" height="10" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
+                    <rect x="90" y="40" width="4" height="10" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>접어서 벽 세우기 (높이=깊이)</h4>
+                <p>빨간 점선(척추 쪽)은 산접기, 파란 점선(바깥 쪽)은 골접기로 접어 벽을 세웁니다. 각 벽은 <b>높이와 깊이가 같아서</b> 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접혀요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* side view: three walls standing at increasing depth */}
+                    <path d="M10 50 L110 50" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M35 50 L35 30" stroke="var(--primary-main)" strokeWidth="3" />
+                    <path d="M60 50 L60 22" stroke="var(--primary-main)" strokeWidth="3" />
+                    <path d="M85 50 L85 14" stroke="var(--primary-main)" strokeWidth="3" />
+                    <path d="M33 50 l2 -4 M33 50 l2 4" stroke="red" strokeWidth="1" fill="none" />
+                    <text x="60" y="58" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">앞(낮음) → 뒤(높음)</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>⚠️ 맨 뒤 층부터 앞으로 순서대로 붙이기</h4>
+                <p>반드시 <b>가장 뒤(깊고 큰 번호) 층부터</b> 붙이세요. 각 층의 양옆 날개를 바깥으로 접어 카드 바닥에 붙입니다. 앞 층을 먼저 붙이면 뒤 층에 손이 닿지 않고, 순서가 틀리면 겹침이 어긋나 <b>카드를 닫을 때 뒤 벽이 밖으로 삐져나와요.</b></p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    <path d="M10 50 L110 50" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="72" y="14" width="14" height="36" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" />
+                    <text x="79" y="10" fontSize="6" textAnchor="middle" fill="red">①먼저</text>
+                    <rect x="55" y="24" width="14" height="26" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" opacity="0.7" />
+                    <text x="62" y="20" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">②</text>
+                    <rect x="38" y="34" width="14" height="16" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" opacity="0.5" />
+                    <text x="45" y="30" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">③마지막</text>
+                    <path d="M90 40 l14 0 M100 36 l4 4 l-4 4" stroke="var(--text-secondary)" strokeWidth="1.2" fill="none" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>닫아서 확인하고 열어보기</h4>
+                <p>카드를 닫아 <b>모든 층이 카드 바깥 선 안쪽으로 납작하게</b> 접혀 들어가는지 확인하세요. 열면 성벽과 탑이 층층이 서로 다른 깊이로 솟아오릅니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <path d="M18 62 L50 74 L82 62 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="40" y="30" width="20" height="30" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <rect x="34" y="40" width="32" height="22" fill="rgba(0,0,0,0.05)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="46" y="20" width="8" height="18" fill="gold" stroke="orange" strokeWidth="1" />
+                    <path d="M46 20 l0 -4 M50 20 l0 -6 M54 20 l0 -4" stroke="orange" strokeWidth="1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>

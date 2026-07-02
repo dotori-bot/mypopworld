@@ -17,6 +17,7 @@ import { renderVolvelle } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
+import { renderLayeredStage } from './layeredStage.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -78,6 +79,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderRisingSlide(params),
     defaultParams: { riseFraction: 0.62, sliderWidth: 12, grip: 20 },
     instructionStyle: 'rising-slide',
+  },
+  'layered-stage': {
+    labelKo: '층층이 무대 (성·마을이 겹겹이 솟는 팝업)',
+    render: (params) => renderLayeredStage(params),
+    defaultParams: { layers: 3 },
+    instructionStyle: 'layered-stage',
   },
 };
 
@@ -163,6 +170,17 @@ export const INSTRUCTION_TEXT = {
       '카드 위로 나온 손잡이를 잡고 위로 당기면 그림이 빛줄기를 따라 스르륵 올라갑니다. 끝까지 올라가면 멈춤 날개가 딱 걸려 멈춥니다. 손을 놓고 살살 내리면 그림이 다시 빛 속으로 숨어요.',
     ],
     tips: '멈춤 날개가 멈춤 띠 아래에서만 지나다니고, 맨 위에서 확실히 걸리는지 확인하세요. 너무 뻑뻑하면 안내 띠를 아주 살짝 느슨하게(가운데를 조금 더 띄워) 붙이고, 너무 헐거우면 멈춤 띠 양 끝을 꼼꼼히 눌러 붙여 주세요.',
+  },
+  'layered-stage': {
+    title: '층층이 무대 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 각 층(무대) 벽을 오려주세요. 벽의 세로 양옆에 붙은 초록색 네모(풀칠 자리/날개)는 자르지 말고 남겨둡니다. 벽 위쪽(먼 쪽) 가로선만 오리고, 척추(가운데 접는 선) 쪽 아래 가로선은 자르지 마세요 — 그 선으로 벽이 카드에 붙어 섭니다.',
+      '빨간 점선(척추 쪽, 산접기)은 볼록하게, 파란 점선(바깥 쪽, 골접기)은 오목하게 접어 벽을 세워주세요. 각 벽은 높이와 깊이가 같아서(높이=깊이), 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접힙니다.',
+      '아주 중요 — 반드시 맨 뒤(가장 깊고 큰 번호) 층부터 앞으로 순서대로 붙이세요. 각 층의 양옆 초록색 날개를 바깥으로 접어 카드 바닥면에 붙입니다. 앞 층을 먼저 붙이면 뒤 층에 손이 닿지 않아 조립이 막히고, 순서가 틀리면 겹침(telescoping)이 어긋나 카드를 닫을 때 뒤 벽이 카드 밖으로 삐져나옵니다.',
+      '카드를 닫아 확인하세요. 모든 층이 카드 바깥 자르는 선 안쪽으로 납작하게 접혀 들어가야 정상입니다. 열면 성벽·탑이 층층이 서로 다른 깊이로 솟아오릅니다.',
+    ],
+    tips: '뒤에서 앞 순서로 붙이는 것이 핵심입니다. 뒤 층일수록 더 높고(성의 안쪽 탑처럼) 더 깊은 곳에 섭니다. 닫았을 때 어느 한 벽이라도 카드 밖으로 나오면, 그 층 벽이 너무 깊은 것이니 조금 낮은(=얕은) 벽으로 다시 만들어 주세요.',
   },
 };
 

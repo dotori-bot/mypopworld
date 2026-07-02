@@ -48,6 +48,7 @@ export default async function handler(req, res) {
 - "flip-disc": 동그란 그림을 휙휙 넘기면 반쪽이 다른 그림으로 짠! 바뀌는 도안 (요리 접시, 낮과 밤, 애벌레→나비 등) (난이도: 중~상, 반쪽을 정확히 맞춰야 해서 7세 이상 추천)
 - "spiral-spring": 달팽이처럼 돌돌 말린 종이 스프링이 늘어나면서 인형이나 행성이 둥실 떠오르는 장치 (우주·태양계, 바닷속, 자라나는 새싹 등) (난이도: 중~상, 소용돌이를 가늘게 오려야 해서 8세 이상 추천)
 - "rising-slide": 손잡이를 당기면 작은 그림이 빛줄기를 따라 위로 스르륵 올라가는 장치. 올라오는·승천하는·발사되는 주제에 잘 어울립니다 (UFO 빛에 끌려 올라가는 소, 예수님 승천, 엘리야의 불수레, 로켓 발사, 두둥실 열기구, 램프에서 나오는 지니 등). 뒷면에 걸림 장치가 있어 손잡이를 세게 당겨도 빠지지 않습니다 (난이도: 중, 7세 이상 추천)
+- "layered-stage": 카드를 열면 성이나 마을 건물들이 층층이 겹쳐서 서로 다른 깊이로 입체적으로 솟아오르는 무대 도안. 앞 벽은 낮고 뒤 벽은 높아(성 안쪽 탑처럼) 원근감이 살아납니다 (성·궁전, 마을 거리, 도시 스카이라인, 숲속 무대 등). 카드를 닫으면 모든 층이 카드 밖으로 삐져나오지 않고 납작하게 접혀 들어갑니다. 뒤에서 앞 순서로 붙여야 해서 여러 층 조립이 필요합니다 (난이도: 중~상, 8세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`
