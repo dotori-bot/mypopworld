@@ -86,6 +86,45 @@
   z-index: 20;
 }
 
+/* Decoration Mode Toggle (page-2 artwork style: AI image vs. freehand guide) */
+.decoration-mode-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg) 0;
+  flex-wrap: wrap;
+}
+
+.decoration-mode-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-right: var(--space-xs);
+}
+
+.decoration-mode-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.decoration-mode-btn:hover {
+  background: var(--bg-glass-hover);
+}
+
+.decoration-mode-btn.active {
+  background: var(--accent-gradient);
+  color: white;
+  border-color: transparent;
+}
+
 /* Page Navigator */
 .page-navigator {
   position: absolute;
