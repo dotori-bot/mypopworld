@@ -1,4 +1,4 @@
-import { addPath, addPolygon, getLineStyle, addText, addGroup } from './svgBuilder';
+import { addPath, addPolygon, getLineStyle, addText, addGroup, createTemplate } from './svgBuilder';
 
 /**
  * Generates an SVG group for a V-Fold popup mechanism
@@ -71,3 +71,22 @@ export const generateVFold = (svg, options = {}) => {
 
   return g;
 };
+
+/**
+ * Render V-Fold onto a complete printable SVG template (page outline + spine).
+ * @param {Object} [params={}]
+ * @param {'A4'|'LETTER'} [params.paperSize='A4']
+ * @param {'color'|'bw'} [params.colorMode='color']
+ * @returns {{ svg: SVGSVGElement }}
+ */
+export function renderVFold(params = {}) {
+  const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  generateVFold(contentGroup, {
+    cx: paper.width / 2,
+    cy: spineY,
+    ...opts,
+    isColor: colorMode !== 'bw',
+  });
+  return { svg };
+}

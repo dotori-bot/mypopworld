@@ -1,4 +1,4 @@
-import { SVG_NS, LINE_STYLES, LINE_STYLES_BW, PAPER_SIZES } from './constants';
+import { SVG_NS, LINE_STYLES, LINE_STYLES_BW, PAPER_SIZES, PRINT, getLineStyles } from './constants';
 
 export const getLineStyle = (type, isColor) => {
   const styles = isColor ? LINE_STYLES : LINE_STYLES_BW;
@@ -83,4 +83,29 @@ export const addGroup = (svg, id) => {
 export const svgToString = (svg) => {
   const serializer = new XMLSerializer();
   return serializer.serializeToString(svg);
+};
+
+/**
+ * Build the shared base card page every mechanism renders into:
+ * a printable page at the given paper size, with a print-safe-margin cut
+ * guide (the sheet's outer trim line) and a center spine valley-fold line
+ * (the line the paper folds along to become the card, per CARD_SIZES).
+ *
+ * @param {'A4'|'LETTER'} [paperSizeKey='A4']
+ * @param {'color'|'bw'} [colorMode='color']
+ * @returns {{ svg: SVGSVGElement, contentGroup: SVGGElement, paper: {width:number,height:number,name:string}, spineY: number, styles: object }}
+ */
+export const createTemplate = (paperSizeKey = 'A4', colorMode = 'color') => {
+  const paper = PAPER_SIZES[paperSizeKey] || PAPER_SIZES.A4;
+  const svg = createSVG(paper.width, paper.height);
+  const styles = getLineStyles(colorMode);
+  const spineY = paper.height / 2;
+
+  // Trim/cut guide at the print-safe margin — this is the sheet's outer cut line
+  addRect(svg, PRINT.MARGIN, PRINT.MARGIN, paper.width - 2 * PRINT.MARGIN, paper.height - 2 * PRINT.MARGIN, styles.CUT);
+  // Center spine — the paper folds in half along this line to become the card (see CARD_SIZES)
+  addPath(svg, `M ${PRINT.MARGIN} ${spineY} L ${paper.width - PRINT.MARGIN} ${spineY}`, styles.VALLEY_FOLD);
+
+  const contentGroup = addGroup(svg, 'content');
+  return { svg, contentGroup, paper, spineY, styles };
 };

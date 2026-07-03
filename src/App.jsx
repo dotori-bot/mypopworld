@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ChatWindow from './components/Chat/ChatWindow';
 import SVGPreview from './components/Preview/SVGPreview';
 import Instructions from './components/Preview/Instructions';
+import Preview3D from './components/Preview/Preview3D';
 import { Sparkles } from 'lucide-react';
 import './styles/index.css';
 import './styles/layout.css';
@@ -32,15 +33,22 @@ function App() {
               2D 도안 미리보기
               <div className="preview-tab-indicator" />
             </div>
-            <div 
+            <div
               className={`preview-tab ${activeTab === 'instructions' ? 'active' : ''}`}
               onClick={() => setActiveTab('instructions')}
             >
               조립 설명서
               <div className="preview-tab-indicator" />
             </div>
+            <div
+              className={`preview-tab ${activeTab === '3d' ? 'active' : ''}`}
+              onClick={() => setActiveTab('3d')}
+            >
+              3D 미리보기
+              <div className="preview-tab-indicator" />
+            </div>
           </div>
-          {activeTab === '2d' ? <SVGPreview /> : <Instructions />}
+          {activeTab === '2d' ? <SVGPreview /> : activeTab === 'instructions' ? <Instructions /> : <Preview3D />}
         </div>
       </main>
     </div>

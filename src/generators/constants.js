@@ -35,6 +35,11 @@ export const LINE_STYLES_BW = {
   SCORE: { stroke: '#555555', strokeWidth: 0.5, dasharray: '8 3', label: 'Score Line', labelKo: '골내기' },
 };
 
+// Returns the full line-style dictionary for a given color mode.
+// (Plural, dict-returning — distinct from the singular getLineStyle(type, isColor)
+// helper in svgBuilder.js. Both coexist; other code depends on the singular one.)
+export const getLineStyles = (colorMode = 'color') => (colorMode === 'bw' ? LINE_STYLES_BW : LINE_STYLES);
+
 // Mechanism types
 export const MECHANISMS = {
   V_FOLD: 'v-fold',
@@ -42,6 +47,7 @@ export const MECHANISMS = {
   PARALLEL_FOLD: 'parallel-fold',
   PULL_TAB: 'pull-tab',
   STRAW_ROCKET: 'straw-rocket',
+  RISING_SLIDE: 'rising-slide',
 };
 
 // SVG namespace

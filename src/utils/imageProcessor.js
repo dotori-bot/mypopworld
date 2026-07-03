@@ -1,6 +1,14 @@
+// A simple rounded-blob path (four quadratic-bezier "corners") used both as
+// the contour fallback below (when tracing fails/no image) and, standalone,
+// as the neutral "draw inside this outline" placeholder shape for the
+// freehand decoration guide in SVGPreview.jsx.
+export function getBlobPath(xOffset, yOffset, width, height) {
+  return `M ${xOffset} ${yOffset + height/2} Q ${xOffset} ${yOffset} ${xOffset + width/2} ${yOffset} Q ${xOffset + width} ${yOffset} ${xOffset + width} ${yOffset + height/2} Q ${xOffset + width} ${yOffset + height} ${xOffset + width/2} ${yOffset + height} Q ${xOffset} ${yOffset + height} ${xOffset} ${yOffset + height/2} Z`;
+}
+
 export async function getContourPath(imgUrl, xOffset, yOffset, width, height, margin = 10) {
   return new Promise((resolve) => {
-    const fallbackPath = `M ${xOffset} ${yOffset + height/2} Q ${xOffset} ${yOffset} ${xOffset + width/2} ${yOffset} Q ${xOffset + width} ${yOffset} ${xOffset + width} ${yOffset + height/2} Q ${xOffset + width} ${yOffset + height} ${xOffset + width/2} ${yOffset + height} Q ${xOffset} ${yOffset + height} ${xOffset} ${yOffset + height/2} Z`;
+    const fallbackPath = getBlobPath(xOffset, yOffset, width, height);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';

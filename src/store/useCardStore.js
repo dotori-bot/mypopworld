@@ -2,9 +2,13 @@ import { create } from 'zustand';
 
 const useCardStore = create((set) => ({
   // Settings
-  paperSize: 'A4', 
-  colorMode: 'color', 
+  paperSize: 'A4',
+  colorMode: 'color',
   language: 'ko',
+  // 'ai-image': embed the AI-generated image itself as the cuttable page-2 artwork.
+  // 'freehand' (default): show a draw-it-yourself guide (outline/size/position/angle)
+  // with the AI image reduced to a small inspirational reference thumbnail.
+  decorationMode: 'freehand',
   
   // Chat
   messages: [],
@@ -22,6 +26,7 @@ const useCardStore = create((set) => ({
   setPaperSize: (size) => set({ paperSize: size }),
   setColorMode: (mode) => set({ colorMode: mode }),
   setLanguage: (lang) => set({ language: lang }),
+  setDecorationMode: (mode) => set({ decorationMode: mode }),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),
