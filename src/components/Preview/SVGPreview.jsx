@@ -214,6 +214,27 @@ export default function SVGPreview() {
     }
   };
 
+  // SVG export — download each generated page as its own .svg file (vector,
+  // editable in Illustrator/Inkscape/Figma). Flagged as a planned premium
+  // feature (no gating exists yet anywhere in this app); freely usable for now.
+  const handleSvgExport = () => {
+    const svgEls = pageElementsRef.current;
+    if (!svgEls || svgEls.length === 0) return;
+
+    svgEls.forEach((svgEl, i) => {
+      const svgString = svgToString(svgEl);
+      const blob = new Blob([svgString], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${cardParams.theme || 'popup'}_도안_${i + 1}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  };
+
   return (
     <div className="preview-content">
       <div className="decoration-mode-toggle">
@@ -274,12 +295,21 @@ export default function SVGPreview() {
             </button>
           </div>
 
-          <button
-            className="btn-download download-overlay"
-            onClick={handleDownload}
-          >
-            PDF로 다운로드
-          </button>
+          <div className="download-overlay">
+            <button
+              className="btn-download"
+              onClick={handleDownload}
+            >
+              PDF로 다운로드
+            </button>
+            <button
+              className="btn-download-secondary"
+              onClick={handleSvgExport}
+              title="벡터 SVG 파일로 내보내기 (일러스트레이터/잉크스케이프 등에서 편집 가능)"
+            >
+              SVG로 내보내기 <span className="premium-badge">✨ 프리미엄 예정</span>
+            </button>
+          </div>
         </>
       )}
     </div>
