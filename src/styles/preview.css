@@ -415,6 +415,27 @@
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
 }
 
+/* Parallel-fold staircase: each level is a plain rectangle, nested inside the
+   previous one (preserve-3d) so it inherits the parent's transform and adds its
+   own local flex. Hinge (pivot) is the spine-side edge, mirroring the box-flap
+   convention. preserve-3d is REQUIRED so nested levels keep composing in 3D. */
+.preview3d-step {
+  position: absolute;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.preview3d-step-left {
+  transform-origin: right center;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+}
+
+.preview3d-step-right {
+  transform-origin: left center;
+  background: linear-gradient(225deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+}
+
 .preview3d-readout {
   font-size: 0.72rem;
   color: var(--text-muted);

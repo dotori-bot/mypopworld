@@ -138,12 +138,12 @@ export function generateParallelFold(rawParams) {
     const upperStart = round(spineY - accumulatedDepth);
     const upperEnd   = round(spineY - cutDepthFromSpine);
 
+    // Side cuts span ONLY this level's own band (accumulatedDepth → cutDepth),
+    // freeing the staircase strip's edges so it can lift out of the card.
     // Left vertical cut
     cuts.push(`M ${left} ${upperStart} L ${left} ${upperEnd}`);
     // Right vertical cut
     cuts.push(`M ${right} ${upperStart} L ${right} ${upperEnd}`);
-    // Horizontal cut connecting the two verticals at the top
-    cuts.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
 
     // ── Lower half (below spine) ─────────────────────────────────
     const lowerStart = round(spineY + accumulatedDepth);
@@ -151,12 +151,39 @@ export function generateParallelFold(rawParams) {
 
     cuts.push(`M ${left} ${lowerStart} L ${left} ${lowerEnd}`);
     cuts.push(`M ${right} ${lowerStart} L ${right} ${lowerEnd}`);
-    cuts.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
 
-    // ── Mountain folds (horizontal, parallel to spine) ───────────
-    // These are at the edges where cuts meet the card – the step lip
+    // ── Outer edge (at cut depth) ────────────────────────────────
+    // The bug was cutting AND mountain-folding this same line. A line can be
+    // one or the other, never both. Which one depends on whether a narrower
+    // level sits on top of this one.
+    const isLast = i === levels.length - 1;
+    if (isLast) {
+      // Top of the staircase: the outer edge is a FREE edge → full cut across
+      // this level's width, and it is NOT a fold (no mountainFolds push).
+      cuts.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
+      cuts.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
+    } else {
+      // A narrower next level shares this outer edge as its hinge. Only cut the
+      // exposed "shoulders" (tread edges) either side of the next level's
+      // width; leave the middle strip uncut so it can serve as level i+1's
+      // inner mountain-fold hinge (which level i+1 draws itself — so we push NO
+      // mountainFolds entry here, to avoid re-labeling the same shared line).
+      const nextHalfWidth = levels[i + 1].width / 2;
+      const innerLeft  = round(posX - nextHalfWidth);
+      const innerRight = round(posX + nextHalfWidth);
+      // Upper shoulders
+      cuts.push(`M ${left} ${upperEnd} L ${innerLeft} ${upperEnd}`);
+      cuts.push(`M ${innerRight} ${upperEnd} L ${right} ${upperEnd}`);
+      // Lower shoulders
+      cuts.push(`M ${left} ${lowerEnd} L ${innerLeft} ${lowerEnd}`);
+      cuts.push(`M ${innerRight} ${lowerEnd} L ${right} ${lowerEnd}`);
+    }
+
+    // ── Inner edge mountain fold (the hinge attaching this level) ──
+    // For level 0 this coincides with the spine; for level i>0 it IS the shared
+    // hinge on level i-1's (uncut) outer-edge middle strip.
     if (accumulatedDepth === 0) {
-      // First level: mountain folds at spine level across the step width
+      // First level: mountain fold at spine level across the step width
       // (The paper between the cuts and the spine will fold up)
       mountainFolds.push(`M ${left} ${round(spineY)} L ${right} ${round(spineY)}`);
     } else {
@@ -164,10 +191,6 @@ export function generateParallelFold(rawParams) {
       mountainFolds.push(`M ${left} ${upperStart} L ${right} ${upperStart}`);
       mountainFolds.push(`M ${left} ${lowerStart} L ${right} ${lowerStart}`);
     }
-
-    // Mountain fold at the top/bottom edges of each step
-    mountainFolds.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
-    mountainFolds.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
 
     // ── Labels ────────────────────────────────────────────────────
     markers.push({

@@ -14,7 +14,66 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold']);
+
+/**
+ * Recursively build the nested DOM for a parallel-fold staircase on one side of
+ * the spine. See the "Parallel-fold pose" comment block below for the physics.
+ *
+ * Each level is a plain rectangle (like a box-popup flap) that is a DOM CHILD of
+ * the previous level, so via preserve-3d it inherits the parent's full transform
+ * and then applies its OWN local flex `transform` on top — this is the CSS
+ * embodiment of "level i attaches to level i-1's moving surface".
+ *
+ * @param {Array<{width:number,depth:number}>} levels  outermost = last entry
+ * @param {number} i           current level index
+ * @param {'left'|'right'} side
+ * @param {number} sinA        sin(γ), γ = α/2
+ * @param {number} cosA        cos(γ)
+ * @param {number} gamma       per-level local flex magnitude in degrees (α/2)
+ * @param {number} PX          mm→px scale
+ * @param {number} parentDimPx the parent's along-spine size in px (page height
+ *                             for level 0, previous level's widthPx otherwise)
+ *
+ * Fold DIRECTION alternates per level: even levels (0,2,4…) flex +γ ("risers",
+ * lifting away from the parent surface), odd levels flex −γ ("treads", flattening
+ * back parallel to the base). This is (a) the mountain/valley alternation a real
+ * flat-foldable staircase requires and (b) what keeps the running frame from
+ * compounding into a spiral — so the steps ascend monotonically instead of
+ * rotating past vertical and retracting inside earlier levels.
+ */
+function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
+  if (i >= levels.length) return null;
+  const depthPx = levels[i].depth * PX;  // extent away from the spine
+  const widthPx = levels[i].width * PX;  // extent along the spine
+  // Centre this level on its parent's along-spine span.
+  const top = (parentDimPx - widthPx) / 2;
+  // Spine-side (hinge) edge sits on the parent's outer edge. For level 0 the
+  // parent is the page and the hinge is AT the spine (right:0 / left:0); for
+  // deeper levels the hinge is the parent's far edge (right:100% / left:100%).
+  const pos =
+    side === 'left'
+      ? { right: i === 0 ? 0 : '100%' }
+      : { left: i === 0 ? 0 : '100%' };
+  // Same rotate3d axis convention as box-popup / V-fold; sign alternates.
+  const angle = i % 2 === 0 ? gamma : -gamma;
+  const zc = side === 'left' ? -cosA : cosA;
+  const transform = `rotate3d(${(-sinA).toFixed(5)}, 0, ${zc.toFixed(5)}, ${angle}deg)`;
+  return (
+    <div
+      className={`preview3d-step preview3d-step-${side}`}
+      style={{
+        width: `${depthPx}px`,
+        height: `${widthPx}px`,
+        top: `${top}px`,
+        transform,
+        ...pos,
+      }}
+    >
+      {renderStairLevel(levels, i + 1, side, sinA, cosA, gamma, PX, widthPx)}
+    </div>
+  );
+}
 
 /**
  * Preview3D — pure-CSS-3D assembled preview of the V-fold mechanism.
@@ -153,6 +212,32 @@ export default function Preview3D() {
       />
     );
     readout = `팝업 높이 h = ${h.toFixed(1)}mm · 팔 길이 L = ${armLength}mm · 팔 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'parallel-fold') {
+    // Parallel-fold staircase — see the "Parallel-fold pose" comment block
+    // above. N nested rectangular levels, each folding by the SAME local flex
+    // γ = α/2 relative to its own parent (level i-1's outer face, or the page
+    // for level 0), composed via DOM nesting + preserve-3d.
+    const levels =
+      Array.isArray(params.levels) && params.levels.length > 0
+        ? params.levels
+        : [{ width: params.width ?? defaults.width, depth: params.depth ?? defaults.depth }];
+
+    // Local per-level flex, identical to the single-level (box) case:
+    //   h_level = depth · sin(α/2)  ⇒  γ = arcsin(h/depth) = α/2.
+    const gamma = alpha / 2; // deg
+
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+
+    attachmentLeft = renderStairLevel(levels, 0, 'left', sinA, cosA, gamma, PX, pageH);
+    attachmentRight = renderStairLevel(levels, 0, 'right', sinA, cosA, gamma, PX, pageH);
+
+    // Report cumulative rise + step count. Each level contributes depth·sin(α/2)
+    // of rise measured along its own parent's normal.
+    const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
+    const hTop = calculateParallelFoldHeight(totalDepth, alpha);
+    readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
