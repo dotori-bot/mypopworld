@@ -28,6 +28,7 @@ export const generateLayeredStage = (svg, options = {}) => {
   const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
 
   let offset = 0; // distance already used up from the spine
+  const decorationAreas = []; // one per layer, sized from that layer's own width/height
 
   layers.forEach((layer) => {
     const halfW = layer.width / 2;
@@ -51,6 +52,16 @@ export const generateLayeredStage = (svg, options = {}) => {
 
     addText(g, cx, cy - (innerOffset + outerOffset) / 2, layer.label, 2.8, 'middle');
 
+    // Upper-side wall face (the one carrying the label above) as this
+    // layer's decoration area — matches its own width/height exactly.
+    decorationAreas.push({
+      x: left,
+      y: cy - outerOffset,
+      width: layer.width,
+      height: layer.height,
+      label: layer.label,
+    });
+
     offset = outerOffset + gap;
   });
 
@@ -63,5 +74,5 @@ export const generateLayeredStage = (svg, options = {}) => {
   addText(g, cx, cy - topEdgeOffset - 9, '다층 무대 (Layered Stage)', 4, 'middle');
   addText(g, cx, cy - topEdgeOffset - 3, '가까운 벽부터 순서대로 접어 세우고, 그림을 붙여 풍경을 완성해요!', 2.5, 'middle');
 
-  return g;
+  return { group: g, decorationAreas };
 };

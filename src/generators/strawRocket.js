@@ -75,5 +75,12 @@ export const generateStrawRocket = (svg, options = {}) => {
   addText(g, cx, cy - 60, "💡 빨대 로켓 (Straw Rocket) 도안", 4, 'middle');
   addText(g, cx, cy - 50, "1. 튜브를 말아서 풀칠합니다. 2. 윗부분을 접어 막습니다. 3. 튜브 앞뒤로 장식을 붙입니다. 4. 빨대를 꽂아 붑니다!", 2.5, 'middle');
 
-  return g;
+  // Decoration areas: the same front/back placeholder boxes drawn above,
+  // so the cut-out decoration actually fits the tube instead of a fixed square.
+  const decorationAreas = [
+    { x: frontX, y: decY, width: decWidth, height: decHeight, label: '앞면' },
+    { x: backX, y: decY, width: decWidth, height: decHeight, label: '뒷면' },
+  ];
+
+  return { group: g, decorationAreas };
 };

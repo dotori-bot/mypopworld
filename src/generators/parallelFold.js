@@ -27,6 +27,7 @@ export const generateParallelFold = (svg, options = {}) => {
   const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
 
   let acc = 0; // depth already accumulated from the spine
+  let lastInnerOffset = 0; // captured for the top step's decoration area
 
   levels.forEach((level, i) => {
     const halfW = level.width / 2;
@@ -63,6 +64,7 @@ export const generateParallelFold = (svg, options = {}) => {
     addText(g, right + 2, cy - (innerOffset + outerOffset) / 2, `${i + 1}단`, 2.5);
 
     acc = outerOffset;
+    lastInnerOffset = innerOffset;
   });
 
   // General card spine fold (valley), only outside the staircase footprint
@@ -74,5 +76,19 @@ export const generateParallelFold = (svg, options = {}) => {
   addText(g, cx, cy - acc - 9, '평행 접기 (계단식 무대)', 4, 'middle');
   addText(g, cx, cy - acc - 3, '맨 위 칸에 인형이나 장식을 세워보세요!', 2.5, 'middle');
 
-  return g;
+  // Decoration area: the top (last) step's own riser band — the part of
+  // the staircase that actually becomes the highest, most visible wall —
+  // sized from that level's own width/depth instead of a fixed square.
+  const topHalfW = levels[levels.length - 1].width / 2;
+  const decorationAreas = [
+    {
+      x: cx - topHalfW,
+      y: cy - acc,
+      width: topHalfW * 2,
+      height: acc - lastInnerOffset,
+      label: '맨 위 칸',
+    },
+  ];
+
+  return { group: g, decorationAreas };
 };

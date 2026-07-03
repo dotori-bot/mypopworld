@@ -45,5 +45,18 @@ export const generateFoldingScreen = (svg, options = {}) => {
   addText(g, cx, top - 12, '병풍 (접이식 배경막)', 4.5, 'middle');
   addText(g, cx, bottom + 8, '지그재그로 접으면 풀칠 없이도 혼자 서요. 칸마다 이어지는 그림을 그려보세요!', 2.6, 'middle');
 
-  return g;
+  // Decoration areas: one per panel, sized from panelWidth/panelHeight —
+  // a themed cutout can be sliced across these instead of one fixed square.
+  const decorationAreas = [];
+  for (let i = 0; i < panelCount; i++) {
+    decorationAreas.push({
+      x: left + panelWidth * i,
+      y: top,
+      width: panelWidth,
+      height: panelHeight,
+      label: `${i + 1}번 칸`,
+    });
+  }
+
+  return { group: g, decorationAreas };
 };

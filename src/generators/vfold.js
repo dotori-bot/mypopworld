@@ -69,5 +69,13 @@ export const generateVFold = (svg, options = {}) => {
   addText(g, leftX - 10, topY - 5, '풀칠', 2.5);
   addText(g, rightX + 2, topY - 5, '풀칠', 2.5);
 
-  return g;
+  // Decoration area: the V's own front-face bounding box (leftX..rightX,
+  // topY..cy). Sized/positioned from the same armLength/angle used above,
+  // so the decoration piece actually matches the popped-out V instead of
+  // being an unrelated fixed-size square.
+  const decorationAreas = [
+    { x: leftX, y: topY, width: rightX - leftX, height: cy - topY, label: 'V-fold 앞면' },
+  ];
+
+  return { group: g, decorationAreas };
 };

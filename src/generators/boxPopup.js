@@ -55,5 +55,11 @@ export const generateBoxPopup = (svg, options = {}) => {
 
   addText(g, cx, cy - d + 4, '상자 팝업 (Box)', 3, 'middle');
 
-  return g;
+  // Decoration area: the box's own front face (upper half, cy-d..cy),
+  // sized directly from width/height so the decoration actually fits the box.
+  const decorationAreas = [
+    { x: cx - hw, y: cy - d, width, height: d, label: '상자 앞면' },
+  ];
+
+  return { group: g, decorationAreas };
 };
