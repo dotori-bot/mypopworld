@@ -68,6 +68,20 @@ export default async function handler(req, res) {
   "difficulty": "easy | medium | hard"
 }
 \`\`\`
+
+[layered-stage 전용 추가 필드: decorationVariants]
+"mechanism"이 "layered-stage"일 때만, 위 JSON 블록에 "decorationVariants"라는 배열을 추가로 포함하세요. 이 메커니즘은 벽이 여러 층(기본 3층) 있어서 층마다 서로 다른 그림이 필요합니다. "decorationVariants"는 짧은(2~4단어) 영문 이미지 프롬프트 문구를 층 수만큼(기본 3개) 담은 배열이며, 선택된 주제와 일관된 테마여야 합니다.
+예: 주제가 "노아의 방주"라면
+\`\`\`json
+{
+  "theme": "노아의 방주",
+  "imagePrompt": "A cute wooden Noah's Ark boat on waves",
+  "mechanism": "layered-stage",
+  "difficulty": "medium",
+  "decorationVariants": ["a cute pair of elephants", "a cute pair of giraffes", "a cute rainbow"]
+}
+\`\`\`
+"layered-stage"가 아닌 다른 모든 메커니즘에서는 "decorationVariants" 필드를 아예 포함하지 마세요.
     `;
 
     const response = await ai.models.generateContent({

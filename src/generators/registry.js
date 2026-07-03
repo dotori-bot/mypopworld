@@ -17,7 +17,7 @@ import { renderVolvelle } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
-import { renderLayeredStage } from './layeredStage.js';
+import { renderLayeredStage, resolveLayeredStageGeometry } from './layeredStage.js';
 import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 
@@ -87,6 +87,19 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderLayeredStage(params),
     defaultParams: { layers: 3 },
     instructionStyle: 'layered-stage',
+    // One decoration slot per wall, sized off the SAME geometry the mechanism
+    // itself renders with (resolveLayeredStageGeometry), so the decoration
+    // image's suggested size always matches the actual printed wall.
+    decorationSlots: (params) => {
+      const geo = resolveLayeredStageGeometry(params);
+      return geo.layers.map((layer) => ({
+        label: `${layer.index}번 벽 그림 (${layer.index === geo.count ? '제일 안쪽/제일 큰 벽' : layer.index === 1 ? '제일 바깥쪽/제일 작은 벽' : '중간 벽'})`,
+        width: layer.width * 0.75,
+        // *1.5 on height: the decoration needs to generously cover the wall's
+        // standing height, not just its footprint depth.
+        height: layer.height * 1.5,
+      }));
+    },
   },
   'auto-slide-window': {
     labelKo: '열면 바뀌는 액자 카드 (열면 창문 속 그림이 저절로 바뀜)',
@@ -189,9 +202,12 @@ export const INSTRUCTION_TEXT = {
     title: '층층이 무대 조립 설명서',
     materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
     steps: [
-      '검은색 실선을 따라 각 층(무대) 벽을 오려주세요. 벽의 세로 양옆에 붙은 초록색 네모(풀칠 자리/날개)는 자르지 말고 남겨둡니다. 벽 위쪽(먼 쪽) 가로선만 오리고, 척추(가운데 접는 선) 쪽 아래 가로선은 자르지 마세요 — 그 선으로 벽이 카드에 붙어 섭니다.',
+      '완성 모습: 카드를 120도쯤 열면 벽이 여러 장(보통 3장, 많으면 4장) 서로 다른 깊이에서 층층이 솟아올라요. 번호가 작을수록 작고 낮은 벽(맨 앞/척추에서 가장 가까움), 번호가 클수록 크고 높은 벽(맨 안쪽/척추에서 가장 멂)입니다 — 성벽 뒤로 안쪽 탑이 솟은 모습을 떠올리면 됩니다.',
+      '검은색 실선을 따라 벽마다(1번부터 가장 큰 번호까지) 테두리를 모두 오려주세요. 벽의 세로 양옆에 붙은 초록색 네모(풀칠 자리/날개)는 자르지 말고 남겨둡니다. 벽 바깥쪽(먼 쪽) 가로선만 오리고, 척추(가운데 접는 선) 쪽 가로선은 자르지 마세요 — 그 선으로 벽이 카드에 붙어 섭니다.',
       '빨간 점선(척추 쪽, 산접기)은 볼록하게, 파란 점선(바깥 쪽, 골접기)은 오목하게 접어 벽을 세워주세요. 각 벽은 높이와 깊이가 같아서(높이=깊이), 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접힙니다.',
-      '아주 중요 — 반드시 맨 뒤(가장 깊고 큰 번호) 층부터 앞으로 순서대로 붙이세요. 각 층의 양옆 초록색 날개를 바깥으로 접어 카드 바닥면에 붙입니다. 앞 층을 먼저 붙이면 뒤 층에 손이 닿지 않아 조립이 막히고, 순서가 틀리면 겹침(telescoping)이 어긋나 카드를 닫을 때 뒤 벽이 카드 밖으로 삐져나옵니다.',
+      '아주 중요 — 조립 순서는 반드시 뒤에서 앞으로입니다. 예를 들어 벽이 3장이면 3번 → 2번 → 1번 순서로 세워 붙이세요. 앞 벽을 먼저 붙이면 그 뒤에 가려서 손이 뒤쪽 벽까지 닿지 않기 때문입니다. 순서를 거꾸로 하면 카드를 닫을 때 뒤 벽이 접힌 자리를 벗어나 카드 밖으로 삐져나옵니다.',
+      '벽을 세울 때마다 좌우의 초록색 날개(풀칠 탭)를 벽 몸통에서 멀어지는 바깥쪽으로 접어, 카드 바닥면에 풀칠하거나 양면테이프로 붙여 고정하세요.',
+      '장식 그림 붙이기 — 이 도안은 2번째 페이지부터 벽 개수만큼 장식 그림이 따로따로 나옵니다. 각 장식 페이지에 적힌 번호(예: "1번 벽 그림", "2번 벽 그림"…)를 확인해서, 가위로 오린 뒤 같은 번호의 벽 앞면에 붙여주세요.',
       '카드를 닫아 확인하세요. 모든 층이 카드 바깥 자르는 선 안쪽으로 납작하게 접혀 들어가야 정상입니다. 열면 성벽·탑이 층층이 서로 다른 깊이로 솟아오릅니다.',
     ],
     tips: '뒤에서 앞 순서로 붙이는 것이 핵심입니다. 뒤 층일수록 더 높고(성의 안쪽 탑처럼) 더 깊은 곳에 섭니다. 닫았을 때 어느 한 벽이라도 카드 밖으로 나오면, 그 층 벽이 너무 깊은 것이니 조금 낮은(=얕은) 벽으로 다시 만들어 주세요.',
@@ -242,4 +258,30 @@ export function buildMechanismParams(cardParams, paperSize, colorMode) {
   const mech = getMechanism(cardParams?.mechanism);
   if (!mech) return null;
   return { ...mech.defaultParams, paperSize, colorMode, theme: cardParams.theme };
+}
+
+/**
+ * Resolve the list of decoration image/guide "slots" a mechanism wants — one
+ * per distinct decoration the mechanism can display (e.g. one per wall for
+ * 'layered-stage'). Each slot is just a content-size hint in mm
+ * (`{ label, width, height }`); SVGPreview.jsx is responsible for laying the
+ * slot out on an actual page.
+ *
+ * Mechanisms without an explicit `decorationSlots(params)` entry fall back to
+ * the single-slot behavior every mechanism had before this function existed,
+ * so this is a no-regression default.
+ *
+ * @param {{ mechanism?: string, theme?: string }} cardParams
+ * @param {'A4'|'LETTER'} paperSize
+ * @param {'color'|'bw'} colorMode
+ * @returns {Array<{ label: string, width: number, height: number }>}
+ */
+export function getDecorationSlots(cardParams, paperSize, colorMode) {
+  const mech = getMechanism(cardParams?.mechanism);
+  if (mech && typeof mech.decorationSlots === 'function') {
+    const params = buildMechanismParams(cardParams, paperSize, colorMode);
+    const slots = mech.decorationSlots(params);
+    if (Array.isArray(slots) && slots.length > 0) return slots;
+  }
+  return [{ label: cardParams?.theme, width: 100, height: 100 }];
 }

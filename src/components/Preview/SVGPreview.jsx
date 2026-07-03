@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import useCardStore from '../../store/useCardStore';
-import { getMechanism, buildMechanismParams, INSTRUCTION_TEXT } from '../../generators/registry';
+import { getMechanism, buildMechanismParams, getDecorationSlots, INSTRUCTION_TEXT } from '../../generators/registry';
 import { PAPER_SIZES, PRINT } from '../../generators/constants';
 import { createSVG, svgToString, getLineStyle, addPath, addRect, addText } from '../../generators/svgBuilder';
 import { getContourPath, getBlobPath } from '../../utils/imageProcessor';
@@ -52,98 +52,136 @@ export default function SVGPreview() {
         addText(svg1, paper.width / 2, paper.height / 2, '아직 지원되지 않는 메커니즘입니다.', 5, 'middle');
       }
 
-      // --- Page 2: Themed Decoration ---
-      const svg2 = createSVG(paper.width, paper.height);
-      const queryText = cardParams.imagePrompt ? cardParams.imagePrompt : cardParams.theme;
-      const themeQuery = encodeURIComponent(`${queryText} simple cute cartoon vector isolated on pure white background for kids sticker`);
-      const imgUrl = `https://image.pollinations.ai/prompt/${themeQuery}?width=512&height=512&nologo=true`;
+      // --- Page 2..N+1: Themed Decoration (one page per decoration slot) ---
+      // A mechanism can ask for more than one decoration image/guide (e.g.
+      // 'layered-stage' wants one per wall). getDecorationSlots() returns a
+      // content-size hint per slot; every mechanism without an explicit
+      // decorationSlots() definition falls back to today's single 100x100mm
+      // slot, so this loop reduces to exactly the old single-page behavior
+      // for them.
+      const slots = getDecorationSlots(cardParams, paperSize, colorMode);
 
-      // Decoration position/size, derived proportionally from the paper size
-      // instead of hardcoded A4-only mm values, so it centers/scales correctly
-      // on both A4 and Letter. (100mm on A4's 210mm width was the original
-      // fraction — preserved here as a ratio of the shorter paper dimension.)
-      const decoSize = Math.min(paper.width, paper.height) * (100 / 210);
-      const decoX = (paper.width - decoSize) / 2;
-      const decoY = paper.height * (80 / 297);
-      const decoW = decoSize;
-      const decoH = decoSize;
+      // Slot width/height are mm hints designed against an A4 (210mm-wide)
+      // reference — the same ratio the original single 100mm hint used — so
+      // a single 100x100 slot scales identically to the pre-existing
+      // A4/Letter-proportional logic (no regression).
+      const slotScale = Math.min(paper.width, paper.height) / 210;
+      const maxDecoW = paper.width - 2 * PRINT.MARGIN;
+      const maxDecoH = paper.height * (115 / 297);
       const titleY = paper.height * (65 / 297);
+      const decoY = paper.height * (80 / 297);
 
-      if (decorationMode === 'ai-image') {
-        // Full-size AI image embedded as the actual cuttable artwork, with a
-        // traced cut-contour around it.
-        const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-        img.setAttribute('href', imgUrl);
-        img.setAttribute('x', decoX);
-        img.setAttribute('y', decoY);
-        img.setAttribute('width', decoW);
-        img.setAttribute('height', decoH);
-        svg2.appendChild(img);
+      const decorationPages = await Promise.all(slots.map(async (slot, i) => {
+        const svg = createSVG(paper.width, paper.height);
 
-        // Add contour cut line
-        const contourPath = await getContourPath(imgUrl, decoX, decoY, decoW, decoH, 5);
-        addPath(svg2, contourPath, getLineStyle('CUT', isColor));
+        // Fit this slot's aspect ratio proportionally to the paper, then
+        // defensively clamp inside the printable area (guards against
+        // unusually tall/wide slot hints from a mechanism).
+        let decoW = slot.width * slotScale;
+        let decoH = slot.height * slotScale;
+        const fitScale = Math.min(1, maxDecoW / decoW, maxDecoH / decoH);
+        decoW *= fitScale;
+        decoH *= fitScale;
+        const decoX = (paper.width - decoW) / 2;
 
-        addText(svg2, paper.width / 2, titleY, `[ ${cardParams.theme} ] 장식 조각`, 5, 'middle');
-        addText(svg2, paper.width / 2, paper.height * (195 / 297), '가위로 윤곽선을 따라 오린 후, 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
-      } else {
-        // 'freehand': a neutral placeholder outline the child draws inside,
-        // annotated with size/position/angle, plus a small AI image shown
-        // only as an inspirational reference thumbnail (not meant to be cut).
-        const decorationAngle = cardParams.decorationAngle || 0;
+        // Per-slot image prompt: an explicit decorationVariants[i] (see
+        // api/chat.js for 'layered-stage') wins; otherwise fall back to the
+        // single shared imagePrompt/theme exactly like before. When there
+        // are multiple slots but no variant was supplied, append the slot's
+        // own label as a distinguishing hint so the pages at least look
+        // intentionally different — reusing the same image across slots in
+        // that degraded case is acceptable, just never blank/erroring.
+        const variant = cardParams.decorationVariants?.[i];
+        const basePrompt = variant || cardParams.imagePrompt || cardParams.theme;
+        const queryText = variant || (slots.length > 1 ? `${basePrompt} ${slot.label}` : basePrompt);
+        const themeQuery = encodeURIComponent(`${queryText} simple cute cartoon vector isolated on pure white background for kids sticker`);
+        const imgUrl = `https://image.pollinations.ai/prompt/${themeQuery}?width=512&height=512&nologo=true`;
 
-        addText(svg2, paper.width / 2, titleY, `[ ${cardParams.theme} ] 직접 그리기 가이드`, 5, 'middle');
+        // Title suffix: preserve the exact old single-slot wording; only
+        // switch to the per-slot label once there's more than one page.
+        const titleSuffix = slots.length > 1 ? slot.label : '장식 조각';
 
-        // Neutral "draw inside this outline" placeholder cut-shape.
-        const placeholderPath = getBlobPath(decoX, decoY, decoW, decoH);
-        addPath(svg2, placeholderPath, getLineStyle('CUT', isColor));
+        if (decorationMode === 'ai-image') {
+          // Full-size AI image embedded as the actual cuttable artwork, with a
+          // traced cut-contour around it.
+          const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+          img.setAttribute('href', imgUrl);
+          img.setAttribute('x', decoX);
+          img.setAttribute('y', decoY);
+          img.setAttribute('width', decoW);
+          img.setAttribute('height', decoH);
+          svg.appendChild(img);
 
-        const shapeCenterX = decoX + decoW / 2;
-        const shapeBottom = decoY + decoH;
+          // Add contour cut line
+          const contourPath = await getContourPath(imgUrl, decoX, decoY, decoW, decoH, 5);
+          addPath(svg, contourPath, getLineStyle('CUT', isColor));
 
-        // Dimension labels, right on/under the shape.
-        addText(svg2, shapeCenterX, decoY + decoH / 2, `${decoW.toFixed(0)}mm × ${decoH.toFixed(0)}mm`, 4, 'middle');
+          addText(svg, paper.width / 2, titleY, `[ ${cardParams.theme} ] ${titleSuffix}`, 5, 'middle');
+          addText(svg, paper.width / 2, paper.height * (195 / 297), '가위로 윤곽선을 따라 오린 후, 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
+        } else {
+          // 'freehand': a neutral placeholder outline the child draws inside,
+          // annotated with size/position/angle, plus a small AI image shown
+          // only as an inspirational reference thumbnail (not meant to be cut).
+          const decorationAngle = cardParams.decorationAngle || 0;
 
-        // Position description in human terms, relative to the page center,
-        // plus the exact mm offset for precision.
-        const centerX = paper.width / 2;
-        const centerY = paper.height / 2;
-        const dx = shapeCenterX - centerX;
-        const dy = decoY + decoH / 2 - centerY;
-        const vertDesc = dy < -5 ? '위쪽' : dy > 5 ? '아래쪽' : '중앙';
-        const horizDesc = dx < -5 ? '왼쪽' : dx > 5 ? '오른쪽' : '';
-        const posDesc = `카드 중앙 ${vertDesc}${horizDesc ? ' ' + horizDesc : ''} (중심에서 x:${dx.toFixed(0)}mm, y:${dy.toFixed(0)}mm)`;
-        addText(svg2, shapeCenterX, shapeBottom + 12, posDesc, 3, 'middle');
+          const freehandTitle = slots.length > 1
+            ? `[ ${cardParams.theme} ] ${slot.label} 직접 그리기 가이드`
+            : `[ ${cardParams.theme} ] 직접 그리기 가이드`;
+          addText(svg, paper.width / 2, titleY, freehandTitle, 5, 'middle');
 
-        // Angle indicator: a small rotated arrow + label. decorationAngle
-        // defaults to 0 (upright) but every mechanism can pass a value.
-        const arrowCenterY = shapeBottom + 26;
-        const arrowStyle = { stroke: isColor ? '#FF8800' : '#333333', strokeWidth: 0.6, dasharray: 'none', fill: 'none' };
-        addPath(svg2, buildAngleArrowPath(shapeCenterX, arrowCenterY, decorationAngle), arrowStyle);
-        addText(svg2, shapeCenterX, arrowCenterY + 12, `회전 각도: ${decorationAngle}°`, 3, 'middle');
+          // Neutral "draw inside this outline" placeholder cut-shape.
+          const placeholderPath = getBlobPath(decoX, decoY, decoW, decoH);
+          addPath(svg, placeholderPath, getLineStyle('CUT', isColor));
 
-        addText(svg2, paper.width / 2, paper.height - PRINT.MARGIN - 8, '위 안내에 맞춰 자유롭게 그린 후, 그린 선을 따라 오려서 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
+          const shapeCenterX = decoX + decoW / 2;
+          const shapeBottom = decoY + decoH;
 
-        // Small AI reference thumbnail — illustrative only, not cut geometry.
-        // Sized well inside the print-safe margin so it never overlaps it.
-        const thumbSize = 25;
-        const thumbX = paper.width - PRINT.MARGIN - 10 - thumbSize;
-        const thumbY = PRINT.MARGIN + 8;
-        const thumbImg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-        thumbImg.setAttribute('href', imgUrl);
-        thumbImg.setAttribute('x', thumbX);
-        thumbImg.setAttribute('y', thumbY);
-        thumbImg.setAttribute('width', thumbSize);
-        thumbImg.setAttribute('height', thumbSize);
-        svg2.appendChild(thumbImg);
-        const dashedBorderStyle = { stroke: isColor ? '#888888' : '#555555', strokeWidth: 0.4, dasharray: '2 1', fill: 'none' };
-        addRect(svg2, thumbX, thumbY, thumbSize, thumbSize, dashedBorderStyle);
-        addText(svg2, thumbX + thumbSize / 2, thumbY + thumbSize + 4, '참고 예시', 2.5, 'middle');
-        addText(svg2, thumbX + thumbSize / 2, thumbY + thumbSize + 8, '(그대로 따라 그리지 않아도 돼요)', 2, 'middle');
-      }
+          // Dimension labels, right on/under the shape.
+          addText(svg, shapeCenterX, decoY + decoH / 2, `${decoW.toFixed(0)}mm × ${decoH.toFixed(0)}mm`, 4, 'middle');
 
-      pageElementsRef.current = [svg1, svg2];
-      setPages([svgToString(svg1), svgToString(svg2)]);
+          // Position description in human terms, relative to the page center,
+          // plus the exact mm offset for precision.
+          const centerX = paper.width / 2;
+          const centerY = paper.height / 2;
+          const dx = shapeCenterX - centerX;
+          const dy = decoY + decoH / 2 - centerY;
+          const vertDesc = dy < -5 ? '위쪽' : dy > 5 ? '아래쪽' : '중앙';
+          const horizDesc = dx < -5 ? '왼쪽' : dx > 5 ? '오른쪽' : '';
+          const posDesc = `카드 중앙 ${vertDesc}${horizDesc ? ' ' + horizDesc : ''} (중심에서 x:${dx.toFixed(0)}mm, y:${dy.toFixed(0)}mm)`;
+          addText(svg, shapeCenterX, shapeBottom + 12, posDesc, 3, 'middle');
+
+          // Angle indicator: a small rotated arrow + label. decorationAngle
+          // defaults to 0 (upright) but every mechanism can pass a value.
+          const arrowCenterY = shapeBottom + 26;
+          const arrowStyle = { stroke: isColor ? '#FF8800' : '#333333', strokeWidth: 0.6, dasharray: 'none', fill: 'none' };
+          addPath(svg, buildAngleArrowPath(shapeCenterX, arrowCenterY, decorationAngle), arrowStyle);
+          addText(svg, shapeCenterX, arrowCenterY + 12, `회전 각도: ${decorationAngle}°`, 3, 'middle');
+
+          addText(svg, paper.width / 2, paper.height - PRINT.MARGIN - 8, '위 안내에 맞춰 자유롭게 그린 후, 그린 선을 따라 오려서 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
+
+          // Small AI reference thumbnail — illustrative only, not cut geometry.
+          // Sized well inside the print-safe margin so it never overlaps it.
+          const thumbSize = 25;
+          const thumbX = paper.width - PRINT.MARGIN - 10 - thumbSize;
+          const thumbY = PRINT.MARGIN + 8;
+          const thumbImg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+          thumbImg.setAttribute('href', imgUrl);
+          thumbImg.setAttribute('x', thumbX);
+          thumbImg.setAttribute('y', thumbY);
+          thumbImg.setAttribute('width', thumbSize);
+          thumbImg.setAttribute('height', thumbSize);
+          svg.appendChild(thumbImg);
+          const dashedBorderStyle = { stroke: isColor ? '#888888' : '#555555', strokeWidth: 0.4, dasharray: '2 1', fill: 'none' };
+          addRect(svg, thumbX, thumbY, thumbSize, thumbSize, dashedBorderStyle);
+          addText(svg, thumbX + thumbSize / 2, thumbY + thumbSize + 4, '참고 예시', 2.5, 'middle');
+          addText(svg, thumbX + thumbSize / 2, thumbY + thumbSize + 8, '(그대로 따라 그리지 않아도 돼요)', 2, 'middle');
+        }
+
+        return svg;
+      }));
+
+      pageElementsRef.current = [svg1, ...decorationPages];
+      setPages([svgToString(svg1), ...decorationPages.map(svgToString)]);
       setCurrentPage(0);
     };
 
