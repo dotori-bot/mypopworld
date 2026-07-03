@@ -1,0 +1,79 @@
+# 달팽이 스프링 (spiral-spring)
+
+## 개요
+
+사용자가 보는 효과는 "카드를 열면 납작하던 소용돌이 원판이 위로 쭉 늘어나며 3D 나선 기둥이 서고, 그 위에 붙인 평면 장식(행성·인형 등)이 서로 다른 높이로 둥실 떠오르는" 팝업이다. `registry.js`의 `labelKo`는 `'달팽이 스프링 (늘어나며 떠오르는 팝업)'`, `instructionStyle`은 `'spiral-spring'`, `defaultParams`는 `{ turns: 5, pitch: 6, decorations: 4 }`이다. `turns`는 나선 감김 수 N, `pitch`는 띠 폭(=반경 방향 피치) w(mm), `decorations`는 장식 부착 표시점 개수다. 접기가 없는 계열로, 카드가 닫힐 때 나선이 **탄성 복원(recoil)**으로 원래 평면 원판으로 돌아가는 것이 핵심이다.
+
+## 작동 방식
+
+원판 하나를 바깥 rim에서 중심 hub까지 **하나의 연속 아르키메데스 나선**으로 잘라, 일정 폭 종이 코일 스프링을 만든다. 중심 hub는 카드 한쪽 면(A)에, 바깥 rim 끝은 반대 면(B)에 붙인다. 카드를 열면 두 고정점이 벌어지며 띠가 나선 기둥으로 풀려 나온다.
+
+### 나선 절단 기하
+
+- 아르키메데스 나선 `r(θ) = r0 + b·θ`, 반경 피치(띠 폭) w에 대해 한 바퀴(Δθ=2π)마다 r이 w만큼 커지므로 `b = w / 2π`.
+- N바퀴이면 rim 반지름 `R_outer = r0 + N·w`, 띠 중심선 길이 `L_strip ≈ π·(r0 + R_outer)·N`.
+
+절단 경로는 `spiralPath` (`spiralSpring.js:117`)가 `t ∈ [0,1]`로 샘플링한 폴리라인으로 그린다. `t=0`이 hub 가장자리(r=r0), `t=1`이 rim(r=R_outer)이고 rim 끝은 상단(0°, 척추 쪽)에 온다:
+
+```
+r = r0 + (w·turns)·t
+angleDeg = (t − 1)·360·turns     // t=1 → 0°(위)
+```
+
+각도→좌표는 `polarToCartesian`(0°=위) 사용. 샘플 밀도는 `SEG_PER_TURN(48)`.
+
+### 신장(extension) 모델
+
+- 수직 원통 극한에서 각 바퀴의 반경 폭 w가 수직 상승으로 바뀌므로 최대 신장 `E_max ≈ N·w = R_outer − r0`. (실제 호 길이 L_strip은 훨씬 길지만 거기까지 당기면 코일이 곧게 펴져 찢어진다 — E_max가 사용 가능한 상한.)
+- 안전 계수 `EXT_SAFETY(0.9)`만큼만 쓴다.
+
+### 앵커와 카드 열림 결합
+
+hub는 면 A에서 척추 아래 거리 a에, rim 끝은 면 B에서 척추 위 거리 b에 붙는다. 척추 힌지 둘레로 팔 길이 a, b가 만드는 열림각 α에서의 앵커 간 거리는 **코사인 법칙**:
+
+```
+D(α) = √(a² + b² − 2·a·b·cosα)
+```
+
+D는 닫힘(R_outer)에서 완전 개방(a+b)까지 단조 증가하고, 코일이 흡수해야 하는 추가 신장은 `ΔD = (a+b) − |a−b| = 2·min(a,b) = 2b`. 설계 규칙:
+
+```
+2b ≤ EXT_SAFETY·(R_outer − r0)  ⇒  b ≤ 0.45·(R_outer − r0)
+a = R_outer + b
+추정 기립 높이 H_stand ≈ 2b
+```
+
+### 파라미터 해석/클램프 (`resolveSpiralGeometry`, `spiralSpring.js:150`)
+
+- `r0 = HUB_R(7)` 고정, `w = clamp(numOr(pitch,6), 4, 10)`, `turns = clamp(round(numOr(turns,5)), 3, 7)`
+- **지면 맞춤**: `2·R_outer + b ≤ faceH`(단, `b = 0.45·(R_outer − r0)`) ⇒ `R_outer ≤ (faceH + 0.45·r0)/2.45`. 이 `rOuterFit`에서 `turnsFit = (rOuterFit − r0)/w`를 구해 요청 turns를 그 아래로 줄인다(띠 폭 w는 강성 유지 위해 건드리지 않음, `spiralSpring.js:163-167`).
+- `b = clamp(min(bSafe, bFit), 5, ...)`, `bSafe = 0.45·(R_outer−r0)`, `bFit = faceH − 2·R_outer`. 하한 5mm는 어린이 그립 바닥.
+- `faceH = card.height − PRINT.MARGIN` (Letter 139.7mm가 더 빡빡해 기본을 지배).
+
+### 장식 오버플로 하드 캡
+
+카드를 세워 열었을 때 높이 h·반지름 ρ 장식은 `h + ρ ≤ CARD.height − MARGIN`(=`overflowBound`)을 지켜야 한다. 각 표시점 i에 대해 `f = i/decos`, `height = round(hStand·f)`, `maxRadius = overflowBound − height`(하드 캡), 그린 제안 반지름 `drawR = clamp(maxRadius, 3, 14)` (`spiralSpring.js:180-187`). 이 최대 반지름은 도안 우측 범례에 점마다 인쇄된다 (`spiralSpring.js:274-291`).
+
+### 도면 배치와 평면 접힘
+
+`generateSpiralSpring` (`spiralSpring.js:223`): 원판 중심은 면 A의 `(cx, cy+a)`, rim 끝 풀칠 탭(②)은 원판 상단, rim 끝 풀칠 타깃은 면 B의 `(cx, cy−b)`. hub 풀칠 원(①)은 `circlePath(hubX, hubY, r0)` 초록. rim 탭 크기 `TAB(6)`mm(5mm 그립 바닥 위). 평면 접힘은 해당 없음 — 산/골 접기가 없고, 코일이 인쇄된 평면 원판으로 **탄성 복원**할 뿐 접히지 않는다.
+
+## 활용
+
+- **SVGPreview.jsx**: `render(params)`로 도안 1페이지. `decorationSlots` 미정의 → 기본 단일 슬롯 폴백(장식 페이지 1장). 실제 부착 지점은 도안 위 번호 점(①②③④)과 우측 "최대 반지름" 범례로만 안내된다.
+- **registry.js**: `defaultParams`의 turns/pitch/decorations가 `renderSpiralSpring`으로 전달. `renderSpiralSpring`은 `paperSize`도 넘겨(`spiralSpring.js:314`) 클램프가 올바른 카드 면 높이를 쓰게 한다. 조립 안내는 `INSTRUCTION_TEXT['spiral-spring']`(PDF)과 `Instructions.jsx`의 `case 'spiral-spring'`(화면)에 손으로 동기화.
+- **Preview3D.jsx**: 미지원(`SUPPORTED_3D`에 없음). 나선이 코사인 법칙에 따라 늘어나는 것을 슬라이더로 보여주는 3D 포즈는 미래 과제.
+
+## 이전 작업에서 배운 교훈
+
+- **커밋 `bd2b51c`**: 최초 도입. 접기가 아니라 탄성 복원으로 평면화한다는 점, 그리고 hub·rim 끝 **두 점만** 붙이고 코일 나머지는 어디에도 붙이지 않아야 한다는 규칙이 설계의 핵심이다(붙으면 늘어나지 않음). `INSTRUCTION_TEXT`의 2단계가 이를 강조한다.
+- **커밋 `5cf884e`** ("Harden ... against NaN/garbage input"): `??`는 `null`/`undefined`만 막고 `NaN`이나 문자열 쓰레기는 통과시킨다. 챗봇 파라미터에서 그런 값이 들어오면 `clamp`가 `NaN`을 모든 하위 좌표로 전파해 도안 전체가 깨졌다. 해결: `numOr = (v,d) => Number.isFinite(Number(v)) ? Number(v) : d` 헬퍼로 pitch/turns/decorations 세 입력을 모두 감쌌다(`spiralSpring.js:157`). 신규 파라미터를 추가할 때 반드시 `numOr`로 받아라.
+- **장식 오버플로**: 나선이 서면 장식이 카드 밖으로 삐져나올 수 있다. 그래서 점마다 `maxRadius = overflowBound − height`를 계산해 도안에 명시했다. 이 하드 캡은 Letter(더 낮은 카드) 기준으로 잡혀 A4에서도 안전하다.
+
+## 앞으로 작업 시 주의사항
+
+- 새 수치 파라미터는 예외 없이 `numOr`로 받아 `NaN` 전파를 막아라(커밋 `5cf884e`의 재발 방지).
+- **강성 vs 신장의 트레이드오프**: 지면에 안 맞으면 코드는 w가 아니라 turns(N)를 줄인다. 띠 폭 w를 얇게 하면 신장은 늘지만 장식 무게에 코일이 좌굴한다. w 하한(4mm)을 낮추기 전에 카드지에서 ~14mm 장식을 지탱하는지 물리적으로 확인하라.
+- `b`의 세 제약(`bSafe`=안전 신장, `bFit`=지면, 하한 5mm=그립)을 모두 유지하라. 어느 하나만 손대면 코일이 완전 개방 전에 팽팽해지거나(찢김) rim이 카드 밖으로 나간다.
+- `H_stand ≈ 2b`는 **추정치**다. 실제 기립 높이는 종이 강성·감김 습관에 좌우되므로 장식 높이 계산을 이 값에 과도하게 의존하지 말 것. 오버플로 캡이 실제 안전장치다.
+- 조립 안내가 `registry.js`와 `Instructions.jsx` 두 곳에 있으니 한쪽만 고치지 말 것.
