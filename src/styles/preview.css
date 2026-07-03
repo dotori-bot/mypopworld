@@ -298,3 +298,109 @@
   opacity: 0.7;
   font-weight: 500;
 }
+
+/* ------------------------------------------------------------------ */
+/* 3D assembled preview (Preview3D.jsx) — pure CSS 3D transforms       */
+/* ------------------------------------------------------------------ */
+.preview3d-root {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at center, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+
+.preview3d-placeholder {
+  max-width: 420px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding: var(--space-xl);
+}
+
+/* Perspective viewport */
+.preview3d-stage {
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The book coordinate space. Tilted back so we look down onto the open
+   card and the popup (rising toward +Z) reads as standing up. */
+.preview3d-book {
+  position: relative;
+  transform-style: preserve-3d;
+  /* 3/4 view: tilt back to look down onto the card, plus a small yaw so the
+     fully-raised popup (which stands in the symmetry plane at α=180) is seen at
+     an angle rather than edge-on. */
+  transform: rotateX(-52deg) rotateY(-20deg);
+}
+
+/* Pages hinge on the central spine. Left page origin = its right edge,
+   right page origin = its left edge, so both creases coincide at center. */
+.preview3d-page {
+  position: absolute;
+  top: 0;
+  transform-style: preserve-3d;
+  background: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  backface-visibility: visible;
+}
+
+.preview3d-page-left {
+  right: 50%;
+  transform-origin: right center;
+}
+
+.preview3d-page-right {
+  left: 50%;
+  transform-origin: left center;
+}
+
+/* V-fold popup anchored at the spine center (symmetry plane). */
+.preview3d-vfold {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  transform-style: preserve-3d;
+}
+
+/* Each arm is a flat triangular panel hinged on the VERTICAL spine (its inner
+   edge). rotateY swings it from lying flat on its page (γ=0) up toward the
+   viewer to vertical (γ=90). The two mirrored arms meet along the spine ridge,
+   forming the V-fold's mountain tent. */
+.preview3d-arm {
+  position: absolute;
+  backface-visibility: visible;
+}
+
+.preview3d-arm-left {
+  right: 0;                       /* inner (spine) edge at container center */
+  transform-origin: right center; /* hinge on the vertical spine edge */
+  /* triangle: full-height inner spine edge tapering to a point outward */
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+.preview3d-arm-right {
+  left: 0;
+  transform-origin: left center;
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+.preview3d-readout {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
