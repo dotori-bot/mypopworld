@@ -3,11 +3,13 @@ import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { CARD_SIZES } from '../../generators/constants';
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
+import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
 import {
   calculateVFoldAngle,
   calculatePopupHeight,
   calculateParallelFoldHeight,
   framedVolvelleSectors,
+  flipDiscLeafStates,
   polarToCartesian,
   radToDeg,
   degToRad,
@@ -19,7 +21,7 @@ import '../../styles/preview.css';
 // back to the "not ready yet" placeholder. Note: 'volvelle' is a flat top-down
 // SPINNER, not a hinged pop-up, so it opts out of the shared book/α scaffold
 // below and renders its own view (see the volvelle branch in the component).
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -194,6 +196,10 @@ export default function Preview3D() {
   // Volvelle spinner state: disc rotation θ (deg, clockwise +). Kept as a plain
   // hook at the top so React's hook order stays stable regardless of mechanism.
   const [rotation, setRotation] = useState(0);
+  // Flip-disc state: how many top leaves have been turned to the left (0..N-1).
+  // A single integer because the leaves are a strictly ordered stack — see
+  // flipDiscLeafStates() in utils/math.js for why per-leaf angles would be wrong.
+  const [flipped, setFlipped] = useState(0);
   const discRef = useRef(null);
   const drag = useRef({ active: false, last: 0 });
 
@@ -341,6 +347,147 @@ export default function Preview3D() {
             onChange={(e) => setRotation(Number(e.target.value))}
             aria-label="돌림판 회전 각도"
           />
+          <div className="preview3d-readout">{readout}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Flip-disc: fixed left half + a stack of right-half "leaves" turned like ──
+  // book pages about the vertical diameter. NOT a card-opening-angle mechanism
+  // and NOT a spinner — it renders its own genuinely-3D page-turn view (a leaf
+  // lifts toward the viewer, goes edge-on past 90°, and tucks behind the opaque
+  // fixed half). See flipDiscLeafStates() for the physics/state model.
+  if (mechanism === 'flip-disc') {
+    const fdParams = buildMechanismParams(cardParams, paperSize, colorMode) || {};
+    const fdDefaults = getMechanism('flip-disc').defaultParams;
+    // Single source of truth for radius/page-count — same call the generator makes.
+    const geo = resolveFlipDiscGeometry({
+      R: fdParams.R ?? fdDefaults.R,
+      pages: fdParams.pages ?? fdDefaults.pages,
+      paperSize,
+    });
+    const { R, pages } = geo;
+
+    // Normalise so the assembled disc always reads ~320px regardless of the
+    // clamped mm radius; `scale` converts flipDisc.js mm angles/nubs into px.
+    const DISC_PX = 320;
+    const Rpx = DISC_PX / 2;
+    const scale = Rpx / R;
+    const nubDepthPx = FLIPDISC_CONST.NUB_DEPTH * scale;
+
+    const showing = clamp(flipped, 0, pages - 1);
+    const { leaves } = flipDiscLeafStates(showing, pages);
+
+    // translateZ alone does not reorder how the browser PAINTS these sibling
+    // leaves: for coplanar quads this close in Z, Chromium keeps plain DOM
+    // order (later sibling paints over earlier ones) instead of depth-sorting.
+    // So the actual occlusion — turned leaves hidden behind the fixed half,
+    // topmost remaining leaf on top of the rest — has to come from DOM ORDER,
+    // not from `depth`. Paint bottom → top: turned-away leaves first (hidden
+    // either way), then the fixed half (visually covering them), then the
+    // not-yet-turned leaves from deepest-in-the-stack to topmost-remaining LAST.
+    const flippedLeaves = leaves.filter((l) => l.flipped);
+    const unflippedLeaves = leaves.filter((l) => !l.flipped).sort((a, b) => b.index - a.index);
+
+    // Match flipDisc.js's ①②③… page labels so the preview and printed part agree.
+    const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+    const label = (i) => CIRCLED[i] || String(i + 1);
+    const advance = () => setFlipped((f) => clamp(f + 1, 0, pages - 1));
+    const retreat = () => setFlipped((f) => clamp(f - 1, 0, pages - 1));
+
+    const readout =
+      `${label(showing)}번 그림 (배경 + ${label(showing)}페이지) · ${pages}장 중 ${showing + 1}번째`;
+
+    const renderLeaf = (leaf) => {
+      // Staggered grip nub reusing flipDisc.js's angle convention, so the
+      // fan of nubs poking past the arc hints how many leaves are stacked.
+      const nubA = FLIPDISC_CONST.NUB_START_DEG + leaf.index * FLIPDISC_CONST.STAGGER_DEG;
+      // Leaf-local frame: hinge (disc centre) sits at (0, Rpx) — the leaf's
+      // left edge, vertical middle.
+      const nub = polarToCartesian(0, Rpx, Rpx + nubDepthPx / 2, nubA);
+      const hue = Math.round((leaf.index * 360) / pages);
+      const isTop = leaf.index === showing && !leaf.flipped;
+      const canAdvance = isTop && showing < pages - 1;
+      return (
+        <div
+          key={leaf.index}
+          className="preview3d-flipdisc-leaf"
+          onClick={canAdvance ? advance : undefined}
+          style={{
+            width: `${Rpx}px`,
+            height: `${DISC_PX}px`,
+            left: `${Rpx}px`,
+            transform: `translateZ(${leaf.depth}px) rotateY(${leaf.angleDeg}deg)`,
+            cursor: canAdvance ? 'pointer' : 'default',
+          }}
+        >
+          <div
+            className="preview3d-flipdisc-nub"
+            style={{ left: `${nub.x}px`, top: `${nub.y}px` }}
+          />
+          <div
+            className="preview3d-flipdisc-face preview3d-flipdisc-front"
+            style={{ background: `hsl(${hue}, 70%, 62%)` }}
+          >
+            <span className="preview3d-flipdisc-num">{label(leaf.index)}</span>
+          </div>
+          {/* Back face: mirrored border-radius so its in-place rotateY(180)
+              lands exactly on the front's right-D silhouette. */}
+          <div className="preview3d-flipdisc-face preview3d-flipdisc-back" />
+        </div>
+      );
+    };
+
+    return (
+      <div className="preview3d-root">
+        <div className="preview3d-stage preview3d-flipdisc-stage">
+          <div
+            className="preview3d-flipdisc-disc"
+            style={{ width: `${DISC_PX}px`, height: `${DISC_PX}px` }}
+          >
+            {/* Turned-away leaves first — hidden behind the fixed half below. */}
+            {flippedLeaves.map(renderLeaf)}
+
+            {/* Fixed background half-disc (LEFT). Opaque and painted AFTER the
+                turned leaves so it actually covers them (see DOM-order note above). */}
+            <div
+              className="preview3d-flipdisc-fixed"
+              style={{ width: `${Rpx}px`, height: `${DISC_PX}px` }}
+            />
+
+            {/* Not-yet-turned leaves (RIGHT half-discs), farthest-in-the-stack
+                first, topmost-remaining LAST so it paints on top of the rest. */}
+            {unflippedLeaves.map(renderLeaf)}
+
+            {/* Diameter/hinge line, drawn on top of everything. */}
+            <div className="preview3d-flipdisc-hinge" />
+          </div>
+        </div>
+
+        <div className="fold-slider-container">
+          <div className="fold-slider-labels">
+            <span>반쪽 넘김판</span>
+            <span>{showing + 1} / {pages}</span>
+          </div>
+          <div className="preview3d-flipdisc-controls">
+            <button
+              type="button"
+              className="preview3d-flipdisc-btn"
+              onClick={retreat}
+              disabled={showing === 0}
+            >
+              ← 이전 장으로
+            </button>
+            <button
+              type="button"
+              className="preview3d-flipdisc-btn"
+              onClick={advance}
+              disabled={showing >= pages - 1}
+            >
+              다음 장 넘기기 →
+            </button>
+          </div>
           <div className="preview3d-readout">{readout}</div>
         </div>
       </div>

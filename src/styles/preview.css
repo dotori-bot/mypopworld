@@ -506,3 +506,140 @@
 .preview3d-volvelle-hub {
   fill: var(--text-muted);
 }
+
+/* ------------------------------------------------------------------ */
+/* Flip-disc ("반쪽 넘김판"): fixed left half + a stack of right-half     */
+/* leaves turned like book pages about the vertical diameter.          */
+/* ------------------------------------------------------------------ */
+.preview3d-flipdisc-stage {
+  /* Keep the shared stage perspective (1100px) so the page-turn reads as 3D. */
+  padding: var(--space-lg);
+}
+
+/* Coordinate space for the assembled disc. A gentle backward tilt so a leaf
+   lifting toward the viewer mid-turn reads as depth, not a flat scale. */
+.preview3d-flipdisc-disc {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-12deg) rotateY(-5deg);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+}
+
+/* Fixed background half-disc (LEFT, flat edge on the right at the diameter).
+   Opaque and pinned at depth 0 so turned leaves (negative depth) hide behind
+   it — this is what keeps the left half always showing the background. */
+.preview3d-flipdisc-fixed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 100% 0 0 100% / 50% 0 0 50%;
+  background: linear-gradient(135deg, #f8fafc 0%, #dbe2ea 100%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Each leaf hinges on its LEFT edge (the diameter). The CSS transition turns
+   the discrete flippedCount change into a smooth book-page arc. */
+.preview3d-flipdisc-leaf {
+  position: absolute;
+  top: 0;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0.1, 0.2, 1);
+}
+
+.preview3d-flipdisc-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Front: right-half-disc silhouette (flat edge on the left at the diameter). */
+.preview3d-flipdisc-front {
+  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow: inset -6px 0 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Back: MIRRORED (left-D) border-radius + an in-place rotateY(180) so it lands
+   exactly on the front's right-D silhouette but faces the other way. Plain
+   paper backing — the underside of a flip page carries no art. */
+.preview3d-flipdisc-back {
+  border-radius: 100% 0 0 100% / 50% 0 0 50%;
+  transform: rotateY(180deg);
+  background: repeating-linear-gradient(
+      45deg,
+      #fdfdfe,
+      #fdfdfe 6px,
+      #eef2f7 6px,
+      #eef2f7 12px
+    );
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.preview3d-flipdisc-num {
+  color: #ffffff;
+  font-size: 2.4rem;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  /* Sit on the disc's right half, not the hinge edge. */
+  transform: translateX(30%);
+  pointer-events: none;
+}
+
+/* Staggered grip nub poking past the arc — one per leaf, so the fan hints how
+   many leaves are stacked (mirrors flipDisc.js's staggered nubs). Lifted a hair
+   in z so it reads as sitting on top of the leaf rim. */
+.preview3d-flipdisc-nub {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) translateZ(1px);
+  background: var(--bg-glass-active);
+  border: 1.5px solid var(--text-muted);
+  pointer-events: none;
+}
+
+/* Diameter/hinge line, drawn above the halves. */
+.preview3d-flipdisc-hinge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 100%;
+  border-left: 1.5px dashed rgba(0, 0, 0, 0.28);
+  transform: translateX(-50%) translateZ(3px);
+  pointer-events: none;
+}
+
+.preview3d-flipdisc-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.preview3d-flipdisc-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preview3d-flipdisc-btn:hover:not(:disabled) {
+  background: var(--bg-glass-hover);
+  transform: translateY(-1px);
+}
+
+.preview3d-flipdisc-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

@@ -243,6 +243,58 @@ export function framedVolvelleSectors(rotationDeg, geo) {
 }
 
 /**
+ * Flip-disc ("반쪽 넘김판") leaf poses for the interactive 3D preview.
+ *
+ * Physical model (single source of truth mirrored from generators/flipDisc.js):
+ * a circle is split on its vertical diameter. The LEFT half is a fixed, opaque
+ * background half-disc that flipDisc.js glues "on top", so the left half ALWAYS
+ * shows the background. The RIGHT half is a stack of N right-half-disc leaves
+ * hinged on that same diameter and turned one at a time like book pages. A leaf
+ * "emerges from beneath the fixed half", swings up-and-over to the LEFT, and
+ * tucks BEHIND the fixed half — so a turned leaf becomes hidden and the next
+ * leaf beneath it is revealed on the right. The visible circle is therefore
+ * always (fixed background half) + (topmost NOT-yet-turned leaf).
+ *
+ * Because the leaves are a strictly ORDERED stack (leaf k sits under leaf k-1
+ * and cannot be reached until k-1 is turned), the only physically valid states
+ * are "the first `flippedCount` leaves are turned". This is why the caller
+ * tracks a single integer rather than per-leaf angles. flippedCount is clamped
+ * to [0, pages-1]: the bottom leaf has nothing beneath it to reveal, so one leaf
+ * always remains completing the circle.
+ *
+ * @param {number} flippedCount - How many top leaves have been turned to the left.
+ * @param {number} pages        - Total leaf count N.
+ * @returns {{ leaves: Array<{index:number, flipped:boolean, angleDeg:number, depth:number}>, showing:number }}
+ *   leaves[i].angleDeg  0 (flat on the right, front to viewer) or -180 (turned
+ *                       flat to the left; -180 not +180 so the turn sweeps UP
+ *                       TOWARD the viewer like a real page, not away into screen).
+ *   leaves[i].depth     Unitless world-depth ordering hint (larger = nearer the
+ *                       viewer); the caller pins the fixed half at depth 0 and
+ *                       scales these straight into translateZ(px). Un-flipped
+ *                       leaves stack with the topmost-remaining nearest; turned
+ *                       leaves sit just behind the fixed half so it hides them.
+ *   showing             Index of the leaf currently completing the circle
+ *                       (=== clamped flippedCount).
+ */
+export function flipDiscLeafStates(flippedCount, pages) {
+  const n = Math.max(0, Math.trunc(pages) || 0);
+  const fc = clamp(Math.trunc(flippedCount) || 0, 0, Math.max(0, n - 1));
+  const leaves = [];
+  for (let i = 0; i < n; i++) {
+    const flipped = i < fc;
+    leaves.push({
+      index: i,
+      flipped,
+      angleDeg: flipped ? -180 : 0,
+      // Turned: behind the fixed half (< 0), later-turned nearer among them.
+      // Un-flipped: topmost-remaining (smallest i) nearest, deeper leaves back.
+      depth: flipped ? -2 + i * 0.3 : -i * 0.5,
+    });
+  }
+  return { leaves, showing: fc };
+}
+
+/**
  * Round a number to a fixed number of decimal places.
  * Useful for keeping SVG coordinates clean.
  * @param {number} value
