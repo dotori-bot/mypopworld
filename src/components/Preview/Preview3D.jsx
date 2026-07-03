@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
+import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
 import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
@@ -14,7 +15,7 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'layered-stage']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -238,6 +239,31 @@ export default function Preview3D() {
     const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
     const hTop = calculateParallelFoldHeight(totalDepth, alpha);
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'layered-stage') {
+    // Layered-stage — after its cut/fold bugfix (see layeredStage.js header),
+    // this is now structurally the SAME "one spine-crossing pleated strip,
+    // alternating mountain/valley, each band flexing γ = α/2" pattern as
+    // parallel-fold, just with depth == height per band (flat-foldability) and
+    // wider tiers for facade art. Reuses renderStairLevel verbatim.
+    // resolveLayeredStageGeometry is the SAME geometry source of truth the
+    // flat-2D generator and its decoration slots use — no duplicated logic.
+    const geo = resolveLayeredStageGeometry({
+      layers: params.layers,
+      layerSpec: params.layerSpec,
+      paperSize,
+    });
+    const levels = geo.layers.map((l) => ({ width: l.width, depth: l.depth }));
+
+    const gamma = alpha / 2; // deg, identical per-band flex to parallel-fold
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+
+    attachmentLeft = renderStairLevel(levels, 0, 'left', sinA, cosA, gamma, PX, pageH);
+    attachmentRight = renderStairLevel(levels, 0, 'right', sinA, cosA, gamma, PX, pageH);
+
+    const hTop = calculateParallelFoldHeight(geo.cumulativeDepth, alpha);
+    readout = `무대 ${geo.count}층 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's

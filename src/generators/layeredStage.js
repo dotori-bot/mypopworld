@@ -1,89 +1,82 @@
 /**
  * @fileoverview Layered stage pop-up ("층층이 무대 / 성벽 무대") mechanism generator.
  *
- * A multi-tier generalization of the single box-riser (`boxPopup.js`). Instead of
- * ONE standing wall, N wall "flats" (building/tower silhouettes) stand at
- * increasing depth from the spine, so opening the card raises a layered
- * theatrical scene with front-to-back depth (a castle keep rising behind its
- * lower outer wall, etc.).
+ * A multi-tier generalization of parallelFold.js's staircase: one continuous
+ * pleated strip, cut in place and hinged on the card spine, that rises into a
+ * flight of tiers of INCREASING depth and height as the card opens — the tallest
+ * ridge sits at the spine (the "back", furthest into the opened card) and the
+ * tiers step down and forward toward the reader (a castle keep with lower outer
+ * ramparts in front of it). It reduces EXACTLY to boxPopup.js at N = 1.
  *
- * ── Per-layer unit (box-riser, straight from boxPopup.js) ─────────────────────
- *   Layer i is a standing wall of height h_i attached to the card along its NEAR
- *   crease and cut free on its far edge + two side edges. Box-popup's flat-fold
- *   rule is applied PER LAYER:
+ * ── Why NOT "N independent full-height walls" (the old, broken model) ─────────
+ *   The previous design tried to make every band [a_{i-1}, a_i] an independent
+ *   box-riser with its NEAR edge a mountain and its FAR edge BOTH a full cut AND
+ *   a valley. That is physically impossible three ways at once (a full cut severs
+ *   the paper so it cannot also fold there; and because widths narrow outward,
+ *   layer i's far edge (width w_i) coincided with layer i+1's narrower near
+ *   mountain (width w_{i+1}), stacking cut + valley + mountain on one line). It
+ *   also could never self-actuate: a band that lives entirely on ONE card face
+ *   (every band except the spine-straddling one) is not coupled across the spine,
+ *   so opening the card just rotates it rigidly with its page — it never pops.
+ *   Only a crease that CROSSES the spine is driven by the card opening. Hence the
+ *   corrected mechanism is ONE spine-crossing pleated strip, not N loose walls.
  *
- *       d_i = h_i                                   (flat-foldability, per layer)
+ * ── Per-band flex (straight from boxPopup.js) ─────────────────────────────────
+ *   Each band folds by the SAME local angle γ = α/2 relative to the band before
+ *   it (the box-popup / parallel-fold result h = d·sin(α/2) ⇒ γ = α/2). Band 1
+ *   is the box-popup base (its NEAR crease is the spine MOUNTAIN); every later
+ *   band rides on the moving far edge of the band before it, exactly like
+ *   parallelFold's nested staircase levels.
  *
- *   where d_i is the layer's depth footprint (its band on the card face) and h_i
- *   its standing wall height. With d_i = h_i, when the card shuts the wall folds
- *   flat exactly back over its own depth band [a_{i-1}, a_i] — its far edge lands
- *   on its near crease, never overshooting into the neighbour band. NEAR crease is
- *   a MOUNTAIN (wall pops toward the viewer, exactly like box-popup's spine
- *   mountain); FAR crease is a VALLEY (the wall's top nosing folds down). Every
- *   mountain is thus paired with a valley in the same layer → each layer
- *   collapses flat independently.
+ * ── Crease pattern: alternate mountain/valley (true flat-foldability) ─────────
+ *   With a_0 = 0 the creases parallel to the spine sit at depths a_0, a_1, …, a_N
+ *   and MUST alternate to collapse flat (and to keep the running staircase frame
+ *   from spiralling — same reason Preview3D alternates the staircase's ±γ):
  *
- * ── Nesting / accumulated depth (from parallelFold.js's staircase) ────────────
- *   Layers stack outward from the spine, each starting where the previous ended
- *   (parallelFold's `accumulatedDepth` bookkeeping, generalized to full-height
- *   walls):
+ *       a_0 (spine)  MOUNTAIN
+ *       a_i          VALLEY  if i is odd,  MOUNTAIN if i is even   (1 ≤ i ≤ N−1)
+ *       a_N (outer)  FREE CUT — the exposed top edge of the tallest tier
  *
- *       a_0 = 0,   a_i = a_{i-1} + d_i = Σ_{j≤i} d_j          (accumulated depth)
+ *   This is the same rule accordionPopup.js uses (alternating pleats collapse in
+ *   the card's own fold direction), specialised so the ridges read as tiers.
  *
- *   near crease of layer i at depth a_{i-1}, far crease at a_i. Layer 1's near
- *   crease is the spine itself. Depths are non-decreasing outward
- *   (d_1 ≤ d_2 ≤ … ≤ d_N) so deeper = taller = further back (castle keep).
- *   Widths are non-increasing outward (w_1 ≥ w_2 ≥ … ≥ w_N) so a near wall never
- *   hides the silhouette read of a further one.
+ * ── The shoulder-cut (from parallelFold.js) — the fix for the width step ──────
+ *   Consecutive bands share their crease line, but the outer band is NARROWER
+ *   (w_{i+1} < w_i). Only the CENTRAL w_{i+1}-wide strip of the crease at a_i is a
+ *   real hinge (mountain/valley per the parity above), drawn ONCE. The two
+ *   "shoulders" of the wider inner band's far edge, x ∈ [w_{i+1}/2 .. w_i/2] on
+ *   each side, have no next band to hinge to, so they are CUT (free). No line is
+ *   ever both a cut and a fold — the shoulder is cut, the centre is a fold, they
+ *   share no x. Each band's two vertical SIDE edges are cut so the strip is free
+ *   to lift laterally; the strip stays attached to the card along the spine.
  *
- * ── THE hard constraint: nothing protrudes past the card edge when CLOSED ─────
- *   When the card folds shut, each layer's wall folds flat into its own band
- *   [a_{i-1}, a_i] on the card face. These bands are disjoint consecutive
- *   intervals that TILE outward from the spine, so the whole collapsed stack
- *   occupies exactly [0, a_N]. Layer i's folded footprint sits inside the region
- *   bounded by layer i-1's far crease (a_{i-1}) and the card edge — trivially,
- *   since the bands abut. The deepest (background) layer N reaches furthest out,
- *   so IT is the one at risk of poking past the card's own outer cut edge. The
- *   containment inequality every layer must satisfy is therefore:
+ * ── Accumulated depth + the hard containment constraint ───────────────────────
+ *       a_0 = 0,   a_i = a_{i-1} + d_i = Σ_{j≤i} d_j
+ *   Depths are non-decreasing outward (d_1 ≤ … ≤ d_N) so tiers get taller toward
+ *   the back; widths are non-increasing (w_1 ≥ … ≥ w_N) so a front tier never
+ *   hides the silhouette of the tier behind it. When the card shuts, the whole
+ *   pleated strip collapses flat over [0, a_N] on each face, so nothing pokes past
+ *   the card's own cut edge iff:
  *
- *       a_i = Σ_{j≤i} d_j ≤ S_max                     (per layer; binds at i = N)
- *       S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
+ *       a_N = Σ d_j ≤ S_max ,   S_max = CARD_SIZES[paper].height/2 − PRINT.MARGIN
  *
- *   Because d_j > 0 the a_i are strictly increasing, so a_N ≤ S_max implies all.
- *   We clamp against it exactly like parallelFold's buildLevels clamps each depth
- *   against maxDepth — but on the ACCUMULATED sum: each layer's depth is clamped
- *   to the remaining budget (S_max·SAFETY − a_{i-1}), and once the remaining
- *   budget drops below DEPTH_MIN we stop adding layers. An over-large or garbage
- *   request can therefore never push a wall off the sheet; it just yields fewer /
- *   shorter layers. We spend only DEPTH_SAFETY (0.92) of S_max so the deepest far
- *   crease lands strictly inside the edge with a visible slack strip.
- *
- * ── Glue tabs (from boxPopup.js's side trapezoids) ────────────────────────────
- *   Each wall gets its own trapezoid glue tab on each vertical side edge (TAB_W =
- *   6 mm > the 5 mm child-grip floor), folding OUTWARD in x to glue flat beside
- *   the wall. Tab i lives in x ∈ [cx ± (w_i/2 .. w_i/2 + TAB_W)] and depth band
- *   [a_{i-1}, a_i]. A nearer (larger) layer's wall folds into [a_{i-2}, a_{i-1}],
- *   a further (smaller) layer's tab into [a_{i-1}, a_i] — DISJOINT depth bands, so
- *   a further layer's tab can never collide with a nearer layer's wall. Tabs
- *   extend only in x (never deeper in s), and w_i/2 + TAB_W is clamped so the tab
- *   stays inside the printable card width on both A4 and Letter.
+ *   Clamped exactly like parallelFold: each band's depth is capped to the
+ *   remaining budget (DEPTH_SAFETY·S_max − a_{i-1}); once the remainder drops
+ *   below DEPTH_MIN we stop adding bands. Garbage / oversized requests therefore
+ *   yield fewer, shorter tiers rather than a wall off the sheet.
  *
  * ── Default sizes (fit A4 AND Letter; Letter governs) ─────────────────────────
  *   S_max: A4 = 148.5/2 − 5 = 69.25 mm; Letter = 139.7/2 − 5 = 64.85 mm (tighter).
  *   Budget = 0.92·S_max ⇒ Letter 59.66 mm. Ascending default depths (= heights):
  *       N=2: [22, 30]  Σ 52    N=3: [14, 19, 24]  Σ 57    N=4: [10, 13, 16, 19]  Σ 58
  *   all < 59.66, so every default stack clears the Letter edge with ≥ 1.6 mm slack
- *   (A4 slack ≥ 5.7 mm). Descending default widths 100/84/68/52 mm keep every
- *   wall + both 6 mm tabs (≤ 112 mm) well inside the ~188 mm printable width.
- *   N is clamped to 2–4, per-layer depth ≥ 8 mm, width ∈ [30, card.width−2·MARGIN
- *   −2·TAB_W].
+ *   (A4 slack ≥ 5.7 mm). Descending default widths 100/84/68/52 mm keep every band
+ *   well inside the ~188 mm printable width with room to spare.
  *
- * ── Flat-foldability summary ──────────────────────────────────────────────────
- *   (1) Each layer independently satisfies d_i = h_i → its wall folds flat into
- *   its own band with a matched near-mountain / far-valley crease pair.
- *   (2) The bands tile [0, a_N] disjointly and outward, so layers collapse in
- *   depth order without interfering, and the whole scene lies flat inside the
- *   card silhouette iff a_N ≤ S_max — which the clamp guarantees.
+ * ── Assembly note ─────────────────────────────────────────────────────────────
+ *   Because the strip is cut in place and hinged on the spine, there is NO glue
+ *   tab on the structure itself (like parallelFold.js — the tiers are part of the
+ *   card). Glue is only used to stick the decoration pictures onto the tier faces.
  *
  * @module generators/layeredStage
  */
@@ -93,7 +86,6 @@ import { clamp, round } from '../utils/math.js';
 import {
   addPath,
   addRect,
-  addPolygon,
   addText,
   addGroup,
   getLineStyle,
@@ -268,8 +260,18 @@ function drawFacade(g, cx, baseY, roofY, w, style) {
 /**
  * Draw the layered-stage flat pattern into a passed-in SVG/group.
  *
- * The pattern is mirrored above and below the spine (each layer draws an upper
- * and a lower half), exactly like parallelFold's upper/lower staircase.
+ * One pleated strip, mirrored above and below the spine (each band draws an upper
+ * and a lower half), exactly like parallelFold's upper/lower staircase. Cut/fold
+ * assignment per band i (1-based, far crease at accumulated depth a_i):
+ *   - two vertical SIDE edges (at ±w_i/2, over depth band [a_{i-1}, a_i]): CUT
+ *   - the far crease at a_i:
+ *       · i < N: central w_{i+1}-wide strip = FOLD (mountain if i even else valley,
+ *                since the spine a_0 is a mountain and creases alternate); the two
+ *                shoulders out to ±w_i/2 = CUT  (parallelFold's shoulder-cut).
+ *       · i = N: the whole far edge = CUT (the free top of the tallest tier).
+ * The spine crease a_0 (width w_1) is a single MOUNTAIN, drawn once (box-popup's
+ * spine). No line is ever both a cut and a fold; every fold alternates so the
+ * strip collapses flat when the card shuts.
  *
  * @param {SVGElement} svg - Target element (a content group from createTemplate)
  * @param {Object} [options]
@@ -300,58 +302,60 @@ export const generateLayeredStage = (svg, options = {}) => {
   const cutStyle = getLineStyle('CUT', isColor);
   const mountainStyle = getLineStyle('MOUNTAIN_FOLD', isColor);
   const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
-  const glueStyle = getLineStyle('GLUE_TAB', isColor);
   const scoreStyle = getLineStyle('SCORE', isColor);
 
-  const tabW = geo.tabW;
+  const layers = geo.layers;
+  const N = layers.length;
+  if (N === 0) return g;
 
-  // Draw furthest (deepest) layer first so nearer/larger walls overlay it in the
-  // preview, matching the front-to-back read.
-  const ordered = [...geo.layers].sort((a, b) => b.index - a.index);
+  // ── One card face at a time (sign = -1 upper, +1 lower) ───────────────────
+  for (const sign of [-1, 1]) {
+    for (let idx = 0; idx < N; idx++) {
+      const layer = layers[idx];             // 1-based band index i = idx + 1
+      const i = idx + 1;
+      const hw = round(layer.width / 2);
+      const xL = round(cx - hw);
+      const xR = round(cx + hw);
+      const nearY = round(cy + sign * layer.near);
+      const farY = round(cy + sign * layer.far);
 
-  for (const layer of ordered) {
-    const { width, near, far, index } = layer;
-    const hw = round(width / 2);
-    const xL = round(cx - hw);
-    const xR = round(cx + hw);
-
-    // ── One card face at a time (sign = -1 upper, +1 lower) ─────────────────
-    for (const sign of [-1, 1]) {
-      const nearY = round(cy + sign * near);   // near crease (attached / mountain)
-      const farY = round(cy + sign * far);     // far crease (free edge / valley)
-
-      // Cuts: two side verticals + the far horizontal (near edge stays attached).
+      // Side edges: cut, so the band is free to lift laterally out of the card.
       addPath(g, `M ${xL} ${nearY} L ${xL} ${farY}`, cutStyle);
       addPath(g, `M ${xR} ${nearY} L ${xR} ${farY}`, cutStyle);
-      addPath(g, `M ${xL} ${farY} L ${xR} ${farY}`, cutStyle);
 
-      // Folds: near = mountain (pops toward viewer), far = valley (matched pair).
-      addPath(g, `M ${xL} ${nearY} L ${xR} ${nearY}`, mountainStyle);
-      addPath(g, `M ${xL} ${farY} L ${xR} ${farY}`, valleyStyle);
+      if (i === N) {
+        // Outermost tier: its far edge is the exposed free top → full cut.
+        addPath(g, `M ${xL} ${farY} L ${xR} ${farY}`, cutStyle);
+      } else {
+        // Shared crease with the NARROWER next band: centre = fold, shoulders cut.
+        const nhw = round(layers[idx + 1].width / 2);
+        const nxL = round(cx - nhw);
+        const nxR = round(cx + nhw);
+        // Shoulders (this wider band's exposed far corners) → cut.
+        addPath(g, `M ${xL} ${farY} L ${nxL} ${farY}`, cutStyle);
+        addPath(g, `M ${nxR} ${farY} L ${xR} ${farY}`, cutStyle);
+        // Central hinge → fold, alternating (a_i mountain if i even, else valley).
+        const foldStyle = i % 2 === 0 ? mountainStyle : valleyStyle;
+        addPath(g, `M ${nxL} ${farY} L ${nxR} ${farY}`, foldStyle);
+      }
 
-      // Side glue tabs — trapezoids folding OUTWARD in x, spanning the depth band.
-      const yA = Math.min(nearY, farY);
-      const yB = Math.max(nearY, farY);
-      addPolygon(g, [
-        [xL, yA],
-        [round(xL - tabW), round(yA + tabW / 2)],
-        [round(xL - tabW), round(yB - tabW / 2)],
-        [xL, yB],
-      ], glueStyle);
-      addPolygon(g, [
-        [xR, yA],
-        [round(xR + tabW), round(yA + tabW / 2)],
-        [round(xR + tabW), round(yB - tabW / 2)],
-        [xR, yB],
-      ], glueStyle);
-
-      // Decorative facade (score guides only).
-      drawFacade(g, cx, nearY, farY, width, scoreStyle);
+      // Decorative facade (score guides only — never on a cut or a crease).
+      drawFacade(g, cx, nearY, farY, layer.width, scoreStyle);
     }
+  }
 
-    // Layer label on the upper face, inside the band.
-    const labelY = Math.max(round(cy - (near + far) / 2 + 1), PRINT.MARGIN + 4);
-    addText(g, cx, labelY, `무대 ${index} (뒤←${index})`, 2.4, 'middle');
+  // Spine crease a_0: a single mountain (band 1's near hinge, box-popup's spine),
+  // drawn once across the widest band. (The card's own valley spine already runs
+  // full width from createTemplate; the pop-up creases mountain here, as in
+  // boxPopup.js.)
+  const hw1 = round(layers[0].width / 2);
+  addPath(g, `M ${round(cx - hw1)} ${round(cy)} L ${round(cx + hw1)} ${round(cy)}`, mountainStyle);
+
+  // Per-tier labels on the upper face, inside each band.
+  for (const layer of layers) {
+    const labelY = Math.max(round(cy - (layer.near + layer.far) / 2 + 1), PRINT.MARGIN + 4);
+    const role = layer.index === N ? '뒤·제일높음' : layer.index === 1 ? '앞·제일낮음' : '중간';
+    addText(g, cx, labelY, `무대 ${layer.index}층 (${role})`, 2.4, 'middle');
   }
 
   // Title above the deepest upper far crease, clamped inside the page.
