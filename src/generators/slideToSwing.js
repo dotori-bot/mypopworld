@@ -311,20 +311,44 @@ function drawPostPiece(g, ox, oy, geo, isColor) {
   const bodyTop = round(oy + L.PIN_NECK);   // pin tab height = PIN_NECK
   const bodyBot = round(bodyTop + geo.r);   // pivot centre row (post length r)
   const neckBot = round(bodyBot + L.PIVOT_TAB_LEN);
-
-  // Body (pivot → pin) as a solid strip.
-  addRect(g, ox, bodyTop, w, round(geo.r), CUT);
-
-  // Pin tab on top (narrower neck, folds FORWARD through the slider slot).
   const pinL = round(cx - L.PIN_NECK / 2);
-  addRect(g, pinL, pinTop, L.PIN_NECK, L.PIN_NECK, CUT);
-  addPath(g, `M ${pinL} ${bodyTop} L ${round(pinL + L.PIN_NECK)} ${bodyTop}`, MOUNT);
+  const pinR = round(cx + L.PIN_NECK / 2);
+  const neckL = round(cx - L.PIVOT_TAB_W / 2);
+  const neckR = round(cx + L.PIVOT_TAB_W / 2);
+
+  // ── Single continuous post outline (body + pin tab + pivot neck) ──────────
+  // The pin tab folds FORWARD at bodyTop and the pivot neck folds at bodyBot.
+  // Earlier the body was a full closed rect whose top/bottom edges were cut
+  // straight across those two fold lines (and the pin/neck rects re-cut their
+  // own roots): cutting every solid line would sever the pin and the neck off
+  // the post, AND those roots were marked as both a cut and a fold. Here the
+  // body's top and bottom edges are drawn as SHOULDER cuts that stop at the pin
+  // / neck width, leaving the root uncut so it can be the fold — one connected
+  // piece.
+  addPath(
+    g,
+    `M ${ox} ${bodyTop} ` +
+    `L ${pinL} ${bodyTop} ` +          // left shoulder of the pin root
+    `L ${pinL} ${pinTop} ` +           // up the pin tab
+    `L ${pinR} ${pinTop} ` +
+    `L ${pinR} ${bodyTop} ` +          // right shoulder of the pin root
+    `L ${round(ox + w)} ${bodyTop} ` + // across to body top-right
+    `L ${round(ox + w)} ${bodyBot} ` + // down the right edge
+    `L ${neckR} ${bodyBot} ` +         // right shoulder of the neck root
+    `L ${neckR} ${neckBot} ` +         // down the pivot neck
+    `L ${neckL} ${neckBot} ` +
+    `L ${neckL} ${bodyBot} ` +         // left shoulder of the neck root
+    `L ${ox} ${bodyBot} ` +            // across to body bottom-left
+    `L ${ox} ${bodyTop} Z`,            // up the left edge
+    CUT,
+  );
+
+  // Pin tab forward fold (mountain) — at the root, interior to the outline.
+  addPath(g, `M ${pinL} ${bodyTop} L ${pinR} ${bodyTop}`, MOUNT);
   addText(g, round(cx + w / 2 + 1), round(bodyTop - 1), '핀: 앞으로 접어 슬롯에 끼우기', 2.1, 'start');
 
-  // Pivot neck + splay tab at the base (passes through the card hole).
-  const neckL = round(cx - L.PIVOT_TAB_W / 2);
-  addRect(g, neckL, bodyBot, L.PIVOT_TAB_W, L.PIVOT_TAB_LEN, CUT);
-  addPath(g, `M ${neckL} ${bodyBot} L ${round(neckL + L.PIVOT_TAB_W)} ${bodyBot}`, VALLEY);
+  // Pivot neck fold (valley) + glue on the splay tab (passes through the hole).
+  addPath(g, `M ${neckL} ${bodyBot} L ${neckR} ${bodyBot}`, VALLEY);
   addRect(g, round(neckL + 0.6), round(bodyBot + 1.5), round(L.PIVOT_TAB_W - 1.2), round(L.PIVOT_TAB_LEN - 3), GLUE);
   addText(g, round(cx + w / 2 + 1), round((bodyBot + neckBot) / 2), '회전축 목: 구멍에 끼워 뒤에서 캡으로 고정', 2.1, 'start');
 
@@ -339,19 +363,33 @@ function drawPostPiece(g, ox, oy, geo, isColor) {
 function drawSliderPiece(g, ox, oy, geo, isColor) {
   const L = SLIDE_SWING_LIMITS;
   const CUT = getLineStyle('CUT', isColor);
-  const VALLEY = getLineStyle('VALLEY_FOLD', isColor);
 
   const w = L.SLIDER_BODY_W;
   const h = geo.sliderH;
   const sc = L.STOP_CATCH;
   const fw = L.FLANGE_W;
 
-  // Body outline with a stop flange bumping out (in y) at each x-end.
+  // Side handle grip (extends +x) — a rigid, fold-free extension of the slider.
+  const hx = round(ox + w);
+  const hy = round(oy + (h - L.GRIP_H) / 2);
+  const hEnd = round(hx + geo.grip);
+  const hyBot = round(hy + L.GRIP_H);
+
+  // ── Single continuous slider outline (body + stop flanges + handle grip) ──
+  // The grip is integral to the slider (you push it to slide the piece), so it
+  // is folded into the perimeter here. Earlier it was a separate closed rect
+  // sharing the body's right edge, and a valley fold was drawn on that same
+  // shared line — cutting every solid line would have snapped the handle off,
+  // and the shared line was marked as both a cut and a fold. Now the right edge
+  // detours out around the grip and there is no fold there at all.
   const outline =
     `M ${ox} ${round(oy - sc)} ` +
     `L ${round(ox + fw)} ${round(oy - sc)} L ${round(ox + fw)} ${oy} ` +
     `L ${round(ox + w - fw)} ${oy} L ${round(ox + w - fw)} ${round(oy - sc)} ` +
     `L ${round(ox + w)} ${round(oy - sc)} ` +
+    `L ${round(ox + w)} ${hy} ` +                 // down right edge to grip top
+    `L ${hEnd} ${hy} L ${hEnd} ${hyBot} ` +       // out around the handle grip
+    `L ${round(ox + w)} ${hyBot} ` +              // back to the right edge
     `L ${round(ox + w)} ${round(oy + h + sc)} ` +
     `L ${round(ox + w - fw)} ${round(oy + h + sc)} L ${round(ox + w - fw)} ${round(oy + h)} ` +
     `L ${round(ox + fw)} ${round(oy + h)} L ${round(ox + fw)} ${round(oy + h + sc)} ` +
@@ -365,11 +403,6 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   addText(g, round(ox + w / 2), round(oy - sc - 1.5), '슬라이더 — 한 조각', 2.4, 'middle');
   addText(g, round(ox + w / 2 + geo.slotWidthX), round(oy + h / 2), `세로 슬롯 ${geo.slotLen}mm`, 2, 'start');
 
-  // Side handle grip (extends +x), with a fold-free grip (single sheet).
-  const hx = round(ox + w);
-  const hy = round(oy + (h - L.GRIP_H) / 2);
-  addRect(g, hx, hy, geo.grip, L.GRIP_H, CUT);
-  addPath(g, `M ${hx} ${hy} L ${hx} ${round(hy + L.GRIP_H)}`, VALLEY);
   addText(g, round(hx + geo.grip / 2), round(hy + L.GRIP_H / 2 + 0.8), '손잡이', 2.2, 'middle');
   addText(g, round(ox + w / 2), round(oy + h + sc + 3), `이동 거리 ${geo.travel}mm`, 2.1, 'middle');
 }

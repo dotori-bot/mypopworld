@@ -166,58 +166,64 @@ export function generatePullTab(rawParams) {
   const sw = sliderWidth;
   const sh = sliderHeight;
 
-  // Slider body
-  /** @type {string[]} */
-  const sliderCuts = [
-    `M ${sliderAreaX} ${sliderAreaY} ` +
-    `L ${round(sliderAreaX + sw)} ${sliderAreaY} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY + sh)} ` +
-    `L ${sliderAreaX} ${round(sliderAreaY + sh)} Z`,
-  ];
-
-  // Pull handle: a tab extending from one end of the slider
+  // Pull handle geometry (a tab off the right end of the slider body).
   const handleW = 8;
   const handleH = sh;
-  sliderCuts.push(
-    `M ${round(sliderAreaX + sw)} ${sliderAreaY} ` +
-    `L ${round(sliderAreaX + sw + handleW)} ${round(sliderAreaY + 2)} ` +
-    `L ${round(sliderAreaX + sw + handleW)} ${round(sliderAreaY + handleH - 2)} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY + handleH)} Z`
-  );
+
+  // Stop tabs: small protrusions at the slider's four corners that catch on the
+  // guide strips so the slider can't pull out of the track.
+  const stopW = 3;
+  const stopH = 1.5;
+
+  // ── Single continuous slider outline ─────────────────────────────────────
+  // The body, the four corner stops and the pull handle are ONE piece: they
+  // must NOT be cut apart from each other. Earlier this drew the body as a
+  // closed rect and the stops/handle as separate overlapping shapes, so the
+  // body's top/bottom/right edges were cut straight through where the stops and
+  // handle attach (and the handle edge was also marked as a fold) — cutting
+  // every solid line would have detached them. Tracing one perimeter keeps
+  // every protrusion joined and leaves the body↔handle line as a fold only.
+  const X = sliderAreaX;
+  const Y = sliderAreaY;
+  const RX = round(X + sw);          // body right edge x
+  const hTop = round(Y + 2);         // handle attaches along the right edge
+  const hBot = round(Y + handleH - 2); // between hTop and hBot
+  const botY = round(Y + sh);
+
+  /** @type {string[]} */
+  const sliderCuts = [
+    `M ${X} ${round(Y - stopH)} ` +                       // top-left stop, outer corner
+    `L ${round(X + stopW)} ${round(Y - stopH)} ` +
+    `L ${round(X + stopW)} ${Y} ` +                       // step down to body top edge
+    `L ${round(RX - stopW)} ${Y} ` +                      // across body top
+    `L ${round(RX - stopW)} ${round(Y - stopH)} ` +       // up into top-right stop
+    `L ${RX} ${round(Y - stopH)} ` +
+    `L ${RX} ${hTop} ` +                                  // down right edge to handle
+    `L ${round(RX + handleW)} ${hTop} ` +                 // out along handle top
+    `L ${round(RX + handleW)} ${hBot} ` +                 // down handle outer edge
+    `L ${RX} ${hBot} ` +                                  // back to body right edge
+    `L ${RX} ${botY} ` +                                  // down to body bottom-right
+    `L ${RX} ${round(botY + stopH)} ` +                   // into bottom-right stop
+    `L ${round(RX - stopW)} ${round(botY + stopH)} ` +
+    `L ${round(RX - stopW)} ${botY} ` +                   // up to body bottom edge
+    `L ${round(X + stopW)} ${botY} ` +                    // across body bottom
+    `L ${round(X + stopW)} ${round(botY + stopH)} ` +     // into bottom-left stop
+    `L ${X} ${round(botY + stopH)} ` +
+    `L ${X} ${botY} ` +                                   // up to body bottom-left
+    `L ${X} ${Y} Z`,                                      // up left edge (Z closes TL stop)
+  ];
 
   /** @type {string[]} */
   const sliderFolds = [
-    // Fold line between body and handle
-    `M ${round(sliderAreaX + sw)} ${sliderAreaY} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY + sh)}`,
+    // Valley fold where the pull handle hinges off the slider body. Interior to
+    // the outline (the perimeter detours around the handle) so it is a fold
+    // ONLY — never coincident with a cut.
+    `M ${RX} ${hTop} L ${RX} ${hBot}`,
   ];
 
-  // Stop tabs: small protrusions on the slider top/bottom that catch on guides
-  const stopW = 3;
-  const stopH = 1.5;
+  // Stops are now part of the slider outline, so there is no separate stop cut.
   /** @type {string[]} */
-  const stopCuts = [
-    // Top stop (left end)
-    `M ${sliderAreaX} ${round(sliderAreaY - stopH)} ` +
-    `L ${round(sliderAreaX + stopW)} ${round(sliderAreaY - stopH)} ` +
-    `L ${round(sliderAreaX + stopW)} ${sliderAreaY} ` +
-    `L ${sliderAreaX} ${sliderAreaY}`,
-    // Bottom stop (left end)
-    `M ${sliderAreaX} ${round(sliderAreaY + sh)} ` +
-    `L ${round(sliderAreaX + stopW)} ${round(sliderAreaY + sh)} ` +
-    `L ${round(sliderAreaX + stopW)} ${round(sliderAreaY + sh + stopH)} ` +
-    `L ${sliderAreaX} ${round(sliderAreaY + sh + stopH)}`,
-    // Top stop (right end)
-    `M ${round(sliderAreaX + sw - stopW)} ${round(sliderAreaY - stopH)} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY - stopH)} ` +
-    `L ${round(sliderAreaX + sw)} ${sliderAreaY} ` +
-    `L ${round(sliderAreaX + sw - stopW)} ${sliderAreaY}`,
-    // Bottom stop (right end)
-    `M ${round(sliderAreaX + sw - stopW)} ${round(sliderAreaY + sh)} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY + sh)} ` +
-    `L ${round(sliderAreaX + sw)} ${round(sliderAreaY + sh + stopH)} ` +
-    `L ${round(sliderAreaX + sw - stopW)} ${round(sliderAreaY + sh + stopH)}`,
-  ];
+  const stopCuts = [];
 
   // ── Markers ──────────────────────────────────────────────────────
   /** @type {Array<{x:number,y:number,text:string}>} */

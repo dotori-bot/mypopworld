@@ -222,9 +222,20 @@ export function resolveAutoSlideWindow(opts = {}) {
   const pFit = (availHi - availLo - winH - 2 * L_.STRIP_PAD) / 4;
   const p = clamp(numOr(opts.pivotArm, 16), L_.P_MIN, Math.max(L_.P_MIN, Math.min(L_.P_MAX, pFit)));
 
-  // (2) strut-flat-fit clamp on L:  L + p ≤ availHi ; and L ≥ p + L_MIN_OVER_P (> p).
-  const Lfloor = p + L_.L_MIN_OVER_P;
-  const Lceil = Math.max(Lfloor, availHi - p);
+  // (2) L clamps. The window MUST sit at the travel midpoint, W = L (see header:
+  // symmetric window offsets, and the strut-attach point u = 0 always inside the
+  // strip). So instead of sliding W away from L to make the footprint fit the
+  // page — which pushed the strut-attach row clean OFF the end of the strip
+  // (vAttach went negative at defaults) — we clamp L itself, since the strip's
+  // footprint is centred on W = L:
+  //   L ≥ p + L_MIN_OVER_P     (monotonic slider-crank, L > p)
+  //   L − halfSpan ≥ availLo   (footprint clears the spine side)
+  //   L + halfSpan ≤ availHi   (footprint clears the free edge; halfSpan > p so
+  //                             this also satisfies the strut-flat fit L + p)
+  // The (1) footprint clamp on p keeps this interval non-empty on A4 AND Letter.
+  const halfSpan = 2 * p + winH / 2 + L_.STRIP_PAD;
+  const Lfloor = Math.max(p + L_.L_MIN_OVER_P, availLo + halfSpan);
+  const Lceil = Math.max(Lfloor, availHi - halfSpan);
   const L = clamp(numOr(opts.strut, 44), Lfloor, Lceil);
 
   const sOpen = L - p;              // s(180°)
@@ -232,11 +243,8 @@ export function resolveAutoSlideWindow(opts = {}) {
   const travel = 2 * p;
   const footprintSpan = 4 * p + winH + 2 * L_.STRIP_PAD;
 
-  // Centre W in the available band, then clamp so the whole footprint fits.
-  const centre = (availLo + availHi) / 2;
-  const wLo = availLo + footprintSpan / 2;
-  const wHi = availHi - footprintSpan / 2;
-  const W = wHi >= wLo ? clamp(centre, wLo, wHi) : centre;
+  // Window at the travel midpoint (midpoint of [sOpen, sClosed] = [L−p, L+p]).
+  const W = L;
 
   const sPartial = sliderDistance(L_.ALPHA_PARTIAL, p, L);
   const sFull = sliderDistance(L_.ALPHA_FULL, p, L);
@@ -319,26 +327,50 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
 
   const w = geo.sliderWx;
   const h = geo.stripLen;
-
-  // Main body outline.
-  addRect(g, ox, oy, w, h, CUT);
-
-  // Stop flanges — open paths protruding sideways at both ends (like pullTab
-  // stops), wider than the guide channel by STOP_CATCH each side.
   const sc = L_.STOP_CATCH;
   const fh = L_.FLANGE_H;
-  // top (inner) flange
-  addPath(g, `M ${round(ox - sc)} ${round(oy + fh)} L ${round(ox - sc)} ${oy} L ${round(ox + w + sc)} ${oy} L ${round(ox + w + sc)} ${round(oy + fh)}`, CUT);
-  // bottom (outer) flange
-  addPath(g, `M ${round(ox - sc)} ${round(oy + h - fh)} L ${round(ox - sc)} ${round(oy + h)} L ${round(ox + w + sc)} ${round(oy + h)} L ${round(ox + w + sc)} ${round(oy + h - fh)}`, CUT);
+  const rx = round(ox + w);
 
   // Material coordinate on the piece: v = distance from top (inner end).
   // The strut-attach point is material offset u = 0 → v_attach = 0 − uMin.
+  // With W = L this is always the strip's midpoint, so the drive tab sits safely
+  // between the two end bars.
   const vAttach = 0 - geo.uMin;
+  const tabLen = L_.STRUT_W + L_.GLUE_END;
+  const tabTop = round(oy + vAttach - L_.STRUT_W / 2);
+  const tabBot = round(oy + vAttach + L_.STRUT_W / 2);
+
+  // ── Single continuous strip outline (한 조각) ─────────────────────────────
+  // I-beam: wide stop bars (w + 2·STOP_CATCH) at both ends, a narrow web (w) in
+  // between, and the side drive tab as an integral bump on the web. Earlier the
+  // body was a full closed rect and the flanges/drive-tab were separate shapes
+  // sharing (and thus re-cutting) the body edge — cutting every solid line would
+  // have detached the stop bars and the drive tab from the strip. Tracing one
+  // perimeter keeps it a single connected piece.
+  addPath(
+    g,
+    `M ${round(ox - sc)} ${oy} ` +
+    `L ${round(ox + w + sc)} ${oy} ` +                 // top bar top edge
+    `L ${round(ox + w + sc)} ${round(oy + fh)} ` +     // down top bar right
+    `L ${rx} ${round(oy + fh)} ` +                     // step in to web right
+    `L ${rx} ${tabTop} ` +                             // down web to drive tab
+    `L ${round(rx + tabLen)} ${tabTop} ` +             // out along tab top
+    `L ${round(rx + tabLen)} ${tabBot} ` +             // down tab right
+    `L ${rx} ${tabBot} ` +                             // back to web
+    `L ${rx} ${round(oy + h - fh)} ` +                 // down web to bottom bar
+    `L ${round(ox + w + sc)} ${round(oy + h - fh)} ` + // step out to bottom bar
+    `L ${round(ox + w + sc)} ${round(oy + h)} ` +      // down bottom bar right
+    `L ${round(ox - sc)} ${round(oy + h)} ` +          // bottom bar bottom edge
+    `L ${round(ox - sc)} ${round(oy + h - fh)} ` +     // up bottom bar left
+    `L ${ox} ${round(oy + h - fh)} ` +                 // step in to web left
+    `L ${ox} ${round(oy + fh)} ` +                     // up web left
+    `L ${round(ox - sc)} ${round(oy + fh)} Z`,         // step out to top bar, close
+    CUT,
+  );
+
   // Message zones: material offset u → v = u − uMin.
   const v1 = geo.u1 - geo.uMin;   // message 1 (partial-open)
   const v2 = geo.u2 - geo.uMin;   // message 2 (full-open)
-
   const mzW = Math.min(geo.winW, w - 4);
   const mzX = round(ox + (w - mzW) / 2);
   const drawMsg = (v, label) => {
@@ -349,15 +381,11 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   drawMsg(v1, '메시지 ①(살짝 열 때)');
   drawMsg(v2, '메시지 ②(활짝 열 때)');
 
-  // Side DRIVE TAB at the attach row, extending +x, carrying the strut-attach
-  // crease (valley on the strip) and a glue face the strut end sticks to.
-  const tabLen = L_.STRUT_W + L_.GLUE_END;
-  const tabY0 = round(oy + vAttach - L_.STRUT_W / 2);
-  addRect(g, round(ox + w), tabY0, round(tabLen), L_.STRUT_W, CUT);
-  addRect(g, round(ox + w + 1), round(tabY0 + 1), round(tabLen - 2), round(L_.STRUT_W - 2), GLUE);
-  // attach crease (parallel to spine → horizontal here) across the tab root
-  addPath(g, `M ${round(ox + w)} ${round(oy + vAttach)} L ${round(ox + w + tabLen)} ${round(oy + vAttach)}`, MOUNT);
-  addText(g, round(ox + w + tabLen + 1), round(oy + vAttach), '② 지지대 아래 끝 붙이는 곳', 2.2, 'start');
+  // Drive-tab glue face + strut-attach crease (parallel to spine → horizontal),
+  // both interior to the tab so neither coincides with a cut.
+  addRect(g, round(rx + 1), round(tabTop + 1), round(tabLen - 2), round(L_.STRUT_W - 2), GLUE);
+  addPath(g, `M ${rx} ${round(oy + vAttach)} L ${round(rx + tabLen)} ${round(oy + vAttach)}`, MOUNT);
+  addText(g, round(rx + tabLen + 1), round(oy + vAttach), '② 지지대 아래 끝 붙이는 곳', 2.2, 'start');
 
   addText(g, round(ox + w / 2), round(oy - sc - 1.5), '메시지 띠(슬라이더) — 한 조각', 2.6, 'middle');
   addText(g, round(ox + w / 2), round(oy + h + fh + 3), `이동 거리 ${geo.travel}mm`, 2.2, 'middle');
