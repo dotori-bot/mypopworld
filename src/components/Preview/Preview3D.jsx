@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
+import { resolveAccordionGeometry } from '../../generators/accordionPopup';
 import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
@@ -15,7 +16,7 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'layered-stage']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'layered-stage', 'accordion']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -72,6 +73,51 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
       }}
     >
       {renderStairLevel(levels, i + 1, side, sinA, cosA, gamma, PX, widthPx)}
+    </div>
+  );
+}
+
+/**
+ * Recursively build the zigzag pleat chain of an accordion ("병풍") strip.
+ *
+ * Unlike the parallel-fold staircase (whose steps all rise on the SAME side of
+ * the spine, so their local flex is a constant-sign compound), an accordion is a
+ * concertina: consecutive panels tilt to OPPOSITE sides of the anchor-to-anchor
+ * axis. Panel 0 is laid down by the branch below at the left anchor with a fixed
+ * world tilt of −ρ; every deeper panel is a DOM child of the previous one and
+ * applies a RELATIVE rotateY that flips the running tilt across the axis:
+ *   panel 1: +2ρ  (−ρ → +ρ),  panel 2: −2ρ  (+ρ → −ρ),  panel 3: +2ρ, …
+ * so the cumulative world tilt alternates −ρ, +ρ, −ρ, +ρ … — a true zigzag.
+ * (If we used a constant +sign like a naive staircase, the frame would spiral
+ * and curl back on itself instead of marching across to the right anchor; this
+ * is the same alternation lesson called out in the parallel-fold notes.)
+ *
+ * All creases are VERTICAL (parallel to the spine), so each fold is a plain
+ * rotateY and the whole strip bulges in ±z (toward/away from the viewer) — the
+ * physical picture of a folding screen standing on the open card, seen in plan.
+ *
+ * @param {number} i     panel index (>=1 here; panel 0 handled inline)
+ * @param {number} M     total pleat-panel count
+ * @param {number} wPx   panel length (along the chord) in px
+ * @param {number} hPx   panel height (along the spine) in px
+ * @param {number} rho   standing half-angle ρ in degrees
+ */
+function renderAccordionPanel(i, M, wPx, hPx, rho) {
+  if (i >= M) return null;
+  const relAngle = i % 2 === 1 ? 2 * rho : -2 * rho;
+  return (
+    <div
+      className="preview3d-pleat"
+      style={{
+        width: `${wPx}px`,
+        height: `${hPx}px`,
+        left: '100%',
+        top: 0,
+        transformOrigin: 'left center',
+        transform: `rotateY(${relAngle.toFixed(4)}deg)`,
+      }}
+    >
+      {renderAccordionPanel(i + 1, M, wPx, hPx, rho)}
     </div>
   );
 }
@@ -177,6 +223,7 @@ export default function Preview3D() {
 
   let attachmentLeft;
   let attachmentRight;
+  let accordionStrip = null; // book-level (spans BOTH pages); set by the accordion branch
   let readout;
 
   if (mechanism === 'v-fold') {
@@ -264,6 +311,65 @@ export default function Preview3D() {
 
     const hTop = calculateParallelFoldHeight(geo.cumulativeDepth, alpha);
     readout = `무대 ${geo.count}층 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'accordion') {
+    // Accordion ("병풍") — a concertina strip spanning BOTH pages, NOT a
+    // per-page attachment, so it is rendered at book level (accordionStrip)
+    // rather than as attachmentLeft/Right. resolveAccordionGeometry is the SAME
+    // clamp/geometry source of truth the flat-2D generator uses — no dup logic.
+    //
+    // Kinematics (derived; verified against resolveAccordionGeometry + the D=2a
+    // chord math). Anchors are glued at distance `a` from the spine, one per
+    // page; the page rotateY(±θ), θ=90−α/2, carries each anchor to world
+    //   A_L = (−a·sin(α/2), 0, a·cos(α/2)),  A_R = (+a·sin(α/2), 0, a·cos(α/2))
+    // relative to the spine-centre O. Their separation is the chord
+    //   D(α) = 2a·sin(α/2)                          ✓ matches the header
+    // and they sit at height z_base = a·cos(α/2) (α=0 → z=a, fully lifted &
+    // compressed; α=180 → z=0, lying on the card). The flat strip length
+    // L = 2.2a is fixed, so the standing half-angle is cos ρ = D/L and each of
+    // the M panels (width w = L/M) zigzags at ±ρ about the chord, projecting
+    // w·cosρ onto it (Σ = M·w·cosρ = L·(D/L) = D, so the far end lands on A_R)
+    // and w·sinρ = H sideways in z. α=180 → cosρ = 2a/2.2a = 0.909, ρ≈24.6°:
+    // a gently zigzagging (never taut) screen, exactly the design intent.
+    const geo = resolveAccordionGeometry({
+      a: params.a,
+      panels: params.panels,
+      wallHeight: params.wallHeight,
+      paperSize,
+    });
+    const { a, panels: M, w, wallHeight: hWall, L } = geo;
+
+    const halfA = degToRad(alpha / 2);
+    const cosRho = clamp((2 * a * Math.sin(halfA)) / L, 0, 1); // = D/L
+    const rho = radToDeg(Math.acos(cosRho));                   // standing half-angle
+    const H = w * Math.sqrt(1 - cosRho * cosRho);              // bulge per pleat (mm)
+
+    const wPx = w * PX;
+    const hPx = hWall * PX;
+    const dHalfPx = a * Math.sin(halfA) * PX; // D/2 : left anchor x = −this
+    const zBasePx = a * Math.cos(halfA) * PX; // anchor height above the card plane
+
+    accordionStrip = (
+      <div
+        className="preview3d-accordion"
+        style={{ transform: `translate3d(0px, ${pageH / 2}px, 0px)` }}
+      >
+        {/* Panel 0: translated to the LEFT anchor and tilted −ρ (bulge → +z). */}
+        <div
+          className="preview3d-pleat"
+          style={{
+            width: `${wPx}px`,
+            height: `${hPx}px`,
+            left: 0,
+            top: `${-hPx / 2}px`,
+            transformOrigin: 'left center',
+            transform: `translate3d(${(-dHalfPx).toFixed(3)}px, 0px, ${zBasePx.toFixed(3)}px) rotateY(${(-rho).toFixed(4)}deg)`,
+          }}
+        >
+          {renderAccordionPanel(1, M, wPx, hPx, rho)}
+        </div>
+      </div>
+    );
+    readout = `병풍 ${M}폭 · 서있는 각 ρ = ${rho.toFixed(0)}° · 주름 높이 ≈ ${H.toFixed(1)}mm`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
@@ -328,6 +434,9 @@ export default function Preview3D() {
           >
             {attachmentRight}
           </div>
+          {/* Book-level attachment: the accordion strip spans BOTH pages, so it
+              is a sibling of the pages (world/book frame), not a page child. */}
+          {accordionStrip}
         </div>
       </div>
 

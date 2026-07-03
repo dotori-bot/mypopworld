@@ -436,6 +436,29 @@
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
 }
 
+/* Accordion ("병풍") strip: a book-level container (spanning both pages) holding
+   a chain of nested vertical pleat panels. The container carries the strip to
+   the spine-centre / vertical middle; preserve-3d lets each pleat compose in 3D.
+   Each pleat folds on a VERTICAL crease (rotateY), so the strip zigzags in ±z
+   like a folding screen seen in plan. */
+.preview3d-accordion {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.preview3d-pleat {
+  position: absolute;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  /* Alternating faces read more clearly as a zigzag with a slight sheen. */
+  background: linear-gradient(120deg, rgba(236, 72, 153, 0.62), rgba(99, 102, 241, 0.62));
+}
+
 .preview3d-readout {
   font-size: 0.72rem;
   color: var(--text-muted);
