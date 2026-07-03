@@ -365,36 +365,32 @@
   transform-origin: left center;
 }
 
-/* V-fold popup anchored at the spine center (symmetry plane). */
-.preview3d-vfold {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  transform-style: preserve-3d;
-}
-
-/* Each arm is a flat triangular panel hinged on the VERTICAL spine (its inner
-   edge). rotateY swings it from lying flat on its page (γ=0) up toward the
-   viewer to vertical (γ=90). The two mirrored arms meet along the spine ridge,
-   forming the V-fold's mountain tent. */
+/* Each arm is a flat triangular gusset that is a CHILD of its page, so it
+   inherits the page's rotateY(±θ) (preserve-3d) and then folds on top of it.
+   Its pivot corner O is the page's spine centre (the transform-origin below),
+   shared by both arms so their ridge-tips meet at the apex. In the arm's box:
+     O (pivot)   = spine edge, vertical middle
+     T (ridge)   = spine edge, top       → folds up to the shared apex
+     P (outer)   = far edge, vertical middle
+   giving the O–T ridge edge and an outer point P that splays into the page. */
 .preview3d-arm {
   position: absolute;
   backface-visibility: visible;
 }
 
 .preview3d-arm-left {
-  right: 0;                       /* inner (spine) edge at container center */
-  transform-origin: right center; /* hinge on the vertical spine edge */
-  /* triangle: full-height inner spine edge tapering to a point outward */
-  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+  right: 0;                        /* inner (spine) edge at page's spine edge */
+  transform-origin: right center;  /* pivot O = spine centre */
+  /* triangle O(100% 50%) – T(100% 0) – P(0 50%) */
+  clip-path: polygon(100% 0, 100% 50%, 0 50%);
   background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
 }
 
 .preview3d-arm-right {
   left: 0;
-  transform-origin: left center;
-  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  transform-origin: left center;   /* pivot O = spine centre */
+  /* triangle O(0 50%) – T(0 0) – P(100% 50%) */
+  clip-path: polygon(0 0, 0 50%, 100% 50%);
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
 }
 

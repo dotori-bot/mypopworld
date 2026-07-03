@@ -6,6 +6,7 @@ import {
   calculateVFoldAngle,
   calculatePopupHeight,
   radToDeg,
+  degToRad,
   clamp,
 } from '../../utils/math';
 import '../../styles/preview.css';
@@ -19,19 +20,46 @@ import '../../styles/preview.css';
  * V-fold risen at card-opening angle α" — it does NOT re-derive the trig, and
  * it does NOT use vfold.js's flat 2D coordinates (a different thing entirely).
  *
- * Kinematics (all angles in degrees):
+ * Kinematics (all angles in degrees). CSS-3D frame: x = right, y = DOWN,
+ * z = toward the viewer. Spine = the vertical line x=0; card plane = z=0.
+ *
  *   α        = card-opening angle, 0 (closed) … 180 (flat open). Slider-driven.
- *   θ_page   = (180 − α) / 2
- *              Each page is rotated ±θ_page about the vertical spine, away from
- *              the fully-open (coplanar) plane. α=180 → 0° (flat); α=0 → 90°
- *              (pages folded face-to-face). rotateY(±θ_page).
+ *   a = α/2  = the "half-open" angle. Note a === γ (see below).
+ *   θ_page   = (180 − α) / 2 = 90 − a
+ *              Each page is rotated ±θ_page about the vertical spine.
+ *              α=180 → 0° (flat); α=0 → 90° (pages fold into the plane x=0,
+ *              face-to-face). rotateY(±θ_page), pivoting on the spine.
  *   β        = calculateVFoldAngle(α)                     (= α for symmetric k=1)
- *   h        = calculatePopupHeight(armLength, β) = L·sin(α/2)   [mm]
- *              popup apex height above the spine baseline; 0 at α=0, L at α=180.
- *   γ_arm    = arcsin(h / L) = α/2
- *              relative rise of each arm about its spine base crease so its tip
- *              reaches height h. The two arms mirror across the spine, so their
- *              tips coincide at the shared apex (the V's mountain ridge).
+ *   h        = calculatePopupHeight(armLength, β) = L·sin(a)     [mm]
+ *   γ        = arcsin(h / L) = a
+ *
+ * Correct 3D composition (why the arms are DOM children of their page):
+ *   The popup apex must sit on the symmetry plane at world position
+ *       A = (0, −L·cos a, L·sin a)
+ *   i.e. the spine-up vector tilted about the horizontal x-axis by a; its +z
+ *   component is exactly h. a=0 → A lies flat along the spine inside the closed
+ *   pages (hidden); a=90 → A points straight at the viewer, height L; a=45 →
+ *   height 0.707·L. BOTH arms target this same A, so their tips always coincide.
+ *
+ *   The page's rotateY(±θ) and the arm's own fold are rotations about DIFFERENT
+ *   world axes, so you CANNOT scalar-add their angles. Instead each arm is a real
+ *   child of its page (inheriting rotateY(±θ) via preserve-3d) and carries its
+ *   OWN relative rotation. Pulling A back through the page rotation and solving
+ *   for the rotation that carries the local ridge-tip (0,−L,0) onto it gives a
+ *   fold of angle a about axis:
+ *       left  arm:  rotate3d(−sin a, 0, −cos a, a°)
+ *       right arm:  rotate3d(−sin a, 0, +cos a, a°)
+ *   Both the page's rotateY pivot and the arm's rotate3d pivot are the SAME
+ *   spine-center point O, so O stays welded to world spine-center for both arms
+ *   and the two ridge-tips land on the identical A — no apex gap at any α. At
+ *   α=0 the arm rides its page into the plane x=0 and is hidden, edge-on,
+ *   sandwiched between the closed pages.
+ *
+ *   (Deliberate deviation: an ideal rigid gusset on a single fixed page crease
+ *   cannot hit h = L·sin a exactly while keeping the apex on the symmetry plane;
+ *   we honour the authoritative h and tip-meeting by recomputing the arm's fold
+ *   axis per frame. The arm's free outer corner slides imperceptibly — invisible
+ *   in this stylised pose preview.)
  */
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
@@ -67,15 +95,23 @@ export default function Preview3D() {
   const pageH = card.height * PX;
   const armPx = armLength * PX;
 
-  // Arm panels form a dihedral "tent". Each arm is hinged on the vertical spine
-  // (its inner edge) and swings up about it toward the viewer by γ:
-  //   γ=0   (α=0)   → arm lies flat on its page (h=0, card closed)
-  //   γ=90  (α=180) → arm stands fully upright, coincident with its mirror at
-  //                    the spine ridge (h=L, card flat-open)
-  // The free (outer) edge pokes toward the viewer by armPx·sin(γ) = h·PX, and
-  // because the two arms mirror across the spine they meet along the ridge.
-  const armLiftLeft = `rotateY(${gamma}deg)`;
-  const armLiftRight = `rotateY(${-gamma}deg)`;
+  // Each arm is a real child of its page, so it inherits the page's own
+  // rotateY(±θ_page) via preserve-3d and then applies its OWN fold on top. The
+  // fold is a rotation of angle γ (= a = α/2) about a per-frame axis derived so
+  // that the ridge-tip lands on the shared world apex A = (0, −L·cos a, L·sin a):
+  //   left  arm:  rotate3d(−sin a, 0, −cos a, a°)
+  //   right arm:  rotate3d(−sin a, 0, +cos a, a°)
+  const aRad = degToRad(gamma);          // a = γ = α/2
+  const sinA = Math.sin(aRad);
+  const cosA = Math.cos(aRad);
+  const armLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
+  const armLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+
+  // Arm panel box: a triangle whose pivot corner O sits at the page's spine
+  // centre. Height 2·armPx so its box straddles the spine centre; top offset
+  // places that centre at the page's vertical middle.
+  const armH = armPx * 2;
+  const armTop = pageH / 2 - armPx;
 
   return (
     <div className="preview3d-root">
@@ -89,7 +125,20 @@ export default function Preview3D() {
               height: `${pageH}px`,
               transform: `rotateY(${thetaPage}deg)`,
             }}
-          />
+          >
+            {/* Left V-fold arm — child of the page so it inherits rotateY(θ);
+                its pivot O is the page's spine centre, shared with the right arm
+                so the two ridge-tips meet at the apex. */}
+            <div
+              className="preview3d-arm preview3d-arm-left"
+              style={{
+                width: `${armPx}px`,
+                height: `${armH}px`,
+                top: `${armTop}px`,
+                transform: armLiftLeft,
+              }}
+            />
+          </div>
           {/* Right page — hinged on the spine (its left edge) */}
           <div
             className="preview3d-page preview3d-page-right"
@@ -98,28 +147,13 @@ export default function Preview3D() {
               height: `${pageH}px`,
               transform: `rotateY(${-thetaPage}deg)`,
             }}
-          />
-
-          {/* V-fold popup — attached at the spine (symmetry plane), so its ridge
-              rises straight up the symmetry plane and the two arms provably meet.
-              Deliberately NOT a child of a single page: the ridge lives in the
-              symmetry plane which belongs to neither page. */}
-          <div className="preview3d-vfold">
-            <div
-              className="preview3d-arm preview3d-arm-left"
-              style={{
-                width: `${armPx}px`,
-                height: `${armPx * 1.3}px`,
-                top: `${-armPx * 0.65}px`,
-                transform: armLiftLeft,
-              }}
-            />
+          >
             <div
               className="preview3d-arm preview3d-arm-right"
               style={{
                 width: `${armPx}px`,
-                height: `${armPx * 1.3}px`,
-                top: `${-armPx * 0.65}px`,
+                height: `${armH}px`,
+                top: `${armTop}px`,
                 transform: armLiftRight,
               }}
             />
