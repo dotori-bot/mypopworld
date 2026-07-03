@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { CARD_SIZES } from '../../generators/constants';
+import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import {
   calculateVFoldAngle,
   calculatePopupHeight,
   calculateParallelFoldHeight,
+  framedVolvelleSectors,
+  polarToCartesian,
   radToDeg,
   degToRad,
   clamp,
@@ -13,8 +16,10 @@ import {
 import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
-// back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold']);
+// back to the "not ready yet" placeholder. Note: 'volvelle' is a flat top-down
+// SPINNER, not a hinged pop-up, so it opts out of the shared book/α scaffold
+// below and renders its own view (see the volvelle branch in the component).
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -73,6 +78,41 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
       {renderStairLevel(levels, i + 1, side, sinA, cosA, gamma, PX, widthPx)}
     </div>
   );
+}
+
+/**
+ * Annular-sector ("pie", or ring slice if rIn>0) SVG path around origin (0,0),
+ * angles in degrees with the volvelle convention (0° = up, clockwise). This is a
+ * RENDER helper (drawing wedges/window for the flat spinner), not a geometry
+ * derivation — the radii/angles all come from resolveVolvelleGeometry. Kept local
+ * to Preview3D because it draws the interactive pose, exactly like the printable
+ * generator keeps its own sectorPath; they share polarToCartesian's convention so
+ * the preview and the printed disc stay geometrically consistent.
+ *
+ * @param {number} rIn  inner radius (0 → solid pie from centre)
+ * @param {number} rOut outer radius
+ * @param {number} startDeg @param {number} endDeg
+ * @returns {string} SVG path "d"
+ */
+function arcSectorPath(rIn, rOut, startDeg, endDeg) {
+  const oL = polarToCartesian(0, 0, rOut, startDeg);
+  const oR = polarToCartesian(0, 0, rOut, endDeg);
+  const large = endDeg - startDeg > 180 ? 1 : 0;
+  if (rIn <= 0) {
+    return `M 0 0 L ${oL.x.toFixed(2)} ${oL.y.toFixed(2)} ` +
+      `A ${rOut} ${rOut} 0 ${large} 1 ${oR.x.toFixed(2)} ${oR.y.toFixed(2)} Z`;
+  }
+  const iL = polarToCartesian(0, 0, rIn, startDeg);
+  const iR = polarToCartesian(0, 0, rIn, endDeg);
+  return `M ${iL.x.toFixed(2)} ${iL.y.toFixed(2)} L ${oL.x.toFixed(2)} ${oL.y.toFixed(2)} ` +
+    `A ${rOut} ${rOut} 0 ${large} 1 ${oR.x.toFixed(2)} ${oR.y.toFixed(2)} ` +
+    `L ${iR.x.toFixed(2)} ${iR.y.toFixed(2)} ` +
+    `A ${rIn} ${rIn} 0 ${large} 0 ${iL.x.toFixed(2)} ${iL.y.toFixed(2)} Z`;
+}
+
+/** Full-circle SVG path centred on the origin. */
+function circleAtOrigin(r) {
+  return `M ${-r} 0 A ${r} ${r} 0 1 0 ${r} 0 A ${r} ${r} 0 1 0 ${-r} 0 Z`;
 }
 
 /**
@@ -151,14 +191,157 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
   const [alpha, setAlpha] = useState(90);
+  // Volvelle spinner state: disc rotation θ (deg, clockwise +). Kept as a plain
+  // hook at the top so React's hook order stays stable regardless of mechanism.
+  const [rotation, setRotation] = useState(0);
+  const discRef = useRef(null);
+  const drag = useRef({ active: false, last: 0 });
 
   const mechanism = cardParams?.mechanism;
 
   if (!cardParams || !SUPPORTED_3D.has(mechanism)) {
+    // Human-readable supported list derived from the registry, so this never
+    // goes stale as more mechanisms are wired up (flip-disc, spiral-spring…).
+    const supported = [...SUPPORTED_3D]
+      .map((id) => getMechanism(id)?.labelKo?.replace(/\s*\(.*/, '') ?? id)
+      .join(' · ');
     return (
       <div className="preview3d-root">
         <div className="preview3d-placeholder">
-          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재는 브이폴드 · 상자 팝업만 지원)
+          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재 지원: {supported})
+        </div>
+      </div>
+    );
+  }
+
+  // ── Volvelle: flat top-down spinner — no card-opening angle, no fold. ──────
+  // Renders its own view (a rotating disc under a fixed window) instead of the
+  // hinged two-page book scaffold the fold mechanisms share below.
+  if (mechanism === 'volvelle') {
+    const params = buildMechanismParams(cardParams, paperSize, colorMode) || {};
+    const defaults = getMechanism('volvelle').defaultParams;
+    // Single source of truth for radii/angles — same call the generator makes.
+    const geo = resolveVolvelleGeometry({
+      R: params.R ?? defaults.R,
+      sectors: params.sectors ?? defaults.sectors,
+    });
+    const { R, sectors, outerR, rOut, sigma, thetaW } = geo;
+
+    // Match the printed cover's small retained hub (volvelle.js winInner).
+    const winInner = clamp(Math.round(R * 0.18), 5, R - 8);
+    const pad = 6;
+    const box = outerR + pad;
+    const theta = ((rotation % 360) + 360) % 360; // normalised for readout/slider
+
+    const framed = framedVolvelleSectors(theta, geo);
+    const readout = framed.boundary
+      ? `돌림판 회전 θ = ${Math.round(theta)}° · 창문: ${framed.labels.join('·')}번 경계 (두 칸이 반씩 보여요)`
+      : `돌림판 회전 θ = ${Math.round(theta)}° · 창문: ${framed.primary}번 그림`;
+
+    // Pointer angle around the disc centre, using the SAME 0°=up / clockwise+
+    // convention as the disc, so drag deltas map 1:1 onto rotation θ.
+    const pointerAngle = (e) => {
+      const rect = discRef.current.getBoundingClientRect();
+      const dx = e.clientX - (rect.left + rect.width / 2);
+      const dy = e.clientY - (rect.top + rect.height / 2);
+      return radToDeg(Math.atan2(dx, -dy)); // atan2(dx,-dy): 0=up, clockwise +
+    };
+    const onDown = (e) => {
+      drag.current = { active: true, last: pointerAngle(e) };
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    };
+    const onMove = (e) => {
+      if (!drag.current.active) return;
+      const now = pointerAngle(e);
+      // Normalise the step into (−180,180] so crossing the ±180 seam doesn't
+      // make the disc jump a full turn.
+      let d = ((now - drag.current.last + 180) % 360 + 360) % 360 - 180;
+      drag.current.last = now;
+      setRotation((r) => ((r + d) % 360 + 360) % 360);
+    };
+    const onUp = () => { drag.current.active = false; };
+
+    // Wedge palette: evenly spaced hues so adjacent sectors are easy to tell
+    // apart. The disc GROUP is rotated by θ; wedges + numbers ride along, exactly
+    // like a real disc (numbers aren't upright at every angle, and shouldn't be).
+    return (
+      <div className="preview3d-root">
+        <div className="preview3d-stage preview3d-volvelle-stage">
+          <svg
+            ref={discRef}
+            className="preview3d-volvelle-disc"
+            viewBox={`${-box} ${-box} ${2 * box} ${2 * box}`}
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerLeave={onUp}
+          >
+            {/* Rotating disc: N coloured, numbered wedges. */}
+            <g transform={`rotate(${theta})`}>
+              <path d={circleAtOrigin(R)} className="preview3d-volvelle-rotor" />
+              {Array.from({ length: sectors }, (_, k) => {
+                const mid = polarToCartesian(0, 0, R * 0.62, k * sigma + sigma / 2);
+                return (
+                  <g key={k}>
+                    <path
+                      d={arcSectorPath(0, R, k * sigma, (k + 1) * sigma)}
+                      fill={`hsl(${Math.round((k * 360) / sectors)}, 72%, 62%)`}
+                      stroke="rgba(0,0,0,0.18)"
+                      strokeWidth="0.5"
+                    />
+                    <text
+                      x={mid.x.toFixed(2)}
+                      y={mid.y.toFixed(2)}
+                      className="preview3d-volvelle-num"
+                      transform={`rotate(${k * sigma + sigma / 2} ${mid.x.toFixed(2)} ${mid.y.toFixed(2)})`}
+                    >
+                      {k + 1}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+
+            {/* Fixed cover: opaque disc with the window punched out (evenodd
+                fill-rule turns the window sub-path into a see-through hole, so
+                only the framed wedge shows). */}
+            <path
+              className="preview3d-volvelle-cover"
+              fillRule="evenodd"
+              d={`${circleAtOrigin(outerR)} ${arcSectorPath(winInner, rOut, -thetaW / 2, thetaW / 2)}`}
+            />
+            {/* Window frame + rim outlines for legibility. */}
+            <path
+              className="preview3d-volvelle-window"
+              d={arcSectorPath(winInner, rOut, -thetaW / 2, thetaW / 2)}
+            />
+            <path className="preview3d-volvelle-rim" d={circleAtOrigin(outerR)} />
+            {/* Thumb notch marker at the bottom (180°) — where a fingertip spins
+                the exposed rotor rim, matching volvelle.js's notch. */}
+            <path
+              className="preview3d-volvelle-notch"
+              d={arcSectorPath(R - 4, outerR, 180 - 12, 180 + 12)}
+            />
+            <circle r="1.4" className="preview3d-volvelle-hub" />
+          </svg>
+        </div>
+
+        <div className="fold-slider-container">
+          <div className="fold-slider-labels">
+            <span>돌림판 회전</span>
+            <span>{Math.round(theta)}°</span>
+          </div>
+          <input
+            className="custom-range"
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            value={Math.round(theta)}
+            onChange={(e) => setRotation(Number(e.target.value))}
+            aria-label="돌림판 회전 각도"
+          />
+          <div className="preview3d-readout">{readout}</div>
         </div>
       </div>
     );

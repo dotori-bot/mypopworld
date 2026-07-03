@@ -442,3 +442,67 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* Volvelle spinner: flat top-down view (no book/perspective). The stage keeps
+   the shared radial-gradient backdrop for visual consistency, but the disc is a
+   plain 2D SVG the child spins with a slider or by dragging. */
+.preview3d-volvelle-stage {
+  perspective: none;
+  padding: var(--space-lg);
+}
+
+.preview3d-volvelle-disc {
+  width: min(72%, 340px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  cursor: grab;
+  touch-action: none; /* let pointer-drag rotate instead of scrolling */
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.18));
+}
+
+.preview3d-volvelle-disc:active {
+  cursor: grabbing;
+}
+
+/* Rotor backing behind the wedges (fills any rounding gap at the rim). */
+.preview3d-volvelle-rotor {
+  fill: var(--bg-tertiary);
+}
+
+.preview3d-volvelle-num {
+  fill: #1f2937;
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* Opaque cover disc; the window sub-path is punched out via fill-rule:evenodd. */
+.preview3d-volvelle-cover {
+  fill: var(--bg-secondary);
+  stroke: var(--border-glass);
+  stroke-width: 0.75;
+}
+
+.preview3d-volvelle-window {
+  fill: none;
+  stroke: var(--accent-primary);
+  stroke-width: 1.2;
+}
+
+.preview3d-volvelle-rim {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+
+.preview3d-volvelle-notch {
+  fill: var(--bg-glass-active);
+  stroke: var(--text-muted);
+  stroke-width: 0.75;
+}
+
+.preview3d-volvelle-hub {
+  fill: var(--text-muted);
+}

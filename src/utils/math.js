@@ -199,6 +199,50 @@ export function midpoint(p1, p2) {
 }
 
 /**
+ * Determine which volvelle rotor sector(s) currently sit under the fixed window,
+ * given the disc's rotation. Pure geometry helper for the interactive preview —
+ * it is the single source of truth for the "what's framed" readout, mirroring the
+ * frame convention baked into generators/volvelle.js so the preview never
+ * disagrees with the printed part.
+ *
+ * Frame convention (identical to volvelle.js):
+ *   - polarToCartesian uses 0° = up, positive = clockwise (screen y points down).
+ *   - Rotor sector k spans LOCAL angles [k·σ, (k+1)·σ] and is LABELLED (k+1)
+ *     (volvelle.js draws divider k at k·σ and prints "k+1" at k·σ + σ/2).
+ *   - The window is FIXED at screen 0° (straight up), spanning [−θ_w/2, +θ_w/2]
+ *     (volvelle.js: sectorPath(..., −θ_w/2, θ_w/2)).
+ *   - Rotating the disc by θ (clockwise, same sign) sends a point at local angle a
+ *     to screen angle a+θ, so the window centre (screen 0) maps back to LOCAL
+ *     angle −θ, and the window occupies local span [−θ − θ_w/2, −θ + θ_w/2].
+ *
+ * Because θ_w < σ always (the window is one guard-band δ narrower than a sector on
+ * each side), the window overlaps AT MOST two sectors: a single sector is fully
+ * framed while its centre stays within ±δ of the window centre, and two neighbours
+ * are each partially visible while a divider crosses the window (boundary = true).
+ *
+ * @param {number} rotationDeg - Disc rotation θ in degrees (clockwise +).
+ * @param {{ sectors:number, sigma:number, thetaW:number }} geo
+ * @returns {{ primary:number, labels:number[], boundary:boolean }}
+ *   primary  = 1-based label of the sector under the window centre
+ *   labels   = 1-based labels of every sector overlapping the window (1 or 2)
+ *   boundary = true when a divider is inside the window (two sectors half-visible)
+ */
+export function framedVolvelleSectors(rotationDeg, geo) {
+  const { sectors, sigma, thetaW } = geo;
+  const norm360 = (a) => ((a % 360) + 360) % 360;
+  const sectorOf = (a) => Math.floor(norm360(a) / sigma) % sectors;
+  const winCenterLocal = norm360(-rotationDeg);
+  const half = thetaW / 2;
+  const kCenter = sectorOf(winCenterLocal);
+  const kLeft = sectorOf(winCenterLocal - half);
+  const kRight = sectorOf(winCenterLocal + half);
+  const labels = Array.from(new Set([kLeft, kCenter, kRight]))
+    .sort((a, b) => a - b)
+    .map((k) => k + 1);
+  return { primary: kCenter + 1, labels, boundary: kLeft !== kRight };
+}
+
+/**
  * Round a number to a fixed number of decimal places.
  * Useful for keeping SVG coordinates clean.
  * @param {number} value
