@@ -3,6 +3,10 @@ import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
 import { resolveAccordionGeometry } from '../../generators/accordionPopup';
+import { generatePullTab } from '../../generators/pullTab';
+import { resolveRisingSlide } from '../../generators/risingSlide';
+import { resolveSlideToSwing } from '../../generators/slideToSwing';
+import { resolveAutoSlideWindow, sliderDistance } from '../../generators/autoSlideWindow';
 import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
@@ -16,7 +20,16 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'layered-stage', 'accordion']);
+const SUPPORTED_3D = new Set([
+  'v-fold', 'box-popup', 'parallel-fold', 'layered-stage', 'accordion',
+  'pull-tab', 'rising-slide', 'slide-to-swing', 'auto-slide-window',
+]);
+
+// Mechanisms operated by a hand-pulled slider/handle, independent of the card
+// angle alpha (alpha only needs to be "open enough" to see the mechanism's
+// face). These get a SECOND range input (0=rest, 1=fully pulled). Everything
+// else in SUPPORTED_3D is driven purely by alpha.
+const SLIDE_DRIVEN = new Set(['pull-tab', 'rising-slide', 'slide-to-swing']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -198,6 +211,11 @@ function renderAccordionPanel(i, M, wPx, hPx, rho) {
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
   const [alpha, setAlpha] = useState(90);
+  // Hand-pulled slider/handle position, 0 = rest, 1 = fully pulled. Only used
+  // by SLIDE_DRIVEN mechanisms; alpha still keeps the "book" open enough to see
+  // the mechanism's face for those (it defaults to 90 above, not 0, exactly so
+  // the face is visible without the child having to touch the alpha slider).
+  const [slide, setSlide] = useState(0);
 
   const mechanism = cardParams?.mechanism;
 
@@ -370,6 +388,174 @@ export default function Preview3D() {
       </div>
     );
     readout = `병풍 ${M}폭 · 서있는 각 ρ = ${rho.toFixed(0)}° · 주름 높이 ≈ ${H.toFixed(1)}mm`;
+  } else if (mechanism === 'pull-tab') {
+    // Pull-tab: a small picture slides sideways in a fixed track on one open
+    // page. Purely in-plane (no folding at all) -- alpha just needs to keep
+    // the book open enough to see the face. generatePullTab is the SAME pure
+    // data function the flat-2D generator uses; computed.travel is its
+    // authoritative travel distance, not re-derived here.
+    const sliderWidth = params.sliderWidth ?? defaults.sliderWidth;
+    const sliderHeight = params.sliderHeight ?? defaults.sliderHeight;
+    const trackLength = params.trackLength ?? defaults.trackLength;
+    const { computed } = generatePullTab({ paperSize, sliderWidth, sliderHeight, trackLength });
+    const travel = computed.travel; // mm
+
+    const wPx = sliderWidth * PX;
+    const hPx = sliderHeight * PX;
+    const trackPx = trackLength * PX;
+    const trackLeftPx = (pageW - trackPx) / 2;
+    const xPx = slide * travel * PX;
+
+    attachmentRight = (
+      <>
+        <div
+          className="preview3d-track"
+          style={{ width: `${trackPx}px`, height: `${hPx}px`, left: `${trackLeftPx}px`, top: `${pageH / 2 - hPx / 2}px` }}
+        />
+        <div
+          className="preview3d-flat-piece"
+          style={{ width: `${wPx}px`, height: `${hPx}px`, left: `${trackLeftPx + xPx}px`, top: `${pageH / 2 - hPx / 2}px` }}
+        />
+      </>
+    );
+    readout = `이동 거리 ${travel}mm · 손잡이 위치 ${(slide * 100).toFixed(0)}%`;
+  } else if (mechanism === 'rising-slide') {
+    // Rising-slide: a figure rides straight up a fixed vertical slot when the
+    // handle is pulled -- again purely in-plane (risingSlide.js's own header:
+    // "this mechanism NEVER leaves the plane"). resolveRisingSlide is the SAME
+    // pure geometry function the flat-2D generator uses.
+    const geo = resolveRisingSlide({
+      paperSize,
+      riseFraction: params.riseFraction ?? defaults.riseFraction,
+      sliderWidth: params.sliderWidth ?? defaults.sliderWidth,
+      grip: params.grip ?? defaults.grip,
+    });
+    const { travel, sliderW } = geo;
+    const figSize = Math.max(sliderW, 10) * PX;
+    const trackHeightPx = travel * PX;
+    const trackTopPx = pageH / 2 - trackHeightPx;
+    const yPx = (1 - slide) * trackHeightPx; // slide=0 -> hidden low, slide=1 -> risen to top
+
+    attachmentLeft = (
+      <>
+        <div
+          className="preview3d-track"
+          style={{ width: `${figSize}px`, height: `${trackHeightPx}px`, left: `${pageW / 2 - figSize / 2}px`, top: `${trackTopPx}px` }}
+        />
+        <div
+          className="preview3d-flat-piece"
+          style={{
+            width: `${figSize}px`, height: `${figSize}px`, borderRadius: '50%',
+            left: `${pageW / 2 - figSize / 2}px`, top: `${trackTopPx + yPx}px`,
+          }}
+        />
+      </>
+    );
+    readout = `이동 거리 ${travel}mm · 손잡이 위치 ${(slide * 100).toFixed(0)}%`;
+  } else if (mechanism === 'slide-to-swing') {
+    // Slide-to-swing: a Scotch yoke. resolveSlideToSwing is the SAME geometry
+    // the flat-2D generator uses. t (slide remapped to [-1,1]) is the slider's
+    // position as a fraction of its max amplitude; sin(theta) = t*sin(thetaMax)
+    // is the EXACT slider-crank relation from slideToSwing.js's own
+    // xSlider(theta) = px + r*sin(theta) -- not a linear-in-theta shortcut.
+    const geo = resolveSlideToSwing({
+      paperSize,
+      armLength: params.armLength ?? defaults.armLength,
+      swingAngle: params.swingAngle ?? defaults.swingAngle,
+    });
+    const { r, thetaMax, decoR } = geo;
+    const t = slide * 2 - 1; // [-1, 1]
+    const sinThetaMax = Math.sin(degToRad(thetaMax));
+    const theta = radToDeg(Math.asin(clamp(t * sinThetaMax, -1, 1)));
+
+    const rPx = r * PX;
+    const decoRPx = decoR * PX;
+    const postWidthPx = Math.max(4, rPx * 0.12);
+    const pivotX = pageW / 2;
+    const pivotY = pageH * 0.62;
+
+    attachmentRight = (
+      <div
+        className="preview3d-swing-post"
+        style={{
+          width: `${postWidthPx}px`,
+          height: `${rPx}px`,
+          left: `${pivotX - postWidthPx / 2}px`,
+          top: `${pivotY - rPx}px`,
+          transform: `rotateZ(${theta.toFixed(2)}deg)`,
+        }}
+      >
+        <div
+          className="preview3d-swing-deco"
+          style={{
+            width: `${decoRPx * 2}px`, height: `${decoRPx * 2}px`,
+            left: `${postWidthPx / 2 - decoRPx}px`, top: `${-decoRPx}px`,
+          }}
+        />
+      </div>
+    );
+    readout = `흔들림 각도 θ = ${theta.toFixed(0)}° (최대 ±${thetaMax.toFixed(0)}°) · 손잡이 위치 ${(slide * 100 - 50).toFixed(0)}%`;
+  } else if (mechanism === 'auto-slide-window') {
+    // Auto-slide-window: driven by alpha ONLY (no hand-pulled slider -- see
+    // file header), via an in-line slider-crank: s(α) = p·cosα +
+    // √(L²−p²sin²α). A fixed window shows a slice of a longer message strip
+    // that translates as s(α) changes; sliderDistance() is the SAME
+    // authoritative formula the flat-2D generator uses.
+    //
+    // Simplification: the real mechanism has ONE face fixed and ONE moving
+    // (the window/strip live on the fixed back face; the strut's pivot is on
+    // the moving front face). Preview3D's book model has BOTH pages rotate
+    // symmetrically (no "fixed" page), so the window is shown on the right
+    // page and the strut hinges from the left, matching every other
+    // mechanism's symmetric convention rather than special-casing this one.
+    const geo = resolveAutoSlideWindow({
+      paperSize,
+      pivotArm: params.pivotArm ?? defaults.pivotArm,
+      strut: params.strut ?? defaults.strut,
+      windowHeight: params.windowHeight ?? defaults.windowHeight,
+    });
+    const { p, L: strutLen, W, winH, travel } = geo;
+    const s = sliderDistance(alpha, p, strutLen);
+    const u = W - s; // material offset from window centre (mm), range [-p, +p]
+
+    const winWPx = 40 * PX;
+    const winHPx = winH * PX;
+    const stripHPx = (2 * p + winH + 20) * PX; // generous strip, matches header's stripLen shape
+    const uPx = u * PX;
+    const winX = pageW / 2 - winWPx / 2;
+    const winY = pageH / 2 - winHPx / 2;
+
+    attachmentRight = (
+      <div
+        className="preview3d-window-frame"
+        style={{ width: `${winWPx}px`, height: `${winHPx}px`, left: `${winX}px`, top: `${winY}px` }}
+      >
+        <div className="preview3d-window-strip" style={{ height: `${stripHPx}px`, top: `${winHPx / 2 - stripHPx / 2 + uPx}px` }} />
+      </div>
+    );
+
+    // The strut: reuses box-popup's proven rotate3d + spine-pivot composition
+    // (a thin rectangle instead of box-popup's full-width wall), tenting from
+    // the spine to peak height p·sin(α) -- the file header explicitly notes
+    // this IS "exactly the geometry of a standard V-fold pop-up arm".
+    const betaStrut = calculateVFoldAngle(alpha);
+    const hStrut = calculatePopupHeight(p, betaStrut);
+    const gammaStrut = radToDeg(Math.asin(clamp(hStrut / p, 0, 1)));
+    const pPx = p * PX;
+    const aRadS = degToRad(gammaStrut);
+    const sinS = Math.sin(aRadS);
+    const cosS = Math.cos(aRadS);
+    const strutHPx = 8 * PX;
+    attachmentLeft = (
+      <div
+        className="preview3d-boxflap preview3d-boxflap-left"
+        style={{
+          width: `${pPx}px`, height: `${strutHPx}px`, top: `${pageH / 2 - strutHPx / 2}px`,
+          transform: `rotate3d(${(-sinS).toFixed(5)}, 0, ${(-cosS).toFixed(5)}, ${gammaStrut}deg)`,
+        }}
+      />
+    );
+    readout = `창까지 거리 s(α) = ${s.toFixed(1)}mm · 이동 범위 ${travel.toFixed(0)}mm · 카드 각도 α = ${Math.round(alpha)}°`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
@@ -457,6 +643,25 @@ export default function Preview3D() {
         />
         <div className="preview3d-readout">{readout}</div>
       </div>
+
+      {SLIDE_DRIVEN.has(mechanism) && (
+        <div className="preview3d-slide-control">
+          <div className="fold-slider-labels">
+            <span>{mechanism === 'slide-to-swing' ? '손잡이 좌우' : '손잡이 당기기'}</span>
+            <span>{Math.round(slide * 100)}%</span>
+          </div>
+          <input
+            className="custom-range"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={Math.round(slide * 100)}
+            onChange={(e) => setSlide(Number(e.target.value) / 100)}
+            aria-label="손잡이 위치"
+          />
+        </div>
+      )}
     </div>
   );
 }

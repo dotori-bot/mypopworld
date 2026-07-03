@@ -465,3 +465,69 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* ------------------------------------------------------------------ */
+/* Slider-family flat in-plane mechanisms (pull-tab, rising-slide,     */
+/* slide-to-swing, auto-slide-window) -- no folding, just translate/   */
+/* rotate a piece across the surface of one already-open page.         */
+/* ------------------------------------------------------------------ */
+.preview3d-flat-piece {
+  position: absolute;
+  border: 1px solid rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.65), rgba(99, 102, 241, 0.65));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.preview3d-track {
+  position: absolute;
+  border: 1px dashed rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.preview3d-swing-post {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.9), rgba(100, 116, 139, 0.9));
+  transform-origin: bottom center;
+}
+
+.preview3d-swing-deco {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(236, 72, 153, 0.9), rgba(190, 24, 93, 0.9));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.preview3d-window-frame {
+  position: absolute;
+  border: 3px solid rgba(51, 65, 85, 0.85);
+  background: transparent;
+  overflow: hidden;
+}
+
+.preview3d-window-strip {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(236, 72, 153, 0.7) 0px,
+    rgba(236, 72, 153, 0.7) 10px,
+    rgba(99, 102, 241, 0.7) 10px,
+    rgba(99, 102, 241, 0.7) 20px
+  );
+}
+
+.preview3d-slide-control {
+  position: absolute;
+  bottom: 24px;
+  left: calc(50% + 172px);
+  width: 220px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
