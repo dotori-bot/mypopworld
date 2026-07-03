@@ -19,6 +19,7 @@ import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
 import { renderLayeredStage } from './layeredStage.js';
 import { renderAutoSlideWindow } from './autoSlideWindow.js';
+import { renderSlideToSwing } from './slideToSwing.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -92,6 +93,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderAutoSlideWindow(params),
     defaultParams: { pivotArm: 16, strut: 44, windowHeight: 12 },
     instructionStyle: 'auto-slide-window',
+  },
+  'slide-to-swing': {
+    labelKo: '흔들 장치 (손잡이를 밀면 그림이 좌우로 흔들림)',
+    render: (params) => renderSlideToSwing(params),
+    defaultParams: { armLength: 34, swingAngle: 35 },
+    instructionStyle: 'slide-to-swing',
   },
 };
 
@@ -200,6 +207,18 @@ export const INSTRUCTION_TEXT = {
       '카드를 살짝 열면 창문 속에 메시지 ①이, 활짝 열면 저절로 메시지 ②로 바뀝니다. 손잡이를 당길 필요 없이 카드를 여닫는 것만으로 그림이 지나갑니다. 닫으면 지지대가 납작하게 접혀 책처럼 덮입니다.',
     ],
     tips: '지지대의 위·아래 경첩을 척추와 나란히, 같은 세로줄(드라이브 칸)에 맞춰 붙이는 것이 핵심입니다. 너무 뻑뻑하면 안내다리 가운데를 아주 살짝 더 띄워 붙이고, 그림이 창문에서 반쯤 잘려 보이면 지지대 아래 끝을 ② 자리에 정확히 다시 맞춰 붙여 주세요.',
+  },
+  'slide-to-swing': {
+    title: '흔들 장치 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 부품을 오려주세요: 기둥(팔) 1개, 슬라이더(가운데 세로 슬롯도 오려냄) 1개, 위·아래 안내띠 2개, 회전축 캡 1개, 장식(하트 등) 1개. 앞면 카드에는 회전축 구멍만 오려 뚫습니다.',
+      '기둥 아래쪽 목을 카드의 회전축 구멍에 끼워 뒤로 빼고, 뒤에서 회전축 캡을 그 목에 붙여 고정하세요. 캡은 목(종이)에만 붙이고 카드에는 붙이지 마세요 — 그래야 기둥이 구멍을 중심으로 팽이처럼 자유롭게 좌우로 돕니다. (구멍이 목보다 넓어 접는 자국 없이 부드럽게 돌고, 반복해도 잘 찢어지지 않아요.)',
+      '슬라이더를 기둥 위에 겹치고, 기둥 맨 위의 핀을 빨간 점선(산접기)으로 앞으로 접어 슬라이더의 세로 슬롯에 통과시키세요. 앞으로 나온 핀에 장식을 붙이면, 장식이 슬롯보다 넓어 핀이 앞으로 빠지지 않고 슬롯 안에서 위아래로만 움직입니다. (이 핀-슬롯 물림이 곧은 밀기를 좌우 흔들림으로 바꾸는 핵심이에요.)',
+      '⚠️ 안내띠 붙이기: 슬라이더 위·아래에 안내띠 Ⓐ·Ⓑ를 얹고 바깥쪽 초록색만 카드에 붙여 슬라이더가 좌우로만 미끄러지는 길(채널)을 만드세요. 슬라이더 양 끝의 넓은 멈춤 날개가 안내띠보다 커서, 손잡이를 세게 밀어도 슬라이더가 튀어나가지 않습니다.',
+      '손잡이를 좌우로 슬슬 밀어보세요. 슬라이더는 곧게 옆으로 가는데, 슬롯에 걸린 핀이 원을 그리며 돌아 기둥 위의 장식이 좌우로 왔다갔다 흔들립니다. 시계추처럼, 인사하듯, 짝짝이 춤추듯 움직여요!',
+    ],
+    tips: '핵심은 두 가지입니다. (1) 회전축 캡은 기둥 목에만 붙이고 카드에는 붙이지 않기 — 붙이면 기둥이 못 돕니다. (2) 핀은 슬롯 안에서 위아래로 자유롭게 움직여야 하니 슬롯을 풀로 막지 마세요. 너무 뻑뻑하면 안내띠를 아주 살짝 느슨하게 붙이고, 장식이 카드 밖으로 나가면 흔들기 각도(swingAngle)를 조금 줄이세요.',
   },
 };
 

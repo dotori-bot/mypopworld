@@ -638,6 +638,130 @@ export default function Instructions() {
           </>
         );
 
+      case 'slide-to-swing':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>부품 오리기</h4>
+                <p>기둥(팔), 슬라이더(가운데 세로 슬롯도 오려냄), 위·아래 안내띠 2개, 회전축 캡, 장식을 실선대로 오려주세요. 앞면 카드에는 <b>회전축 구멍</b>만 뚫습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 130 60" style={{ width: '100%', maxWidth: '330px', height: 'auto' }}>
+                    {/* post */}
+                    <rect x="12" y="10" width="8" height="34" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="14.5" y="5" width="3" height="5" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="13" y="44" width="6" height="8" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
+                    <text x="16" y="58" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">기둥</text>
+                    {/* slider with vertical slot + handle */}
+                    <rect x="34" y="18" width="26" height="18" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="45" y="22" width="4" height="10" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <rect x="60" y="22" width="14" height="10" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <text x="47" y="15" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">슬라이더</text>
+                    <text x="67" y="15" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">손잡이</text>
+                    {/* guide strips */}
+                    <rect x="82" y="16" width="24" height="5" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <rect x="82" y="30" width="24" height="5" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="94" y="44" fontSize="4" textAnchor="middle" fill="green">안내띠 2개</text>
+                    {/* cap + heart */}
+                    <circle cx="116" cy="16" r="5" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="116" y="26" fontSize="3.6" textAnchor="middle" fill="var(--text-secondary)">캡</text>
+                    <path d="M116 46 l4 -5 a2.6 2.6 0 0 0 -4 -1 a2.6 2.6 0 0 0 -4 1 z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <text x="116" y="54" fontSize="3.6" textAnchor="middle" fill="var(--text-secondary)">장식</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>회전축 만들기 (캡은 목에만!)</h4>
+                <p>기둥 아래 목을 카드의 회전축 구멍에 끼워 뒤로 빼고, 뒤에서 캡을 <b>목(종이)에만</b> 붙이세요. 카드에는 붙이지 마세요 — 그래야 기둥이 구멍을 중심으로 <b>팽이처럼 자유롭게</b> 좌우로 돕니다. 접는 자국이 아니라 도는 축이라 반복해도 잘 안 찢어져요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* side cross-section: card, post front, neck through hole, cap back */}
+                    <rect x="48" y="8" width="4" height="44" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="40" y="8" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">카드</text>
+                    <rect x="44" y="14" width="4" height="30" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="36" y="30" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">기둥(앞)</text>
+                    <rect x="52" y="27" width="6" height="6" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="72" y="24" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">캡(뒤)</text>
+                    {/* rotation arrow */}
+                    <path d="M30 48 a10 10 0 0 1 20 0" fill="none" stroke="var(--primary-main)" strokeWidth="1.3" />
+                    <path d="M50 48 l-1 -4 l-3 3 z" fill="var(--primary-main)" />
+                    <text x="40" y="58" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">자유롭게 회전</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>핵심: 핀을 슬롯에 끼우기 (기둥은 돌고, 슬라이더는 곧게)</h4>
+                <p>슬라이더를 기둥 위에 겹치고, 기둥 맨 위 <b>핀</b>을 빨간 점선(산접기)으로 앞으로 접어 슬라이더의 <b>세로 슬롯</b>에 통과시키세요. 앞으로 나온 핀에 장식을 붙이면 핀이 앞으로 못 빠지고 슬롯 안에서 <b>위아래로만</b> 움직입니다. 기둥은 원을 그리며 돌지만, 슬롯이 위아래 움직임을 삼켜 슬라이더는 <b>곧게 좌우로만</b> 갑니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="140" viewBox="0 0 100 70" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* pivot at bottom, arc of pin, vertical slot capturing pin */}
+                    <circle cx="50" cy="60" r="2.4" fill="var(--text-primary)" />
+                    <text x="50" y="68" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">회전축</text>
+                    {/* arm at three angles */}
+                    <path d="M50 60 L34 22" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <path d="M50 60 L50 18" stroke="var(--text-primary)" strokeWidth="1.6" />
+                    <path d="M50 60 L66 22" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    {/* pin arc */}
+                    <path d="M34 22 A 42 42 0 0 1 66 22" fill="none" stroke="var(--primary-main)" strokeWidth="1" strokeDasharray="3 2" />
+                    {/* vertical slot on the horizontal slider */}
+                    <rect x="30" y="16" width="40" height="14" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="47" y="16" width="6" height="14" fill="var(--bg-app)" stroke="var(--primary-main)" strokeWidth="1.2" />
+                    <circle cx="50" cy="20" r="2" fill="var(--primary-main)" />
+                    {/* horizontal slide arrows */}
+                    <path d="M22 23 l-6 0 M18 20 l-4 3 l4 3" stroke="var(--primary-main)" strokeWidth="1.2" fill="none" />
+                    <path d="M78 23 l6 0 M82 20 l4 3 l-4 3" stroke="var(--primary-main)" strokeWidth="1.2" fill="none" />
+                    <text x="50" y="9" fontSize="4" textAnchor="middle" fill="var(--primary-main)">슬라이더는 곧게 ↔, 핀은 슬롯 안에서 ↕</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>⚠️ 안내띠로 슬라이더 길 만들기 (바깥쪽만 풀칠)</h4>
+                <p>슬라이더 위·아래에 안내띠 <b>Ⓐ·Ⓑ</b>를 얹고 <b>바깥쪽 초록색만</b> 카드에 붙여 좌우로만 미끄러지는 길을 만드세요. 슬라이더 양 끝의 넓은 <b>멈춤 날개</b>가 안내띠보다 커서, 세게 밀어도 <b>튀어나가지 않습니다</b>.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="24" y="24" width="52" height="14" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="20" y="22" width="4" height="18" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <rect x="76" y="22" width="4" height="18" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <rect x="30" y="17" width="40" height="5" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1.1" />
+                    <rect x="30" y="38" width="40" height="5" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1.1" />
+                    <text x="50" y="15" fontSize="4" textAnchor="middle" fill="green">안내띠(바깥쪽만 풀칠)</text>
+                    <text x="12" y="52" fontSize="4.2" textAnchor="middle" fill="var(--primary-main)">멈춤 날개</text>
+                    <text x="88" y="52" fontSize="4.2" textAnchor="middle" fill="var(--primary-main)">멈춤 날개</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>밀면 흔들흔들!</h4>
+                <p>손잡이를 좌우로 슬슬 밀어보세요. 슬라이더는 곧게 옆으로 가는데 기둥 위 장식이 좌우로 왔다갔다 흔들립니다. 시계추처럼, 인사하듯, 짝짝이 춤추듯 움직여요!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="140" viewBox="0 0 100 70" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="50" cy="58" r="2.2" fill="var(--text-primary)" />
+                    <path d="M50 58 L66 22" stroke="var(--text-primary)" strokeWidth="2.2" />
+                    <path d="M50 58 L34 22" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <path d="M66 18 l4 -5 a2.6 2.6 0 0 0 -4 -1 a2.6 2.6 0 0 0 -4 1 z" fill="gold" stroke="orange" strokeWidth="1" />
+                    <path d="M34 14 l4 -5 a2.6 2.6 0 0 0 -4 -1 a2.6 2.6 0 0 0 -4 1 z" fill="none" stroke="var(--text-secondary)" strokeWidth="0.8" strokeDasharray="2 1" />
+                    <path d="M30 46 q20 8 40 0" fill="none" stroke="var(--primary-main)" strokeWidth="1" strokeDasharray="3 2" />
+                    <text x="50" y="68" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">좌우로 흔들흔들</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>
