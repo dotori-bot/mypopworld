@@ -5,11 +5,16 @@ import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
   calculatePopupHeight,
+  calculateParallelFoldHeight,
   radToDeg,
   degToRad,
   clamp,
 } from '../../utils/math';
 import '../../styles/preview.css';
+
+// Mechanisms with a working 3D assembled-pose preview. Anything else falls
+// back to the "not ready yet" placeholder.
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup']);
 
 /**
  * Preview3D — pure-CSS-3D assembled preview of the V-fold mechanism.
@@ -60,58 +65,131 @@ import '../../styles/preview.css';
  *   we honour the authoritative h and tip-meeting by recomputing the arm's fold
  *   axis per frame. The arm's free outer corner slides imperceptibly — invisible
  *   in this stylised pose preview.)
+ *
+ * ---------------------------------------------------------------------------
+ * Box-popup pose (same file, second mechanism)
+ * ---------------------------------------------------------------------------
+ * Box-popup (see generators/boxPopup.js, after its cut/fold bugfix) has the
+ * SAME topology as V-fold -- two attachment points offset from the spine (one
+ * per page, at distance d = box `height` param) plus one shared fold AT the
+ * spine -- just with a full-width rectangle instead of a triangle narrowing to
+ * a point. That means it needs the SAME symmetric flex angle a = α/2, computed
+ * from the SAME kind of authoritative formula (calculateParallelFoldHeight is
+ * the single-level version of calculateParallelFoldHeight/VFold's h = d·sin a),
+ * but a much simpler rotation: no compound rotate3d is needed because a
+ * rectangle's attached edge is already parallel to the spine (the page's own
+ * rotateY axis), so folding it is a plain second rotateY about that edge:
+ *   left  flap: pivot = its OUTER (attached) edge; rotateY(+a) relative to page
+ *   right flap: pivot = its OUTER (attached) edge; rotateY(−a) relative to page
+ * At a=0 the flap is coplanar with its own (already edge-on-when-closed) page
+ * → hidden at α=0. At a=90 (α=180) the flap has rotated a full quarter turn
+ * relative to its page, so its free (spine-side) edge swings from lying along
+ * the spine (in-page) to pointing straight at the viewer, height = d = box's
+ * `height` param -- and since both flaps share the same width (box `width`
+ * param) centred on the same page mid-line, their free edges coincide at every
+ * α, forming one continuous flat box face.
  */
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
   const [alpha, setAlpha] = useState(90);
 
-  const isVFold = cardParams?.mechanism === 'v-fold';
+  const mechanism = cardParams?.mechanism;
 
-  if (!cardParams || !isVFold) {
+  if (!cardParams || !SUPPORTED_3D.has(mechanism)) {
     return (
       <div className="preview3d-root">
         <div className="preview3d-placeholder">
-          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재는 브이폴드만 지원)
+          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재는 브이폴드 · 상자 팝업만 지원)
         </div>
       </div>
     );
   }
 
-  // --- Resolve the user's actual v-fold params (armLength) ---
   const params = buildMechanismParams(cardParams, paperSize, colorMode) || {};
-  const defaults = getMechanism('v-fold').defaultParams;
-  const armLength = params.armLength ?? defaults.armLength; // mm
-
-  // --- Kinematics (authoritative math.js formulas) ---
-  const thetaPage = (180 - alpha) / 2;                       // deg
-  const beta = calculateVFoldAngle(alpha);                   // deg (= α)
-  const h = calculatePopupHeight(armLength, beta);           // mm
-  const gamma = radToDeg(Math.asin(clamp(h / armLength, 0, 1))); // deg (= α/2)
+  const defaults = getMechanism(mechanism).defaultParams;
 
   // --- mm → px scale for an honest-proportioned book ---
   const card = CARD_SIZES[paperSize] || CARD_SIZES.A4;
   const PX = 1.6;
   const pageW = (card.width / 2) * PX;
   const pageH = card.height * PX;
-  const armPx = armLength * PX;
+  const thetaPage = (180 - alpha) / 2; // deg, shared by every mechanism
 
-  // Each arm is a real child of its page, so it inherits the page's own
-  // rotateY(±θ_page) via preserve-3d and then applies its OWN fold on top. The
-  // fold is a rotation of angle γ (= a = α/2) about a per-frame axis derived so
-  // that the ridge-tip lands on the shared world apex A = (0, −L·cos a, L·sin a):
-  //   left  arm:  rotate3d(−sin a, 0, −cos a, a°)
-  //   right arm:  rotate3d(−sin a, 0, +cos a, a°)
-  const aRad = degToRad(gamma);          // a = γ = α/2
-  const sinA = Math.sin(aRad);
-  const cosA = Math.cos(aRad);
-  const armLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
-  const armLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+  let attachmentLeft;
+  let attachmentRight;
+  let readout;
 
-  // Arm panel box: a triangle whose pivot corner O sits at the page's spine
-  // centre. Height 2·armPx so its box straddles the spine centre; top offset
-  // places that centre at the page's vertical middle.
-  const armH = armPx * 2;
-  const armTop = pageH / 2 - armPx;
+  if (mechanism === 'v-fold') {
+    const armLength = params.armLength ?? defaults.armLength; // mm
+
+    // --- Kinematics (authoritative math.js formulas) ---
+    const beta = calculateVFoldAngle(alpha);                   // deg (= α)
+    const h = calculatePopupHeight(armLength, beta);           // mm
+    const gamma = radToDeg(Math.asin(clamp(h / armLength, 0, 1))); // deg (= α/2)
+
+    const armPx = armLength * PX;
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+    const armLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
+    const armLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+
+    // Arm panel box: a triangle whose pivot corner O sits at the page's spine
+    // centre. Height 2·armPx so its box straddles the spine centre; top offset
+    // places that centre at the page's vertical middle.
+    const armH = armPx * 2;
+    const armTop = pageH / 2 - armPx;
+
+    attachmentLeft = (
+      <div
+        className="preview3d-arm preview3d-arm-left"
+        style={{ width: `${armPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftLeft }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-arm preview3d-arm-right"
+        style={{ width: `${armPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftRight }}
+      />
+    );
+    readout = `팝업 높이 h = ${h.toFixed(1)}mm · 팔 길이 L = ${armLength}mm · 팔 각도 γ = ${gamma.toFixed(0)}°`;
+  } else {
+    // box-popup. Same topology as V-fold (two attachments offset from the
+    // spine by d, one shared crease AT the spine) so it reuses V-fold's
+    // PROVEN rotate3d composition and pivot-at-spine convention verbatim --
+    // only the shape changes (a plain rectangle instead of a triangle
+    // narrowing to a point), since box-popup's "meeting edge" is a full-width
+    // line instead of a single apex point.
+    const boxWidth = params.width ?? defaults.width;   // mm, along the spine direction
+    const boxDepth = params.height ?? defaults.height;  // mm, distance from spine (= d)
+
+    const h = calculateParallelFoldHeight(boxDepth, alpha);          // mm
+    const gamma = radToDeg(Math.asin(clamp(h / boxDepth, 0, 1)));    // deg (= α/2)
+
+    const depthPx = boxDepth * PX;
+    const widthPx = boxWidth * PX;
+    const boxTop = pageH / 2 - widthPx / 2;
+
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+    const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
+    const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+
+    attachmentLeft = (
+      <div
+        className="preview3d-boxflap preview3d-boxflap-left"
+        style={{ width: `${depthPx}px`, height: `${widthPx}px`, top: `${boxTop}px`, transform: flapLiftLeft }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-boxflap preview3d-boxflap-right"
+        style={{ width: `${depthPx}px`, height: `${widthPx}px`, top: `${boxTop}px`, transform: flapLiftRight }}
+      />
+    );
+    readout = `팝업 높이 h = ${h.toFixed(1)}mm · 상자 폭 = ${boxWidth}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  }
 
   return (
     <div className="preview3d-root">
@@ -126,18 +204,7 @@ export default function Preview3D() {
               transform: `rotateY(${thetaPage}deg)`,
             }}
           >
-            {/* Left V-fold arm — child of the page so it inherits rotateY(θ);
-                its pivot O is the page's spine centre, shared with the right arm
-                so the two ridge-tips meet at the apex. */}
-            <div
-              className="preview3d-arm preview3d-arm-left"
-              style={{
-                width: `${armPx}px`,
-                height: `${armH}px`,
-                top: `${armTop}px`,
-                transform: armLiftLeft,
-              }}
-            />
+            {attachmentLeft}
           </div>
           {/* Right page — hinged on the spine (its left edge) */}
           <div
@@ -148,15 +215,7 @@ export default function Preview3D() {
               transform: `rotateY(${-thetaPage}deg)`,
             }}
           >
-            <div
-              className="preview3d-arm preview3d-arm-right"
-              style={{
-                width: `${armPx}px`,
-                height: `${armH}px`,
-                top: `${armTop}px`,
-                transform: armLiftRight,
-              }}
-            />
+            {attachmentRight}
           </div>
         </div>
       </div>
@@ -176,9 +235,7 @@ export default function Preview3D() {
           onChange={(e) => setAlpha(Number(e.target.value))}
           aria-label="카드 열림 각도"
         />
-        <div className="preview3d-readout">
-          팝업 높이 h = {h.toFixed(1)}mm · 팔 길이 L = {armLength}mm · 팔 각도 γ = {gamma.toFixed(0)}°
-        </div>
+        <div className="preview3d-readout">{readout}</div>
       </div>
     </div>
   );

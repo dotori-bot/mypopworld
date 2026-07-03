@@ -23,12 +23,12 @@ export const generateBoxPopup = (svg, options = {}) => {
   const hw = width / 2;
   const d = height; // depth = height
 
-  // 1. Cut Lines (Vertical sides of the box)
+  // 1. Cut Lines (Vertical sides of the box only). The top/bottom edges at
+  // cy-d and cy+d must stay UNCUT -- they're where the box panel attaches to
+  // the surrounding card (see Base Folds below). Cutting them too would fully
+  // detach the panel and the pop-up would have nothing to hold it up.
   addPath(g, `M ${cx - hw} ${cy - d} L ${cx - hw} ${cy + d}`, cutStyle);
   addPath(g, `M ${cx + hw} ${cy - d} L ${cx + hw} ${cy + d}`, cutStyle);
-  // Horizontal cuts (Top and bottom)
-  addPath(g, `M ${cx - hw} ${cy - d} L ${cx + hw} ${cy - d}`, cutStyle);
-  addPath(g, `M ${cx - hw} ${cy + d} L ${cx + hw} ${cy + d}`, cutStyle);
 
   // 2. Spine Fold (Mountain - because the box pops out toward viewer)
   addPath(g, `M ${cx - hw} ${cy} L ${cx + hw} ${cy}`, mountainStyle);

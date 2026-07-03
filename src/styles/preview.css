@@ -394,6 +394,27 @@
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
 }
 
+/* Box-popup's flap is a plain rectangle (not a narrowing triangle like the
+   V-fold arm), so no clip-path is needed. Same pivot convention as the
+   V-fold arm (pivot at the SPINE edge, matching preview3d-arm-left/right) --
+   reuses the same proven rotate3d composition, see Preview3D.jsx. */
+.preview3d-boxflap {
+  position: absolute;
+  backface-visibility: visible;
+}
+
+.preview3d-boxflap-left {
+  right: 0;
+  transform-origin: right center;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+.preview3d-boxflap-right {
+  left: 0;
+  transform-origin: left center;
+  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
 .preview3d-readout {
   font-size: 0.72rem;
   color: var(--text-muted);
