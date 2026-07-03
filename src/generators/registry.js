@@ -18,6 +18,7 @@ import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
 import { renderLayeredStage } from './layeredStage.js';
+import { renderAutoSlideWindow } from './autoSlideWindow.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -85,6 +86,12 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderLayeredStage(params),
     defaultParams: { layers: 3 },
     instructionStyle: 'layered-stage',
+  },
+  'auto-slide-window': {
+    labelKo: '열면 바뀌는 액자 카드 (열면 창문 속 그림이 저절로 바뀜)',
+    render: (params) => renderAutoSlideWindow(params),
+    defaultParams: { pivotArm: 16, strut: 44, windowHeight: 12 },
+    instructionStyle: 'auto-slide-window',
   },
 };
 
@@ -181,6 +188,18 @@ export const INSTRUCTION_TEXT = {
       '카드를 닫아 확인하세요. 모든 층이 카드 바깥 자르는 선 안쪽으로 납작하게 접혀 들어가야 정상입니다. 열면 성벽·탑이 층층이 서로 다른 깊이로 솟아오릅니다.',
     ],
     tips: '뒤에서 앞 순서로 붙이는 것이 핵심입니다. 뒤 층일수록 더 높고(성의 안쪽 탑처럼) 더 깊은 곳에 섭니다. 닫았을 때 어느 한 벽이라도 카드 밖으로 나오면, 그 층 벽이 너무 깊은 것이니 조금 낮은(=얕은) 벽으로 다시 만들어 주세요.',
+  },
+  'auto-slide-window': {
+    title: '열면 바뀌는 액자 카드 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 부품 4종을 오려주세요: 창문 액자(가운데 창 구멍도 오려냄), 긴 메시지 띠(슬라이더), 지지대(팔) 1개, 안내다리(Ⓐ·Ⓑ) 2개. 아래쪽 고정 뒷면에는 붙이는 위치만 표시되어 있으니 오리지 마세요.',
+      '메시지 띠를 뒷면의 안내 위치에 올리고, 안내다리 Ⓐ·Ⓑ를 다리처럼 그 위에 얹어 양 끝 초록색만 뒷면에 붙여주세요. 가운데는 붙이지 마세요 — 띠가 그 아래로 지나갑니다. 띠 양 끝의 넓은 멈춤 날개가 안내다리에 걸려 띠가 빠지지 않습니다. (안내다리를 위·아래로 벌려 붙여야 띠가 비뚤어지지 않아요.)',
+      '창문 액자를 창 구멍이 메시지 띠 위에 오도록 덮고, 좌·우 초록색 테두리만 뒷면에 붙여주세요. 위·아래는 열어두어야 띠가 창문 뒤로 미끄러집니다.',
+      '가장 중요 — 지지대(팔) 붙이기: 지지대 위 끝(①)을 위쪽 여는 앞면의 ‘① 붙이는 곳(척추에서 조금 위)’에, 아래 끝(②)을 메시지 띠 옆의 드라이브 탭(② 자리)에 붙입니다. 두 접는 선(경첩)이 반드시 척추(가운데 접는 선)와 나란해야 합니다. 비뚤게 붙이면 카드를 열 때 뻑뻑하거나 걸립니다.',
+      '카드를 살짝 열면 창문 속에 메시지 ①이, 활짝 열면 저절로 메시지 ②로 바뀝니다. 손잡이를 당길 필요 없이 카드를 여닫는 것만으로 그림이 지나갑니다. 닫으면 지지대가 납작하게 접혀 책처럼 덮입니다.',
+    ],
+    tips: '지지대의 위·아래 경첩을 척추와 나란히, 같은 세로줄(드라이브 칸)에 맞춰 붙이는 것이 핵심입니다. 너무 뻑뻑하면 안내다리 가운데를 아주 살짝 더 띄워 붙이고, 그림이 창문에서 반쯤 잘려 보이면 지지대 아래 끝을 ② 자리에 정확히 다시 맞춰 붙여 주세요.',
   },
 };
 

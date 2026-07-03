@@ -526,6 +526,118 @@ export default function Instructions() {
           </>
         );
 
+      case 'auto-slide-window':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>부품 4종 오리기</h4>
+                <p>창문 액자(가운데 창 구멍도), 긴 메시지 띠(슬라이더), 지지대(팔) 1개, 안내다리 2개를 실선대로 오려주세요. 아래쪽 고정 뒷면은 붙이는 위치 안내만 있으니 오리지 않습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* message strip with two message blocks + drive tab */}
+                    <rect x="12" y="8" width="16" height="44" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="14" y="16" width="12" height="8" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 1" />
+                    <rect x="14" y="34" width="12" height="8" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 1" />
+                    <rect x="28" y="26" width="8" height="8" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
+                    <text x="20" y="6" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">메시지 띠</text>
+                    {/* frame with cut window */}
+                    <rect x="52" y="14" width="30" height="24" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="60" y="20" width="14" height="12" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="67" y="12" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">창문 액자</text>
+                    {/* strut */}
+                    <rect x="92" y="10" width="8" height="34" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="92" y="10" width="8" height="5" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="0.8" />
+                    <rect x="92" y="39" width="8" height="5" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="0.8" />
+                    <text x="96" y="8" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">지지대</text>
+                    {/* one guide bridge */}
+                    <rect x="104" y="24" width="14" height="6" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="111" y="38" fontSize="4" textAnchor="middle" fill="green">안내다리</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>메시지 띠 얹고 안내다리 붙이기 (양 끝만!)</h4>
+                <p>메시지 띠를 뒷면 안내 위치에 올리고, 안내다리 <b>Ⓐ·Ⓑ</b>를 다리처럼 얹어 <b>양 끝 초록색만</b> 붙이세요. 가운데는 붙이지 마세요 — 띠가 그 아래로 지나갑니다. 띠 양 끝의 넓은 <b>멈춤 날개</b>가 걸려 빠지지 않아요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="42" y="6" width="16" height="48" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="38" y="8" width="24" height="4" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="38" y="48" width="24" height="4" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="30" y="18" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1.1" />
+                    <rect x="60" y="18" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1.1" />
+                    <path d="M40 18 L60 18 M40 24 L60 24" stroke="green" strokeWidth="0.9" strokeDasharray="2 2" />
+                    <text x="50" y="16" fontSize="4" textAnchor="middle" fill="green">가운데 붙이지 않음</text>
+                    <text x="80" y="22" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">멈춤 날개</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>창문 액자 덮기 (좌·우만 풀칠)</h4>
+                <p>창 구멍이 메시지 띠 위에 오도록 액자를 덮고, <b>좌·우 초록색 테두리만</b> 붙이세요. 위·아래는 열어두어야 띠가 창문 뒤로 미끄러집니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="30" y="10" width="40" height="34" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <rect x="40" y="18" width="20" height="18" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="30" y="10" width="6" height="34" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <rect x="64" y="10" width="6" height="34" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <path d="M50 46 l0 6 M47 49 l3 3 l3 -3" stroke="var(--text-secondary)" strokeWidth="1" fill="none" />
+                    <text x="50" y="8" fontSize="4.5" textAnchor="middle" fill="green">좌·우만 풀칠</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>⚠️ 지지대(팔) 붙이기 — 경첩을 척추와 나란히!</h4>
+                <p>지지대 위 끝(①)을 위쪽 여는 앞면의 ‘① 자리’(척추에서 조금 위)에, 아래 끝(②)을 메시지 띠 옆의 <b>드라이브 탭(② 자리)</b>에 붙이세요. 두 접는 선(경첩)이 반드시 <b>척추와 나란히, 같은 세로줄</b>에 와야 합니다. 비뚤면 열 때 걸립니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="130" viewBox="0 0 100 65" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* spine line */}
+                    <path d="M10 33 L90 33" stroke="blue" strokeWidth="1.3" strokeDasharray="4 1 1 1" />
+                    <text x="20" y="30" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">척추</text>
+                    {/* front face pivot (above) and slider tab (below), strut tented */}
+                    <circle cx="55" cy="18" r="2.2" fill="var(--primary-main)" />
+                    <text x="55" y="12" fontSize="4" textAnchor="middle" fill="var(--primary-main)">① 앞면</text>
+                    <circle cx="62" cy="48" r="2.2" fill="green" />
+                    <text x="70" y="50" fontSize="4" textAnchor="middle" fill="green">② 띠 탭</text>
+                    <path d="M55 18 L62 48" stroke="var(--text-primary)" strokeWidth="2.4" />
+                    <text x="42" y="44" fontSize="4.2" textAnchor="middle" fill="var(--text-primary)">지지대</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>열면 저절로 짠! 하고 바뀌기</h4>
+                <p>카드를 살짝 열면 창문 속 메시지 ①이, 활짝 열면 저절로 메시지 ②로 바뀝니다. 손잡이를 당길 필요 없이 여닫는 것만으로 그림이 지나가요. 닫으면 지지대가 납작하게 접혀 책처럼 덮입니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    <rect x="14" y="14" width="34" height="30" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="24" y="22" width="14" height="14" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <text x="31" y="32" fontSize="7" textAnchor="middle" fill="var(--primary-main)">☀</text>
+                    <text x="31" y="12" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">살짝 열면 ①</text>
+                    <path d="M52 30 l10 0 M58 26 l4 4 l-4 4" stroke="var(--text-secondary)" strokeWidth="1.2" fill="none" />
+                    <rect x="72" y="14" width="34" height="30" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="82" y="22" width="14" height="14" fill="gold" stroke="orange" strokeWidth="1" />
+                    <text x="89" y="32" fontSize="7" textAnchor="middle" fill="orange">★</text>
+                    <text x="89" y="12" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">활짝 열면 ②</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>
