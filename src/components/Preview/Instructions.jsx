@@ -90,6 +90,7 @@ export default function Instructions() {
       case 'box-popup':
       case 'v-fold':
       case 'parallel-fold':
+      case 'layered-stage':
       case 'pull-tab':
         return (
           <>
@@ -137,6 +138,46 @@ export default function Instructions() {
                     <path d="M40 50 L60 60 L60 30 L40 20 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
                   </svg>
                 </div>
+              </div>
+            </div>
+          </>
+        );
+
+      case 'folding-screen':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>오리기</h4>
+                <p>검은색 실선을 따라 병풍 전체를 한 조각으로 오려주세요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="20" y="10" width="60" height="40" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeDasharray="4 2" />
+                    <path d="M10 50 L30 30 M30 50 L10 30" stroke="var(--primary-main)" strokeWidth="2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>지그재그로 접기</h4>
+                <p>빨간 점선(산접기)과 파란 점선(골접기)을 번갈아 접어 아코디언처럼 지그재그 모양을 만들어주세요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <path d="M10 45 L25 15 L40 45 L55 15 L70 45 L85 15" fill="none" stroke="var(--text-primary)" strokeWidth="2" />
+                    <path d="M25 15 L25 45 M55 15 L55 45" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
+                    <path d="M40 45 L40 15 M70 45 L70 15" stroke="blue" strokeWidth="1.5" strokeDasharray="3 2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>세워서 완성하기</h4>
+                <p>풀칠 없이 지그재그로 접기만 해도 혼자 세울 수 있어요. 칸마다 이어지는 그림을 그리면 나만의 병풍이 완성돼요!</p>
               </div>
             </div>
           </>

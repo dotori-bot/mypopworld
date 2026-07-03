@@ -1,212 +1,78 @@
-/**
- * @fileoverview Parallel fold (step / staircase) popup mechanism generator.
- * Produces SVG template data for parallel-fold popups where horizontal
- * cut pairs create steps that rise from the card surface.
- *
- * Key formula: height(α) = d × sin(α / 2), height_max = d
- * Supports multi-level staircases: d1 < d2 < d3, w1 > w2 > w3
- *
- * @module generators/parallelFold
- */
-
-import {
-  PAPER_SIZES,
-  CARD_SIZES,
-  PRINT,
-  getLineStyles,
-} from './constants.js';
-import { clamp, round } from '../utils/math.js';
-import {
-  addPath,
-  addText,
-  addGroup,
-  createTemplate,
-} from './svgBuilder.js';
+import { addPath, getLineStyle, addText, addGroup } from './svgBuilder';
 
 /**
- * @typedef {Object} ParallelFoldLevel
- * @property {number} width - Width of this step along the spine (mm)
- * @property {number} depth - Cut depth perpendicular to spine (mm).
- *   height_max = depth. For staircase: d1 < d2 < d3.
- */
-
-/**
- * @typedef {Object} ParallelFoldParams
- * @property {'A4'|'LETTER'} paperSize
- * @property {{ x: number, y: number }} [position] - Centre placement on spine (mm)
- * @property {number} [width]   - Width of single-level step (mm). Ignored if levels provided.
- * @property {number} [depth]   - Depth of single-level step (mm). Ignored if levels provided.
- * @property {ParallelFoldLevel[]} [levels] - Multi-level staircase definition
- * @property {'color'|'bw'} [colorMode='color']
- */
-
-/**
- * @typedef {Object} ParallelFoldResult
- * @property {string[]} cuts
- * @property {string[]} mountainFolds
- * @property {string[]} valleyFolds
- * @property {Array<{x:number,y:number,text:string}>} markers
- * @property {ParallelFoldLevel[]} levels - Validated level dimensions
- */
-
-/**
- * Build the levels array from params, applying defaults and validation.
- * @param {ParallelFoldParams} params
- * @returns {ParallelFoldLevel[]}
- */
-function buildLevels(params) {
-  const card = CARD_SIZES[params.paperSize] || CARD_SIZES.A4;
-  const maxDepth = card.height / 2 - PRINT.MARGIN;
-  const maxWidth = card.width - 2 * PRINT.MARGIN;
-
-  if (params.levels && params.levels.length > 0) {
-    // Validate: depths ascending, widths descending
-    return params.levels.map((lvl, i) => ({
-      width: clamp(lvl.width, 5, maxWidth),
-      depth: clamp(lvl.depth, 3, maxDepth),
-    }));
-  }
-
-  // Single level
-  return [{
-    width: clamp(params.width ?? 40, 5, maxWidth),
-    depth: clamp(params.depth ?? 20, 3, maxDepth),
-  }];
-}
-
-/**
- * Generate parallel fold mechanism data.
+ * Generates an SVG group for a Parallel-Fold (staircase) popup mechanism.
+ * Math: height(α) = d × sin(α/2) — see utils/math.js calculateParallelFoldHeight.
  *
- * Each level consists of:
- * - Two horizontal cut lines (left and right of the step)
- * - A fold line parallel to the spine at cut depth
- * - The spine itself acts as a valley fold
- *
- * For a single step on the flat template:
- *
- * ```
- *   ─────────────────────  spine (valley fold)
- *   │←── depth ──→│
- *   ├─────────────┤ ─ ─ ─  mountain fold (parallel to spine)
- *   │  step face  │
- *   ├─────────────┤ ─ ─ ─  mountain fold
- *   │←── depth ──→│
- *   ─────────────────────  spine continued
- *       ↑ width ↑
- * ```
- *
- * On the template, cuts go vertically from the spine outward.
- *
- * @param {ParallelFoldParams} rawParams
- * @returns {ParallelFoldResult}
+ * Each step nests inside the previous one (telescoping), so `levels` must
+ * have strictly decreasing `width`, like real stairs: the free outer edge
+ * of one step doubles as the hinge line for the next, narrower step.
  */
-export function generateParallelFold(rawParams) {
-  const colorMode = rawParams.colorMode ?? 'color';
-  const paper = PAPER_SIZES[rawParams.paperSize] || PAPER_SIZES.A4;
-  const levels = buildLevels(rawParams);
+export const generateParallelFold = (svg, options = {}) => {
+  const {
+    cx = 105,       // Spine X (center)
+    cy = 148.5,     // Spine Y
+    levels = [
+      { width: 90, depth: 15 },
+      { width: 60, depth: 15 },
+      { width: 30, depth: 15 },
+    ],
+    isColor = true,
+  } = options;
 
-  // Spine position
-  const spineY = paper.height / 2;
-  const posX = rawParams.position?.x ?? paper.width / 2;
+  const g = addGroup(svg, 'parallel-fold-group');
 
-  /** @type {string[]} */
-  const cuts = [];
-  /** @type {string[]} */
-  const mountainFolds = [];
-  /** @type {string[]} */
-  const valleyFolds = [];
-  /** @type {Array<{x:number,y:number,text:string}>} */
-  const markers = [];
+  const cutStyle = getLineStyle('CUT', isColor);
+  const mountainStyle = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
 
-  // The spine itself is a valley fold across the step area
-  // (It is already drawn by the card outline, but we note it here)
+  let acc = 0; // depth already accumulated from the spine
 
-  let accumulatedDepth = 0; // cumulative depth for staircase stacking
+  levels.forEach((level, i) => {
+    const halfW = level.width / 2;
+    const left = cx - halfW;
+    const right = cx + halfW;
+    const isLast = i === levels.length - 1;
+    const nextHalfW = isLast ? 0 : levels[i + 1].width / 2;
 
-  for (let i = 0; i < levels.length; i++) {
-    const { width, depth } = levels[i];
-    const halfW = width / 2;
+    const innerOffset = acc;
+    const outerOffset = acc + level.depth;
 
-    const left  = round(posX - halfW);
-    const right = round(posX + halfW);
+    [1, -1].forEach((dir) => {
+      const inner = cy + dir * innerOffset;
+      const outer = cy + dir * outerOffset;
 
-    // For staircase: each subsequent level starts where the previous ended
-    const cutDepthFromSpine = accumulatedDepth + depth;
+      // Side cuts bounding this step
+      addPath(g, `M ${left} ${inner} L ${left} ${outer}`, cutStyle);
+      addPath(g, `M ${right} ${inner} L ${right} ${outer}`, cutStyle);
 
-    // ── Upper half (above spine) ─────────────────────────────────
-    // Vertical cuts from previous fold line (or spine) outward
-    const upperStart = round(spineY - accumulatedDepth);
-    const upperEnd   = round(spineY - cutDepthFromSpine);
+      // Outer edge: fully cut for the last step. For earlier steps, cut
+      // only the "shoulders" beyond the next (narrower) step's footprint —
+      // the middle strip stays uncut so it becomes that next step's hinge.
+      if (isLast) {
+        addPath(g, `M ${left} ${outer} L ${right} ${outer}`, cutStyle);
+      } else {
+        addPath(g, `M ${left} ${outer} L ${cx - nextHalfW} ${outer}`, cutStyle);
+        addPath(g, `M ${cx + nextHalfW} ${outer} L ${right} ${outer}`, cutStyle);
+      }
 
-    // Left vertical cut
-    cuts.push(`M ${left} ${upperStart} L ${left} ${upperEnd}`);
-    // Right vertical cut
-    cuts.push(`M ${right} ${upperStart} L ${right} ${upperEnd}`);
-    // Horizontal cut connecting the two verticals at the top
-    cuts.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
-
-    // ── Lower half (below spine) ─────────────────────────────────
-    const lowerStart = round(spineY + accumulatedDepth);
-    const lowerEnd   = round(spineY + cutDepthFromSpine);
-
-    cuts.push(`M ${left} ${lowerStart} L ${left} ${lowerEnd}`);
-    cuts.push(`M ${right} ${lowerStart} L ${right} ${lowerEnd}`);
-    cuts.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
-
-    // ── Mountain folds (horizontal, parallel to spine) ───────────
-    // These are at the edges where cuts meet the card – the step lip
-    if (accumulatedDepth === 0) {
-      // First level: mountain folds at spine level across the step width
-      // (The paper between the cuts and the spine will fold up)
-      mountainFolds.push(`M ${left} ${round(spineY)} L ${right} ${round(spineY)}`);
-    } else {
-      // Subsequent levels: fold at the accumulated depth line
-      mountainFolds.push(`M ${left} ${upperStart} L ${right} ${upperStart}`);
-      mountainFolds.push(`M ${left} ${lowerStart} L ${right} ${lowerStart}`);
-    }
-
-    // Mountain fold at the top/bottom edges of each step
-    mountainFolds.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
-    mountainFolds.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
-
-    // ── Labels ────────────────────────────────────────────────────
-    markers.push({
-      x: posX,
-      y: round((upperStart + upperEnd) / 2),
-      text: `단계 ${i + 1}: ${round(depth)}mm`,
+      // Inner hinge of this step (mountain fold - pops toward viewer)
+      addPath(g, `M ${left} ${inner} L ${right} ${inner}`, mountainStyle);
     });
 
-    accumulatedDepth = cutDepthFromSpine;
-  }
+    addText(g, right + 2, cy - (innerOffset + outerOffset) / 2, `${i + 1}단`, 2.5);
 
-  // Valley fold note at spine
-  valleyFolds.push(
-    `M ${round(posX - levels[0].width / 2 - 5)} ${round(spineY)} ` +
-    `L ${round(posX + levels[0].width / 2 + 5)} ${round(spineY)}`
-  );
+    acc = outerOffset;
+  });
 
-  markers.push({ x: posX, y: spineY + 3, text: '골접기 (Valley fold / Spine)' });
+  // General card spine fold (valley), only outside the staircase footprint
+  // so it doesn't overlap the first step's own mountain-fold hinge.
+  const baseHalfW = levels[0].width / 2;
+  addPath(g, `M ${cx - baseHalfW - 15} ${cy} L ${cx - baseHalfW} ${cy}`, valleyStyle);
+  addPath(g, `M ${cx + baseHalfW} ${cy} L ${cx + baseHalfW + 15} ${cy}`, valleyStyle);
 
-  return { cuts, mountainFolds, valleyFolds, markers, levels };
-}
+  addText(g, cx, cy - acc - 9, '평행 접기 (계단식 무대)', 4, 'middle');
+  addText(g, cx, cy - acc - 3, '맨 위 칸에 인형이나 장식을 세워보세요!', 2.5, 'middle');
 
-/**
- * Render parallel fold onto a complete SVG template.
- * @param {ParallelFoldParams} params
- * @returns {{ svg: SVGSVGElement, result: ParallelFoldResult }}
- */
-export function renderParallelFold(params) {
-  const colorMode = params.colorMode ?? 'color';
-  const styles = getLineStyles(colorMode);
-  const { svg, contentGroup } = createTemplate(params.paperSize, colorMode);
-  const result = generateParallelFold(params);
-
-  const g = addGroup(contentGroup, 'parallel-fold', 'parallel-fold');
-
-  for (const d of result.cuts)           addPath(g, d, styles.CUT);
-  for (const d of result.mountainFolds)  addPath(g, d, styles.MOUNTAIN_FOLD);
-  for (const d of result.valleyFolds)    addPath(g, d, styles.VALLEY_FOLD);
-  for (const m of result.markers)        addText(g, m.x, m.y, m.text, 2);
-
-  return { svg, result };
-}
+  return g;
+};

@@ -40,7 +40,9 @@ export default async function handler(req, res) {
 [가능한 숨은 메커니즘 (절대 사용자에게 직접 용어를 묻지 마세요. 내부적으로만 매핑하세요)]
 - "v-fold": 카드를 열면 삼각형 형태로 튀어나오는 기본 팝업 (난이도: 하)
 - "box-popup": 카드를 열면 네모난 상자(케이크, 선물 등)가 튀어나오는 팝업 (난이도: 하~중)
-- "parallel-fold": 카드를 열면 무대처럼 계단이 올라오는 팝업 (난이도: 중)
+- "parallel-fold": 카드를 열면 무대처럼 계단이 층층이 올라오는 팝업 (난이도: 중)
+- "layered-stage": 카드를 열면 가까운 벽부터 먼 벽까지 여러 겹이 세워져 입체적인 풍경(숲, 마을 등)이 되는 팝업 (난이도: 중~상)
+- "folding-screen": 지그재그로 접어서 혼자 세울 수 있는 병풍 모양 장식. 카드와 별개로 이어지는 그림을 그릴 수 있음 (난이도: 하, 풀칠 불필요)
 - "pull-tab": 손잡이를 당기면 그림이 옆으로 움직이는 장치 (난이도: 중~상)
 - "straw-rocket": 빨대에 종이 뚜껑을 씌워 후~ 불면 날아가는 장난감 (나비, 로켓 등) (난이도: 최하, 4~6세 추천)
 
@@ -56,7 +58,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket",
+  "mechanism": "v-fold | box-popup | parallel-fold | layered-stage | folding-screen | pull-tab | straw-rocket",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`

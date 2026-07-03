@@ -3,6 +3,9 @@ import useCardStore from '../../store/useCardStore';
 import { generateStrawRocket } from '../../generators/strawRocket';
 import { generateVFold } from '../../generators/vfold';
 import { generateBoxPopup } from '../../generators/boxPopup';
+import { generateParallelFold } from '../../generators/parallelFold';
+import { generateLayeredStage } from '../../generators/layeredStage';
+import { generateFoldingScreen } from '../../generators/foldingScreen';
 import { createSVG, svgToString, getLineStyle, addRect, addText, addPath } from '../../generators/svgBuilder';
 import { getContourPath } from '../../utils/imageProcessor';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -34,24 +37,11 @@ export default function SVGPreview() {
         addRect(svg1, 60, 90, 80, 40, getLineStyle('MOUNTAIN_FOLD', true));
         addText(svg1, 100, 115, '풀탭 (Pull Tab) 장치', 4, 'middle');
       } else if (cardParams.mechanism === 'parallel-fold') {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        const spineY = 148.5;
-        const cardWidth = 210;
-        addPath(g, `M 10 10 L 200 10 L 200 287 L 10 287 Z`, getLineStyle('CUT', true));
-        addPath(g, `M 10 ${spineY} L 200 ${spineY}`, getLineStyle('VALLEY_FOLD', true));
-        const stepWidth = 80;
-        const depth = 35; 
-        const startX = (cardWidth - stepWidth) / 2;
-        const endX = startX + stepWidth;
-        addPath(g, `M ${startX} ${spineY - depth} L ${startX} ${spineY + depth}`, getLineStyle('CUT', true));
-        addPath(g, `M ${endX} ${spineY - depth} L ${endX} ${spineY + depth}`, getLineStyle('CUT', true));
-        addPath(g, `M ${startX} ${spineY - depth} L ${endX} ${spineY - depth}`, getLineStyle('VALLEY_FOLD', true));
-        addPath(g, `M ${startX} ${spineY + depth} L ${endX} ${spineY + depth}`, getLineStyle('VALLEY_FOLD', true));
-        addPath(g, `M ${startX} ${spineY} L ${endX} ${spineY}`, getLineStyle('MOUNTAIN_FOLD', true));
-        addRect(g, startX + 5, spineY - depth + 5, stepWidth - 10, depth - 10, getLineStyle('GUIDE', true));
-        addText(g, startX + stepWidth/2, spineY - depth/2 + 2, '여기에 장식을 풀로 붙이세요', 3, 'middle');
-        addText(g, 105, 20, '[ 평행 접기 (무대 팝업) 기본 카드 ]', 5, 'middle');
-        svg1.appendChild(g);
+        generateParallelFold(svg1, {});
+      } else if (cardParams.mechanism === 'layered-stage') {
+        generateLayeredStage(svg1, {});
+      } else if (cardParams.mechanism === 'folding-screen') {
+        generateFoldingScreen(svg1, {});
       } else {
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', 105);

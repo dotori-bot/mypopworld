@@ -40,6 +40,8 @@ export const MECHANISMS = {
   V_FOLD: 'v-fold',
   BOX_POPUP: 'box-popup',
   PARALLEL_FOLD: 'parallel-fold',
+  LAYERED_STAGE: 'layered-stage',
+  FOLDING_SCREEN: 'folding-screen',
   PULL_TAB: 'pull-tab',
   STRAW_ROCKET: 'straw-rocket',
 };
