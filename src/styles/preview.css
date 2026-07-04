@@ -436,6 +436,29 @@
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
 }
 
+/* Flap-clap: a rigid triangular flap hinged INSET from the spine (not flush
+   against it, unlike arm/boxflap). Base (full height) at its own right/left
+   edge, tapering to a point at the far edge's middle — same silhouette as the
+   V-fold arm, just positioned with `right`/`left` > 0 (inline style, since the
+   inset distance varies per design) instead of flush against the page edge.
+   Its own rotate3d angle is FIXED (not driven by α) — see Preview3D.jsx. */
+.preview3d-flap {
+  position: absolute;
+  backface-visibility: visible;
+}
+
+.preview3d-flap-left {
+  transform-origin: right center;
+  clip-path: polygon(100% 0%, 100% 100%, 0% 50%);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+.preview3d-flap-right {
+  transform-origin: left center;
+  clip-path: polygon(0% 0%, 0% 100%, 100% 50%);
+  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
 .preview3d-readout {
   font-size: 0.72rem;
   color: var(--text-muted);

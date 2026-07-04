@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
+import { resolveFlapClapGeometry } from '../../generators/flapClap';
 import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
@@ -14,7 +15,7 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'flap-clap']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -238,6 +239,58 @@ export default function Preview3D() {
     const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
     const hTop = calculateParallelFoldHeight(totalDepth, alpha);
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'flap-clap') {
+    // Flap-clap — see generators/flapClap.js for the full derivation. Unlike
+    // every other mechanism here, this flap's OWN fold angle does NOT track
+    // α: it is glued rigid at a fixed angle δ (its rotate3d angle below is a
+    // CONSTANT, computed once from δ, not from `alpha`). Only the page's own
+    // rotateY(±θ_page) moves it through space — two independent rigid points
+    // on two independently-rotating pages, so their separation still varies
+    // with α even though neither flap "flexes" on its own.
+    //
+    // Reuses box-popup's exact rotate3d composition (a flap hinged at some
+    // inset distance from the spine, rotating by a flex angle γ relative to
+    // its own page): γ_fixed = 180° − δ makes that formula's standing height
+    // d·sin(γ) equal h·sin(δ) = B, and its horizontal reach d·cos(γ) equal
+    // h·cos(180−δ) = −h·cos(δ), matching flapClap.js's A = a − h·cos(δ)
+    // exactly — so this pose is the same physical model as the flat-pattern
+    // math, just read off via CSS 3D instead of trig-by-hand.
+    const a = params.offset ?? defaults.offset;
+    const h = params.flapLength ?? defaults.flapLength;
+    const b = params.halfWidth ?? defaults.halfWidth;
+    const delta = params.delta ?? defaults.delta;
+
+    const gammaFixed = 180 - delta; // deg, CONSTANT — not driven by alpha
+    const gRad = degToRad(gammaFixed);
+    const sinG = Math.sin(gRad);
+    const cosG = Math.cos(gRad);
+    const flapLiftLeft = `rotate3d(${(-sinG).toFixed(5)}, 0, ${(-cosG).toFixed(5)}, ${gammaFixed}deg)`;
+    const flapLiftRight = `rotate3d(${(-sinG).toFixed(5)}, 0, ${cosG.toFixed(5)}, ${gammaFixed}deg)`;
+
+    const aPx = a * PX;
+    const hPx = h * PX;
+    const bPx = b * PX;
+    const flapTop = pageH / 2 - bPx;
+
+    attachmentLeft = (
+      <div
+        className="preview3d-flap preview3d-flap-left"
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, right: `${aPx}px`, transform: flapLiftLeft }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-flap preview3d-flap-right"
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, left: `${aPx}px`, transform: flapLiftRight }}
+      />
+    );
+
+    // Readout: authoritative A/B/clap angle straight from the same resolver
+    // the flat-pattern generator uses, so the pose and the printed template
+    // can never silently disagree.
+    const geo = resolveFlapClapGeometry({ offset: a, flapLength: h, halfWidth: b, delta, paperSize });
+    const gapNow = Math.abs(2 * (geo.A * Math.sin(degToRad(alpha / 2)) - geo.B * Math.cos(degToRad(alpha / 2))));
+    readout = `탁! 각도 α* ≈ ${geo.clapAngle}° · 지금 간격 ${gapNow.toFixed(1)}mm · 열림 간격 ${geo.openGap}mm · 닫힘 잔여간격 ${geo.closedGap}mm`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's

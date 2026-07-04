@@ -51,6 +51,7 @@ export default async function handler(req, res) {
 - "layered-stage": 카드를 열면 성이나 마을 건물들이 층층이 겹쳐서 서로 다른 깊이로 입체적으로 솟아오르는 무대 도안. 앞 벽은 낮고 뒤 벽은 높아(성 안쪽 탑처럼) 원근감이 살아납니다 (성·궁전, 마을 거리, 도시 스카이라인, 숲속 무대 등). 카드를 닫으면 모든 층이 카드 밖으로 삐져나오지 않고 납작하게 접혀 들어갑니다. 뒤에서 앞 순서로 붙여야 해서 여러 층 조립이 필요합니다 (난이도: 중~상, 8세 이상 추천)
 - "auto-slide-window": 카드를 열면 액자(창문·문 모양) 속 그림이나 메시지가 저절로 짠! 하고 바뀌는 장치. 손잡이를 당기지 않고 카드를 여닫는 동작만으로, 지지대(팔)가 뒤에서 메시지 띠를 밀고 당겨 창문 속 그림이 지나갑니다. 살짝 열 때와 활짝 열 때 서로 다른 두 메시지가 보입니다 (생일 축하→선물 그림, 낮→밤, "사랑해"→하트, 애벌레→나비 등). 닫으면 책처럼 납작하게 접힙니다. 지지대 경첩을 척추와 나란히 붙여야 해서 조립에 주의가 필요합니다 (난이도: 중~상, 8세 이상 추천)
 - "slide-to-swing": 손잡이를 옆으로 밀면 기둥 위의 그림(하트·인형·동물 등)이 좌우로 왔다갔다 흔들리는 장치. 손잡이는 곧게 옆으로만 가는데 그림은 팽이축을 중심으로 원을 그리며 흔들려서, 시계추·인사하는 인형·짝짝이 춤추는 캐릭터·메트로놈 같은 주제에 잘 어울립니다 (흔들 그네, 손 흔들며 인사하는 친구, 좌우로 헤엄치는 물고기, 똑딱이는 시계추 등). 뒷면 걸림 장치로 세게 밀어도 빠지지 않습니다 (난이도: 중, 7세 이상 추천)
+- "flap-clap": 카드를 열고 닫으면 위쪽 면과 아래쪽 면에 붙은 두 조각(지느러미·손·발 등)이 서로 가까워졌다 멀어졌다 하면서 "탁!" 하고 마주 부딪히는 장치. 물범이 배를 통통 치거나, 손뼉을 치거나, 발을 구르는 듯한 주제에 잘 어울립니다 (배를 통통 두드리는 물범·바다표범, 손뼉 치는 원숭이, 발 구르는 펭귄 등). 지지대(프롭)로 각도를 고정해 붙여야 해서 조립에 약간 주의가 필요합니다 (난이도: 중, 7세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`
