@@ -40,15 +40,5 @@ export const LINE_STYLES_BW = {
 // helper in svgBuilder.js. Both coexist; other code depends on the singular one.)
 export const getLineStyles = (colorMode = 'color') => (colorMode === 'bw' ? LINE_STYLES_BW : LINE_STYLES);
 
-// Mechanism types
-export const MECHANISMS = {
-  V_FOLD: 'v-fold',
-  BOX_POPUP: 'box-popup',
-  PARALLEL_FOLD: 'parallel-fold',
-  PULL_TAB: 'pull-tab',
-  STRAW_ROCKET: 'straw-rocket',
-  RISING_SLIDE: 'rising-slide',
-};
-
 // SVG namespace
 export const SVG_NS = 'http://www.w3.org/2000/svg';

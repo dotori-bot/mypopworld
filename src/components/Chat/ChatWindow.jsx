@@ -69,13 +69,14 @@ export default function ChatWindow() {
               어떤 주제로 만들기를 하고 싶으신가요? 아이의 연령대와 주제를 입력해주시면 딱 맞는 아이디어를 추천해 드릴게요!
               
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <select 
-                  className="chat-input" 
+                <select
+                  className="chat-input"
                   id="init-age"
+                  defaultValue="7~9세"
                   style={{ width: '100%', padding: '10px 16px', boxSizing: 'border-box', backgroundColor: 'var(--bg-glass)' }}
                 >
                   <option value="4~6세">4~6세 (유아)</option>
-                  <option value="7~9세" selected>7~9세 (초등 저학년)</option>
+                  <option value="7~9세">7~9세 (초등 저학년)</option>
                   <option value="10세 이상">10세 이상 (초등 고학년)</option>
                 </select>
                 <input 
@@ -167,7 +168,7 @@ export default function ChatWindow() {
             placeholder="여기에 메시지를 입력하세요..."
             disabled={isTyping}
           />
-          <button className="chat-send-btn" onClick={handleSend} disabled={isTyping || !input.trim()}>
+          <button className="chat-send-btn" aria-label="메시지 보내기" onClick={handleSend} disabled={isTyping || !input.trim()}>
             <SendHorizonal size={16} />
           </button>
         </div>
