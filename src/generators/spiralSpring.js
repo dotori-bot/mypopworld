@@ -17,8 +17,9 @@
  *       strip centre-line length  L_strip ≈ π·(r0 + R_outer)·N
  *   Tradeoff: more turns / thinner strip ⇒ more extension but a floppier strip
  *   that buckles under a glued decoration. We fix w in the 4–10 mm band (default
- *   6 mm — stiff enough in cardstock to cantilever a ~14 mm planet over the
- *   ~30 mm disc span) and N in 3–7 (default 5), giving R_outer = 7 + 5·6 = 37 mm.
+ *   8 mm — stiff enough even in plain copier paper to cantilever a ~14 mm planet
+ *   over the ~32 mm disc span) and N in 3–7 (default 4), giving
+ *   R_outer = 7 + 4·8 = 39 mm.
  *
  * ── Extension model ──────────────────────────────────────────────────────────
  *   Pulling the hub up out of the plane tilts the (radially stacked) turns into
@@ -157,8 +158,8 @@ export function resolveSpiralGeometry(opts = {}) {
   const numOr = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
   const r0 = L.HUB_R;
-  const w = clamp(round(numOr(opts.pitch, 6)), L.PITCH_MIN, L.PITCH_MAX);
-  let turns = clamp(Math.round(numOr(opts.turns, 5)), L.TURNS_MIN, L.TURNS_MAX);
+  const w = clamp(round(numOr(opts.pitch, 8)), L.PITCH_MIN, L.PITCH_MAX);
+  let turns = clamp(Math.round(numOr(opts.turns, 4)), L.TURNS_MIN, L.TURNS_MAX);
 
   // Fit: 2·R_outer + b ≤ faceH with b = 0.45·(R_outer − r0) ⇒ 2.45·R_outer ≤ faceH + 0.45·r0.
   const rOuterFit = (faceH + 0.45 * r0) / 2.45;
@@ -213,8 +214,8 @@ const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦'];
  * @param {Object} [options]
  * @param {number} [options.cx=105] - Spine centre X (mm)
  * @param {number} [options.cy=148.5] - Spine centre Y (mm)
- * @param {number} [options.turns=5] - Spiral turns N (3–7)
- * @param {number} [options.pitch=6] - Strip width w (mm, 4–10)
+ * @param {number} [options.turns=4] - Spiral turns N (3–7)
+ * @param {number} [options.pitch=8] - Strip width w (mm, 4–10)
  * @param {number} [options.decorations=4] - Attachment markers (3–5)
  * @param {'A4'|'LETTER'} [options.paperSize='A4'] - For clamping vs the card face
  * @param {boolean} [options.isColor=true]
@@ -315,8 +316,8 @@ export const generateSpiralSpring = (svg, options = {}) => {
  * @param {Object} [params={}]
  * @param {'A4'|'LETTER'} [params.paperSize='A4']
  * @param {'color'|'bw'} [params.colorMode='color']
- * @param {number} [params.turns=5]
- * @param {number} [params.pitch=6]
+ * @param {number} [params.turns=4]
+ * @param {number} [params.pitch=8]
  * @param {number} [params.decorations=4]
  * @returns {{ svg: SVGSVGElement }}
  */
