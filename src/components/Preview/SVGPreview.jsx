@@ -4,21 +4,8 @@ import { getMechanism, buildMechanismParams, getDecorationSlots, INSTRUCTION_TEX
 import { PAPER_SIZES, PRINT } from '../../generators/constants';
 import { createSVG, svgToString, getLineStyle, addPath, addRect, addText } from '../../generators/svgBuilder';
 import { getContourPath, getBlobPath } from '../../utils/imageProcessor';
-import { polarToCartesian } from '../../utils/math';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/preview.css';
-
-// Builds the "d" for a simple angle-indicator arrow: a shaft through (cx, cy)
-// pointing at angleDeg (0 = up, clockwise positive, matching polarToCartesian),
-// with a small two-stroke arrowhead at the tip. Purely illustrative, not a
-// load-bearing measurement — see math.js's polarToCartesian for the trig.
-function buildAngleArrowPath(cx, cy, angleDeg, length = 12, headLen = 3.5, headSpread = 25) {
-  const tip = polarToCartesian(cx, cy, length / 2, angleDeg);
-  const tail = polarToCartesian(cx, cy, length / 2, angleDeg + 180);
-  const headA = polarToCartesian(tip.x, tip.y, headLen, angleDeg + 180 - headSpread);
-  const headB = polarToCartesian(tip.x, tip.y, headLen, angleDeg + 180 + headSpread);
-  return `M ${tail.x} ${tail.y} L ${tip.x} ${tip.y} M ${tip.x} ${tip.y} L ${headA.x} ${headA.y} M ${tip.x} ${tip.y} L ${headB.x} ${headB.y}`;
-}
 
 export default function SVGPreview() {
   const { cardParams, isTyping, paperSize, colorMode, language, decorationMode, setDecorationMode } = useCardStore();
@@ -120,10 +107,8 @@ export default function SVGPreview() {
           addText(svg, paper.width / 2, paper.height * (195 / 297), '가위로 윤곽선을 따라 오린 후, 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
         } else {
           // 'freehand': a neutral placeholder outline the child draws inside,
-          // annotated with size/position/angle, plus a small AI image shown
-          // only as an inspirational reference thumbnail (not meant to be cut).
-          const decorationAngle = cardParams.decorationAngle || 0;
-
+          // annotated with size/position, plus a small AI image shown only
+          // as an inspirational reference thumbnail (not meant to be cut).
           const freehandTitle = slots.length > 1
             ? `[ ${cardParams.theme} ] ${slot.label} 직접 그리기 가이드`
             : `[ ${cardParams.theme} ] 직접 그리기 가이드`;
@@ -149,13 +134,6 @@ export default function SVGPreview() {
           const horizDesc = dx < -5 ? '왼쪽' : dx > 5 ? '오른쪽' : '';
           const posDesc = `카드 중앙 ${vertDesc}${horizDesc ? ' ' + horizDesc : ''} (중심에서 x:${dx.toFixed(0)}mm, y:${dy.toFixed(0)}mm)`;
           addText(svg, shapeCenterX, shapeBottom + 12, posDesc, 3, 'middle');
-
-          // Angle indicator: a small rotated arrow + label. decorationAngle
-          // defaults to 0 (upright) but every mechanism can pass a value.
-          const arrowCenterY = shapeBottom + 26;
-          const arrowStyle = { stroke: isColor ? '#FF8800' : '#333333', strokeWidth: 0.6, dasharray: 'none', fill: 'none' };
-          addPath(svg, buildAngleArrowPath(shapeCenterX, arrowCenterY, decorationAngle), arrowStyle);
-          addText(svg, shapeCenterX, arrowCenterY + 12, `회전 각도: ${decorationAngle}°`, 3, 'middle');
 
           addText(svg, paper.width / 2, paper.height - PRINT.MARGIN - 8, '위 안내에 맞춰 자유롭게 그린 후, 그린 선을 따라 오려서 팝업 장치(풀칠 부위)에 붙여주세요!', 3, 'middle');
 
@@ -314,6 +292,7 @@ export default function SVGPreview() {
           <div className="page-navigator">
             <button
               className="btn-icon btn-secondary"
+              aria-label="이전 페이지"
               disabled={currentPage === 0}
               onClick={() => setCurrentPage(p => p - 1)}
             >
@@ -326,6 +305,7 @@ export default function SVGPreview() {
             </div>
             <button
               className="btn-icon btn-secondary"
+              aria-label="다음 페이지"
               disabled={currentPage === pages.length - 1}
               onClick={() => setCurrentPage(p => p + 1)}
             >
@@ -345,7 +325,7 @@ export default function SVGPreview() {
               onClick={handleSvgExport}
               title="벡터 SVG 파일로 내보내기 (일러스트레이터/잉크스케이프 등에서 편집 가능)"
             >
-              SVG로 내보내기 <span className="premium-badge">✨ 프리미엄 예정</span>
+              SVG로 내보내기
             </button>
           </div>
         </>

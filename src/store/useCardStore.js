@@ -4,9 +4,12 @@ const useCardStore = create((set) => ({
   // Settings
   paperSize: 'A4',
   colorMode: 'color',
+  // PDF instruction-page labels support 'en' (see pdfExporter.addInstructionPage),
+  // but INSTRUCTION_TEXT content itself is Korean-only — no UI toggle for this
+  // until the instruction copy is actually translated, to avoid a half-English page.
   language: 'ko',
   // 'ai-image': embed the AI-generated image itself as the cuttable page-2 artwork.
-  // 'freehand' (default): show a draw-it-yourself guide (outline/size/position/angle)
+  // 'freehand' (default): show a draw-it-yourself guide (outline/size/position)
   // with the AI image reduced to a small inspirational reference thumbnail.
   decorationMode: 'freehand',
   

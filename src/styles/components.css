@@ -52,10 +52,12 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Toggle Group */
+/* Toggle Group — segmented control: unselected segments are "weak" (plain
+   text), the selected segment is "fill" (solid primary), per the meaning +
+   intensity split described in the design system reference. */
 .toggle-group {
   display: flex;
-  background: var(--bg-glass);
+  background: var(--bg-secondary);
   border-radius: var(--radius-md);
   padding: 4px;
   border: 1px solid var(--border-glass);
@@ -70,10 +72,23 @@
   transition: all var(--transition-fast);
 }
 
-.toggle-btn.active {
-  background: var(--bg-glass-active);
+.toggle-btn:hover:not(.active) {
   color: var(--text-primary);
+}
+
+.toggle-btn.active {
+  background: var(--primary-main);
+  color: var(--text-inverse);
   box-shadow: var(--shadow-sm);
+}
+
+.toggle-group-sm {
+  padding: 2px;
+}
+
+.toggle-group-sm .toggle-btn {
+  padding: 5px 10px;
+  font-size: var(--fs-caption);
 }
 
 /* Cards */
