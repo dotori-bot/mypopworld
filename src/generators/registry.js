@@ -73,7 +73,7 @@ export const MECHANISM_REGISTRY = {
   'spiral-spring': {
     labelKo: '달팽이 스프링 (늘어나며 떠오르는 팝업)',
     render: (params) => renderSpiralSpring(params),
-    defaultParams: { turns: 5, pitch: 6, decorations: 4 },
+    defaultParams: { turns: 4, pitch: 8, decorations: 4 },
     instructionStyle: 'spiral-spring',
   },
   'rising-slide': {
