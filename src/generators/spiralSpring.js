@@ -244,6 +244,18 @@ export const generateSpiralSpring = (svg, options = {}) => {
   const hubX = round(cx);
   const hubY = round(cy + a);           // disc centre, below the spine (face A)
 
+  // 0. Strip-width guide: a light fill across the whole annulus (hub edge →
+  //    rim) so the coiled strip's real width (pitch w) reads visually on the
+  //    flat pattern instead of looking like a bare hairline thread. This is
+  //    purely a visual aid — the only actual CUT is the single spiral line
+  //    below; the guide sits underneath it and every other mark.
+  const bandFill = addPath(
+    g,
+    `${circlePath(hubX, hubY, rOuter)} ${circlePath(hubX, hubY, r0)}`,
+    { fill: isColor ? 'rgba(120,90,40,0.08)' : 'rgba(0,0,0,0.06)' },
+  );
+  bandFill.setAttribute('fill-rule', 'evenodd');
+
   // 1. Disc outer boundary (cut).
   addPath(g, circlePath(hubX, hubY, rOuter), cutStyle);
 
