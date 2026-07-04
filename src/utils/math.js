@@ -85,6 +85,34 @@ export function calculateParallelFoldHeight(depth, cardAngle) {
 }
 
 /**
+ * Spiral-spring ("달팽이 스프링") anchor extension distance D(α), law of cosines.
+ *
+ * The coil's hub is glued to face A at distance `a` below the spine; its rim tip
+ * to face B at distance `b` above the spine. As the card opens to angle α the two
+ * anchors swing apart on arms a and b about the shared spine hinge, so the
+ * straight-line distance the coil must span end-to-end is
+ *
+ *     D(α) = √(a² + b² − 2·a·b·cos α)
+ *
+ * D(0) = |a − b| = R_outer (coil relaxed flat, zero standing height) and
+ * D(180) = a + b (max extension). The VISIBLE standing height of the coil in the
+ * assembled pose is the pay-out beyond the relaxed disc, D(α) − R_outer, which
+ * rises monotonically 0 → 2·min(a,b) = hStand. This is the authoritative single-
+ * source formula for the spiral-spring preview, mirroring calculateVFoldAngle's
+ * role for the V-fold — the renderer calls it instead of re-deriving the trig.
+ *
+ * @param {number} cardAngle - Card opening angle α in degrees (0 = closed, 180 = flat)
+ * @param {number} a - Hub distance below the spine (mm)
+ * @param {number} b - Rim-tip distance above the spine (mm)
+ * @returns {number} Anchor-to-anchor distance D(α) in mm
+ */
+export function calculateSpiralExtension(cardAngle, a, b) {
+  const rad = degToRad(cardAngle);
+  const d2 = a * a + b * b - 2 * a * b * Math.cos(rad);
+  return Math.sqrt(Math.max(0, d2));
+}
+
+/**
  * Clamp a value between min and max.
  * @param {number} value
  * @param {number} min

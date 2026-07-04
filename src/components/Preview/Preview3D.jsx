@@ -4,10 +4,12 @@ import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { CARD_SIZES } from '../../generators/constants';
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
+import { resolveSpiralGeometry } from '../../generators/spiralSpring';
 import {
   calculateVFoldAngle,
   calculatePopupHeight,
   calculateParallelFoldHeight,
+  calculateSpiralExtension,
   framedVolvelleSectors,
   flipDiscLeafStates,
   polarToCartesian,
@@ -21,7 +23,7 @@ import '../../styles/preview.css';
 // back to the "not ready yet" placeholder. Note: 'volvelle' is a flat top-down
 // SPINNER, not a hinged pop-up, so it opts out of the shared book/α scaffold
 // below and renders its own view (see the volvelle branch in the component).
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc', 'spiral-spring']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -568,6 +570,127 @@ export default function Preview3D() {
     const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
     const hTop = calculateParallelFoldHeight(totalDepth, alpha);
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'spiral-spring') {
+    // ── Spiral-spring pose ───────────────────────────────────────────────────
+    // Same α family as V-fold/box/parallel: the physics ARE parameterised by the
+    // card-opening angle. resolveSpiralGeometry is the single source of truth for
+    // r0/rOuter/a/b/hStand/decos (same call the printable generator makes); the
+    // extension trig comes from calculateSpiralExtension (utils/math.js).
+    //
+    // Anchors: hub glued to face A at distance `a` below the spine, rim tip to
+    // face B at distance `b` above it. Opening the card swings the two anchors
+    // apart on arms a, b about the spine hinge, so the coil must physically span
+    //     D(α) = √(a² + b² − 2·a·b·cos α)
+    // end-to-end. D(0) = |a−b| = rOuter (coil relaxed flat) and D(180) = a+b.
+    //
+    // VISIBLE-HEIGHT MAPPING (justified): the coil's flat printed disc already
+    // occupies the D(0) = rOuter span at rest, so the standing height it pays out
+    // is exactly the EXTRA distance beyond that rest span:
+    //     standH(α) = D(α) − rOuter,          zero at α=0, hStand (=2b) at α=180.
+    // That zero-point is the physically correct one — at α=0 the anchors are only
+    // rOuter apart, the coil lies flat in its disc, nothing stands up. The per-
+    // decoration heights (geo.decos[i].height, defined at FULL extension) are
+    // scaled by the extension fraction ext = standH/hStand ∈ [0,1] so a marker
+    // rises from the card plane and reaches its documented height only at α=180
+    // (using standH/hStand — the true extension fraction — rather than the naive
+    // D(α)/D(180), which would leave markers floating at ~58% height while the
+    // coil is still visibly flat at α=0, contradicting the flat rest state).
+    const geo = resolveSpiralGeometry({
+      turns: params.turns ?? defaults.turns,
+      pitch: params.pitch ?? defaults.pitch,
+      decorations: params.decorations ?? defaults.decorations,
+      paperSize,
+    });
+    const { r0, w, turns, rOuter, a, b, hStand, decos } = geo;
+
+    const D = calculateSpiralExtension(alpha, a, b);        // mm, end-to-end span
+    const standH = Math.max(0, D - rOuter);                 // mm, visible standing height
+    const ext = hStand > 0 ? clamp(standH / hStand, 0, 1) : 0; // extension fraction 0..1
+
+    const standPx = standH * PX;
+    // Coil display radius: the spiral's mean radius, held constant along the helix
+    // (a stylised cylinder-limit spring). Under the book's rotateX tilt each flat
+    // ring renders as an ellipse, so the stack reads as a coil that grows taller.
+    const coilRpx = ((r0 + rOuter) / 2) * PX;
+    // One ring per half-turn for a smooth helix; total twist = turns·360°.
+    const ringCount = clamp(Math.round(turns * 2), 6, 14);
+    const twistPer = (turns * 360) / Math.max(1, ringCount - 1);
+
+    // Build every 3-D element tagged with its local z (translateZ). We then sort
+    // the array by z ASCENDING and emit in that order, so DOM order == depth
+    // order (farthest-from-viewer first, nearest last). This is the flip-disc
+    // lesson applied: for these near-coplanar rings/dots Chromium paints in DOM
+    // order, NOT by translateZ, so paint order must be guaranteed by DOM order —
+    // higher-z (nearer the viewer, the top of the standing coil) is emitted LAST
+    // and therefore paints on top, exactly as it should.
+    const parts = [];
+    for (let k = 0; k < ringCount; k++) {
+      const f = ringCount === 1 ? 0 : k / (ringCount - 1);
+      const z = f * standPx;
+      // Base (f=0) tinted cool, top (f=1) warm, so the helix's rise is legible
+      // even when squat. Slightly thicker base ring to ground the coil.
+      const hue = Math.round(210 - 190 * f);
+      parts.push({
+        z,
+        node: (
+          <div
+            key={`ring-${k}`}
+            className="preview3d-spiral-ring"
+            style={{
+              width: `${coilRpx * 2}px`,
+              height: `${coilRpx * 2}px`,
+              borderColor: `hsl(${hue}, 70%, 60%)`,
+              borderWidth: k === 0 ? '3px' : '2px',
+              transform: `translate(-50%, -50%) translateZ(${z.toFixed(2)}px) rotateZ(${(k * twistPer).toFixed(2)}deg)`,
+            }}
+          />
+        ),
+      });
+    }
+    for (const d of decos) {
+      const z = d.height * ext * PX;                        // current marker height (px)
+      const ang = degToRad(d.f * turns * 360);              // where along the spiral it sits
+      const dx = coilRpx * Math.cos(ang);
+      const dy = coilRpx * Math.sin(ang);
+      const dotR = d.drawR * PX * 0.7;                      // planet radius (mm→px, trimmed for the pose)
+      const hue = Math.round((d.n * 360) / (decos.length + 1));
+      parts.push({
+        z,
+        node: (
+          <div
+            key={`deco-${d.n}`}
+            className="preview3d-spiral-deco"
+            style={{
+              width: `${dotR * 2}px`,
+              height: `${dotR * 2}px`,
+              background: `hsl(${hue}, 72%, 60%)`,
+              transform: `translate(-50%, -50%) translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) translateZ(${z.toFixed(2)}px)`,
+            }}
+          />
+        ),
+      });
+    }
+    // Stable sort by z: farthest (z=0, coil base) first → nearest (coil top) last.
+    parts.sort((p, q) => p.z - q.z);
+
+    // The coil stands vertically in the symmetry plane regardless of α. It lives
+    // inside the LEFT page (its hub is anchored to face A), so it inherits the
+    // page's rotateY(θ); we cancel that with rotateY(−θ) about the SAME spine
+    // point (transform-origin 0 0 sits exactly on the page's right-center pivot),
+    // leaving the coil axis welded to world-vertical +Z at every opening angle.
+    attachmentLeft = (
+      <div
+        className="preview3d-spiral"
+        style={{ top: `${pageH / 2}px`, transform: `rotateY(${-thetaPage}deg)` }}
+      >
+        {parts.map((p) => p.node)}
+      </div>
+    );
+    attachmentRight = null;
+
+    readout =
+      `늘어난 거리 D = ${D.toFixed(1)}mm · 코일 높이 h = ${standH.toFixed(1)}mm · ` +
+      `${Math.round(turns)}바퀴 · 피치 ${w}mm`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
