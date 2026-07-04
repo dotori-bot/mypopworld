@@ -35,17 +35,14 @@ export const generateVFold = (svg, options = {}) => {
   addPath(g, `M ${cx} ${cy} L ${leftX} ${topY}`, cutStyle);
   addPath(g, `M ${cx} ${cy} L ${rightX} ${topY}`, cutStyle);
 
-  // 2. Spine Fold (Valley) - only where the V-fold spans
-  addPath(g, `M ${cx} ${topY} L ${cx} ${cy}`, valleyStyle);
+  // 2. V ridge (Mountain) - the central crease peaks toward the viewer
+  addPath(g, `M ${cx} ${topY} L ${cx} ${cy}`, mountainStyle);
 
-  // 3. Mountain Folds (at the base of the V arms where they attach to the card)
-  // Normally the base card folds. The V-fold itself is a separate piece or cut from the card.
-  // Assuming a pop-up piece cut OUT of the card:
-  const baseFoldY = topY - 15; 
-  // Wait, standard V-fold cut from center:
-  // Base folds parallel to spine? No, V-fold bases are angled.
-  addPath(g, `M ${leftX} ${topY} L ${cx} ${baseFoldY}`, mountainStyle);
-  addPath(g, `M ${rightX} ${topY} L ${cx} ${baseFoldY}`, mountainStyle);
+  // 3. Base folds (Valley) - where each V arm hinges down to glue flat onto its
+  // page. Paired with the mountain ridge so the piece collapses flat.
+  const baseFoldY = topY - 15;
+  addPath(g, `M ${leftX} ${topY} L ${cx} ${baseFoldY}`, valleyStyle);
+  addPath(g, `M ${rightX} ${topY} L ${cx} ${baseFoldY}`, valleyStyle);
 
   // 4. Glue Tabs (Trapezoids at the base)
   const tabSize = 8;

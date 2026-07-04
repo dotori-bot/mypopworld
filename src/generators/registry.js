@@ -26,7 +26,7 @@ export const MECHANISM_REGISTRY = {
     labelKo: '브이폴드 (V-Fold)',
     render: (params) => renderVFold(params),
     defaultParams: { armLength: 40, angle: 45 },
-    instructionStyle: 'generic',
+    instructionStyle: 'v-fold',
   },
   'box-popup': {
     labelKo: '상자 팝업 (Box Popup)',
@@ -122,6 +122,16 @@ export const MECHANISM_REGISTRY = {
  * the on-screen equivalent and are kept in sync with this text by hand.
  */
 export const INSTRUCTION_TEXT = {
+  'v-fold': {
+    title: '브이폴드(V-Fold) 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 삼각형 팝업 조각을 오려주세요. 조각 아래 양쪽에 붙은 초록색 날개(풀칠 자리)는 자르지 말고 남겨둡니다.',
+      '가운데 세로선(빨간 점선)은 산접기(볼록하게) 해서 능선이 앞으로 뾰족하게 서게 하고, 양옆 바닥선(파란 점선)은 골접기(오목하게) 해서 두 팔이 바깥으로 눕게 접어주세요.',
+      '카드를 반쯤 펼친 상태에서 왼쪽 팔은 왼쪽 종이면에, 오른쪽 팔은 오른쪽 종이면에 척추(가운데 접는 선)를 기준으로 좌우 대칭이 되도록 붙여주세요. 두 팔의 능선이 척추 위에서 만나야 합니다.',
+    ],
+    tips: '카드를 닫으면 삼각형이 척추를 따라 납작하게 접히고, 열면 능선이 앞으로 솟아올라야 정상입니다. 한쪽으로 기울면 두 팔을 척추 기준으로 대칭이 되게 다시 붙여 주세요.',
+  },
   generic: {
     title: '조립 설명서',
     materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
