@@ -686,3 +686,169 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* ------------------------------------------------------------------ */
+/* Straw-rocket ("빨대 로켓"): a breath-powered paper tube that flies off  */
+/* a drinking straw. Rendered as a PLAIN 2D/2.5D scene — no perspective, */
+/* no preserve-3d, no translateZ. Occlusion is by z-index only (straw=1, */
+/* rocket=3), which Chromium honours deterministically, unlike depth-    */
+/* sorting near-coplanar 3D siblings (the flip-disc lesson). The launch   */
+/* is a transform+opacity keyframe animation with an ease-out curve, so   */
+/* the rocket leaves fast and decelerates like a real blown paper tube.   */
+/* ------------------------------------------------------------------ */
+.preview3d-rocket-stage {
+  perspective: none;
+  padding: var(--space-lg);
+}
+
+.preview3d-rocket-scene {
+  position: relative;
+  width: 240px;
+  height: 380px;
+}
+
+/* Ground shadow beneath the straw (deepest layer). */
+.preview3d-rocket-pad {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: 120px;
+  height: 14px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 70%);
+  z-index: 0;
+}
+
+/* The drinking straw: striped, rounded, standing vertically behind the rocket. */
+.preview3d-rocket-straw {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  width: 12px;
+  height: 300px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: repeating-linear-gradient(-45deg, #ef4444 0 8px, #ffffff 8px 16px);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  z-index: 1;
+}
+
+/* Rocket tube. Base pose sits low over the straw; z-index 3 pins it above the
+   straw at every animation frame. */
+.preview3d-rocket {
+  position: absolute;
+  left: 50%;
+  bottom: 40px;
+  width: 64px;
+  transform: translate(-50%, 0);
+  transform-origin: 50% 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 3;
+}
+
+/* .is-flying plays the launch keyframes; `forwards` holds the flown-away end
+   state (opacity 0, far up) through the 'landed' phase. Removing the class on
+   reset reverts to the base pose INSTANTLY — no reverse animation. */
+.preview3d-rocket.is-flying {
+  animation: preview3d-rocket-fly 0.95s cubic-bezier(0.15, 0.62, 0.32, 1) forwards;
+}
+
+.preview3d-rocket-svg {
+  width: 64px;
+  height: 104px;
+  display: block;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
+}
+
+/* Theme-based decoration caption riding on the tube (reuses the theme param,
+   mirroring the generator's "[theme 앞면]" placeholder). */
+.preview3d-rocket-theme {
+  margin-top: 2px;
+  max-width: 88px;
+  padding: 1px 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Flame flickers only while flying. transform-box:fill-box so transform-origin
+   is relative to the flame path, not the whole SVG. */
+.preview3d-rocket-flame {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.preview3d-rocket.is-flying .preview3d-rocket-flame {
+  opacity: 1;
+  animation: preview3d-rocket-flame 0.12s ease-in-out infinite alternate;
+}
+
+/* Breath puff at the straw mouth (mounted only during 'launching'). */
+.preview3d-rocket-puff {
+  position: absolute;
+  left: calc(50% + 14px);
+  bottom: 30px;
+  font-size: 1.4rem;
+  z-index: 2;
+  pointer-events: none;
+  animation: preview3d-rocket-puff 0.6s ease-out forwards;
+}
+
+@keyframes preview3d-rocket-fly {
+  0%   { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 1; }
+  55%  { transform: translate(calc(-50% + 12px), -180px) rotate(-6deg) scale(0.92); opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translate(calc(-50% + 28px), -340px) rotate(-13deg) scale(0.66); opacity: 0; }
+}
+
+@keyframes preview3d-rocket-flame {
+  from { transform: scaleY(0.8); }
+  to   { transform: scaleY(1.28); }
+}
+
+@keyframes preview3d-rocket-puff {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  30%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(10px, -28px) scale(1.6); }
+}
+
+.preview3d-rocket-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.preview3d-rocket-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-gradient);
+  border: none;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preview3d-rocket-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
+}
+
+.preview3d-rocket-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  background: var(--bg-glass-active);
+  color: var(--text-secondary);
+}

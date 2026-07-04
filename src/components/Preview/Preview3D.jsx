@@ -23,7 +23,7 @@ import '../../styles/preview.css';
 // back to the "not ready yet" placeholder. Note: 'volvelle' is a flat top-down
 // SPINNER, not a hinged pop-up, so it opts out of the shared book/α scaffold
 // below and renders its own view (see the volvelle branch in the component).
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc', 'spiral-spring']);
+const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc', 'spiral-spring', 'straw-rocket']);
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -202,6 +202,12 @@ export default function Preview3D() {
   // A single integer because the leaves are a strictly ordered stack — see
   // flipDiscLeafStates() in utils/math.js for why per-leaf angles would be wrong.
   const [flipped, setFlipped] = useState(0);
+  // Straw-rocket launch phase. A SINGLE enum — 'idle' | 'launching' | 'landed' —
+  // so no two phases (hence no two animations) can be active at once. There is no
+  // card-opening-angle physics here (it's a breath-powered launch, unrelated to a
+  // hinged card), so straw-rocket opts out of the shared book scaffold and renders
+  // its own 2.5D scene below, exactly like volvelle/flip-disc do.
+  const [rocketPhase, setRocketPhase] = useState('idle');
   const discRef = useRef(null);
   const drag = useRef({ active: false, last: 0 });
 
@@ -489,6 +495,139 @@ export default function Preview3D() {
             >
               다음 장 넘기기 →
             </button>
+          </div>
+          <div className="preview3d-readout">{readout}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Straw-rocket ("빨대 로켓"): a breath-powered paper tube that flies off a ──
+  // drinking straw. No card-opening angle and no fold physics, so it renders its
+  // OWN scene (a striped straw + a decorated rocket tube) plus a "불기" button that
+  // plays a launch animation, instead of the shared hinged-book scaffold.
+  //
+  // Occlusion note (the flip-disc lesson, applied): this scene is a PLAIN 2D
+  // stacking context — no `perspective`, no `preserve-3d`, no `translateZ`. The
+  // rocket must always paint over the straw; Chromium does not reliably depth-sort
+  // near-coplanar 3D siblings, so occlusion is pinned by `z-index` (straw=1,
+  // rocket=3) which IS honoured deterministically. The launch is a 2.5D
+  // transform/opacity animation, not a real 3D pose, which is all a kid's-toy
+  // preview needs here.
+  //
+  // There are no numeric geometry params to honour (registry defaultParams: {}),
+  // so — per the brief — the "authoritative source" is just the theme string and
+  // the blow→launch interaction; we lean on animation quality, not a fake formula.
+  if (mechanism === 'straw-rocket') {
+    const rocketParams = buildMechanismParams(cardParams, paperSize, colorMode) || {};
+    const theme = rocketParams.theme || 'rocket';
+    const flying = rocketPhase !== 'idle';
+
+    // --- State machine ---------------------------------------------------------
+    //   idle ──(click 불기)──▶ launching ──(fly animationend)──▶ landed
+    //   landed ──(click 다시 불기)──▶ idle   (instant reset, then blow again)
+    // The ONLY automatic transition is launching→landed, gated on the fly
+    // animation actually finishing, so the reset button can never appear before
+    // the launch completes. Every handler is guarded by the current phase, so an
+    // extra/stray click or a bubbled child animationend cannot skip or contradict
+    // a state (e.g. no double-launch, no two animations running at once).
+    const launch = () => {
+      if (rocketPhase === 'idle') setRocketPhase('launching');
+    };
+    const resetRocket = () => {
+      if (rocketPhase === 'landed') setRocketPhase('idle');
+    };
+    const onRocketAnimEnd = (e) => {
+      // Filter to the fly keyframes only: the flame flicker is `infinite` (never
+      // ends) and the puff lives outside this element, but guard by name anyway.
+      if (e.animationName === 'preview3d-rocket-fly' && rocketPhase === 'launching') {
+        setRocketPhase('landed');
+      }
+    };
+
+    const readout =
+      rocketPhase === 'launching'
+        ? '발사! 🚀 로켓이 빨대에서 쏙 날아가요'
+        : rocketPhase === 'landed'
+          ? '다 날아갔어요 — 다시 불어볼까요?'
+          : '불기 전 — 아래 버튼을 눌러 로켓을 발사해요!';
+
+    return (
+      <div className="preview3d-root">
+        <div className="preview3d-stage preview3d-rocket-stage">
+          <div className="preview3d-rocket-scene">
+            {/* Ground shadow / launch pad. */}
+            <div className="preview3d-rocket-pad" />
+
+            {/* Striped drinking straw — behind the rocket (z-index 1). */}
+            <div className="preview3d-rocket-straw" />
+
+            {/* Breath puff at the straw mouth — only while launching. */}
+            {rocketPhase === 'launching' && (
+              <div className="preview3d-rocket-puff" aria-hidden="true">💨</div>
+            )}
+
+            {/* Rocket tube. z-index 3 keeps it painted over the straw always.
+                .is-flying plays the launch keyframes; `forwards` holds the flown
+                -away end state through the 'landed' phase, and removing the class
+                on reset snaps it straight back to the pad (no reverse animation). */}
+            <div
+              className={`preview3d-rocket${flying ? ' is-flying' : ''}`}
+              onAnimationEnd={onRocketAnimEnd}
+            >
+              <svg viewBox="0 0 64 104" className="preview3d-rocket-svg" aria-hidden="true">
+                {/* Flame (shown only while flying, via CSS) — drawn first so the
+                    body overlaps its top. */}
+                <path
+                  className="preview3d-rocket-flame"
+                  d="M24 80 Q26 96 32 104 Q38 96 40 80 Q36 90 32 84 Q28 90 24 80 Z"
+                  fill="#fb923c"
+                />
+                <path
+                  className="preview3d-rocket-flame"
+                  d="M28 82 Q30 92 32 98 Q34 92 36 82 Q34 88 32 85 Q30 88 28 82 Z"
+                  fill="#fde047"
+                />
+                {/* Fins */}
+                <path d="M20 62 L8 86 L20 80 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" strokeLinejoin="round" />
+                <path d="M44 62 L56 86 L44 80 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" strokeLinejoin="round" />
+                {/* Body (the paper tube) */}
+                <rect x="20" y="30" width="24" height="52" rx="11" ry="11" fill="#f97316" stroke="#c2410c" strokeWidth="1.5" />
+                {/* Nose cone (the folded/sealed top) */}
+                <path d="M32 5 L45 34 L19 34 Z" fill="#ef4444" stroke="#b91c1c" strokeWidth="1.5" strokeLinejoin="round" />
+                {/* Trim band */}
+                <rect x="20" y="64" width="24" height="5" fill="#fbbf24" />
+                {/* Window */}
+                <circle cx="32" cy="47" r="7.5" fill="#7dd3fc" stroke="#e0f2fe" strokeWidth="2.5" />
+                <circle cx="32" cy="47" r="7.5" fill="none" stroke="#0284c7" strokeWidth="1" />
+              </svg>
+              {/* Theme-based decoration caption (reuses the theme param). */}
+              <span className="preview3d-rocket-theme">{theme}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="fold-slider-container">
+          <div className="fold-slider-labels">
+            <span>빨대 로켓</span>
+            <span>테마: {theme}</span>
+          </div>
+          <div className="preview3d-rocket-controls">
+            {rocketPhase === 'idle' && (
+              <button type="button" className="preview3d-rocket-btn" onClick={launch}>
+                불기 💨
+              </button>
+            )}
+            {rocketPhase === 'launching' && (
+              <button type="button" className="preview3d-rocket-btn" disabled>
+                발사 중… 🚀
+              </button>
+            )}
+            {rocketPhase === 'landed' && (
+              <button type="button" className="preview3d-rocket-btn" onClick={resetRocket}>
+                다시 불기 🔄
+              </button>
+            )}
           </div>
           <div className="preview3d-readout">{readout}</div>
         </div>
