@@ -873,16 +873,19 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">1</div>
               <div className="step-content">
-                <h4>삼각형 팝업 조각 오리기</h4>
-                <p>검은색 실선을 따라 삼각형 팝업 조각을 오려주세요. 아래 양쪽에 붙은 초록색 날개(풀칠 자리)는 자르지 말고 남깁니다.</p>
+                <h4>다이아몬드 팝업 조각 오리기</h4>
+                <p>검은색 실선을 따라 다이아몬드(마름모) 모양 팝업 조각을 오려주세요. 위·아래 끝에 붙은 초록색 날개(풀칠 자리)는 자르지 말고 남깁니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    {/* Symmetric triangular gusset outline (cut) */}
-                    <path d="M50 8 L24 44 L76 44 Z" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeDasharray="4 2" />
-                    {/* Two glue feet, one per arm, split at the centre line */}
-                    <path d="M24 44 L50 44 L50 50 L26 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
-                    <path d="M50 44 L76 44 L74 50 L50 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
-                    <path d="M8 52 L18 42 M18 52 L8 42" stroke="var(--primary-main)" strokeWidth="2" /> {/* Scissors hint */}
+                    {/* Spine runs horizontally; the diamond straddles it. */}
+                    <path d="M8 30 L92 30" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" />
+                    <text x="8" y="27" fontSize="5" fill="var(--text-secondary)">척추(가운데 접는 선)</text>
+                    {/* Kite outline (cut): wide ridge on the spine, tapering to both pages */}
+                    <path d="M30 30 L42 12 L58 12 L70 30 L58 48 L42 48 Z" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeDasharray="4 2" />
+                    {/* Two glue feet, one per page, at the tapered tips */}
+                    <path d="M42 12 L45 6 L55 6 L58 12 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <path d="M42 48 L45 54 L55 54 L58 48 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <path d="M6 52 L16 42 M16 52 L6 42" stroke="var(--primary-main)" strokeWidth="2" /> {/* Scissors hint */}
                   </svg>
                 </div>
               </div>
@@ -890,20 +893,21 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">2</div>
               <div className="step-content">
-                <h4>능선은 산접기, 바닥은 골접기</h4>
-                <p>가운데 세로선(빨간 점선)은 <b>산접기</b>(볼록하게)로 능선이 앞으로 뾰족하게 서게 하고, 양옆 바닥선(파란 점선)은 <b>골접기</b>(오목하게)로 두 팔이 바깥으로 눕게 접어주세요.</p>
+                <h4>능선은 산접기, 두 바닥선은 골접기</h4>
+                <p>척추와 겹치는 가운데 가로 능선(빨간 점선)은 <b>산접기</b>(볼록하게)로 앞으로 뾰족하게 세우고, 위·아래 두 바닥선(파란 점선)은 <b>골접기</b>(오목하게)로 접어 두 팔이 각각 반대쪽 종이면으로 눕게 합니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    <path d="M50 8 L24 44 L76 44 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" />
-                    {/* Central ridge = mountain (red) */}
-                    <path d="M50 8 L50 44" stroke="red" strokeWidth="2" strokeDasharray="4 2" />
-                    {/* Two base creases = valley (blue) */}
-                    <path d="M24 44 L50 44" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
-                    <path d="M50 44 L76 44" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
-                    <path d="M24 44 L50 44 L50 50 L26 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
-                    <path d="M50 44 L76 44 L74 50 L50 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
-                    <text x="58" y="26" fontSize="6" fill="red">산접기(능선)</text>
-                    <text x="20" y="57" fontSize="5.5" fill="blue">골접기(바닥)</text>
+                    <path d="M30 30 L42 12 L58 12 L70 30 L58 48 L42 48 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" />
+                    {/* Ridge = mountain (red), horizontal ON the spine */}
+                    <path d="M30 30 L70 30" stroke="red" strokeWidth="2" strokeDasharray="4 2" />
+                    {/* Two base creases = valley (blue), one toward each page */}
+                    <path d="M42 12 L58 12" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
+                    <path d="M42 48 L58 48" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
+                    <path d="M42 12 L45 6 L55 6 L58 12 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <path d="M42 48 L45 54 L55 54 L58 48 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="72" y="31" fontSize="5.5" fill="red">산접기(능선=척추)</text>
+                    <text x="60" y="10" fontSize="5" fill="blue">골접기(바닥)</text>
+                    <text x="60" y="57" fontSize="5" fill="blue">골접기(바닥)</text>
                   </svg>
                 </div>
               </div>
@@ -911,25 +915,24 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">3</div>
               <div className="step-content">
-                <h4>척추 기준 좌우 대칭으로 붙이기</h4>
-                <p>카드를 반쯤 펼친 상태에서 왼쪽 팔은 왼쪽 종이면에, 오른쪽 팔은 오른쪽 종이면에 <b>척추를 기준으로 좌우 대칭</b>이 되게 붙이세요. 두 팔의 능선이 척추 위에서 만나고, 열면 능선이 앞으로 솟아오릅니다.</p>
+                <h4>능선을 척추 위에, 날개는 양쪽 페이지에</h4>
+                <p>카드를 반쯤 펼친 상태에서 <b>능선을 척추(가운데 접는 선) 위에 정확히 얹고</b>, 위쪽 날개는 위 종이면에, 아래쪽 날개는 아래 종이면에 <b>상하 대칭</b>으로 붙이세요. 열면 능선이 앞으로 솟아오릅니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="160" viewBox="0 0 100 80" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    {/* Isometric open card: diamond, spine vertical front→back */}
-                    <path d="M20 60 L50 75 L80 60 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <path d="M50 75 L50 10" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" />
-                    <text x="53" y="18" fontSize="5" fill="var(--text-secondary)">척추</text>
-                    {/* V-fold: symmetric about the spine, apex rising toward viewer */}
-                    <path d="M50 26 L50 50 L34 56 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
-                    <path d="M50 26 L50 50 L66 56 Z" fill="var(--primary-main)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.55" />
-                    {/* Mountain ridge along the spine, toward the viewer */}
-                    <path d="M50 26 L50 50" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
-                    {/* Glue feet on the two pages */}
-                    <path d="M50 50 L34 56" stroke="green" strokeWidth="2" />
-                    <path d="M50 50 L66 56" stroke="green" strokeWidth="2" />
-                    <circle cx="34" cy="56" r="2" fill="green" />
-                    <circle cx="66" cy="56" r="2" fill="green" />
-                    <text x="50" y="70" fontSize="4.5" textAnchor="middle" fill="green">양쪽 페이지에 대칭으로 풀칠</text>
+                    {/* Open card seen from above: spine horizontal, two pages up/down */}
+                    <path d="M15 40 L50 20 L85 40 L50 60 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M15 40 L85 40" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" />
+                    <text x="17" y="37" fontSize="5" fill="var(--text-secondary)">척추</text>
+                    <text x="70" y="55" fontSize="4.5" fill="var(--text-secondary)">위 페이지</text>
+                    <text x="70" y="30" fontSize="4.5" fill="var(--text-secondary)">아래 페이지</text>
+                    {/* V-fold ridge sitting ON the spine, apex rising toward viewer */}
+                    <path d="M38 40 L62 40 L50 24 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.9" />
+                    <path d="M38 40 L62 40 L50 56 Z" fill="var(--primary-main)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.4" />
+                    <path d="M38 40 L62 40" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
+                    {/* Glue feet on the two pages, mirrored about the spine */}
+                    <circle cx="50" cy="26" r="2" fill="green" />
+                    <circle cx="50" cy="54" r="2" fill="green" />
+                    <text x="50" y="74" fontSize="4.5" textAnchor="middle" fill="green">위·아래 페이지에 대칭으로 풀칠</text>
                   </svg>
                 </div>
               </div>
