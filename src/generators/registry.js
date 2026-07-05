@@ -13,20 +13,21 @@ import { renderParallelFold } from './parallelFold.js';
 import { renderPullTab } from './pullTab.js';
 import { renderStrawRocket } from './strawRocket.js';
 import { renderAccordion } from './accordionPopup.js';
-import { renderVolvelle } from './volvelle.js';
+import { renderVolvelle, resolveVolvelleGeometry } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
 import { renderLayeredStage, resolveLayeredStageGeometry } from './layeredStage.js';
 import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
+import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
     labelKo: '브이폴드 (V-Fold)',
     render: (params) => renderVFold(params),
     defaultParams: { armLength: 40, angle: 45 },
-    instructionStyle: 'generic',
+    instructionStyle: 'v-fold',
   },
   'box-popup': {
     labelKo: '상자 팝업 (Box Popup)',
@@ -63,6 +64,18 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderVolvelle(params),
     defaultParams: { R: 40, sectors: 6 },
     instructionStyle: 'volvelle',
+    // Rotor disc is a flat circle of diameter 2R, not the generic 100x100mm
+    // square hint — size the reference-image slot to match it so the AI
+    // image (and the "직접 그리기" guide circle) actually fits the real disc
+    // instead of floating at an unrelated size/position.
+    decorationSlots: (params) => {
+      const geo = resolveVolvelleGeometry(params);
+      return [{
+        label: '돌림판 전체 그림 (동그랗게, 바로 위에서 내려다본 모습으로 창문에 꽉 차게)',
+        width: geo.R * 2,
+        height: geo.R * 2,
+      }];
+    },
   },
   'flip-disc': {
     labelKo: '반쪽 넘김판 (넘기면 그림이 바뀌는 접시)',
@@ -73,7 +86,7 @@ export const MECHANISM_REGISTRY = {
   'spiral-spring': {
     labelKo: '달팽이 스프링 (늘어나며 떠오르는 팝업)',
     render: (params) => renderSpiralSpring(params),
-    defaultParams: { turns: 5, pitch: 6, decorations: 4 },
+    defaultParams: { turns: 4, pitch: 8, decorations: 4 },
     instructionStyle: 'spiral-spring',
   },
   'rising-slide': {
@@ -113,6 +126,22 @@ export const MECHANISM_REGISTRY = {
     defaultParams: { armLength: 34, swingAngle: 35 },
     instructionStyle: 'slide-to-swing',
   },
+  'flap-clap': {
+    labelKo: '통통 플랩 (카드를 열고 닫으면 두 조각이 마주 부딪힘)',
+    render: (params) => renderFlapClap(params),
+    defaultParams: { offset: 18, flapLength: 22, halfWidth: 18, delta: 110 },
+    instructionStyle: 'flap-clap',
+    // One decoration slot per flap (upper page / lower page), sized off the
+    // SAME geometry the mechanism itself renders with, so the flipper/paw
+    // decoration always matches the printed flap's footprint.
+    decorationSlots: (params) => {
+      const geo = resolveFlapClapGeometry(params);
+      return [
+        { label: '위쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
+        { label: '아래쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
+      ];
+    },
+  },
 };
 
 /**
@@ -122,6 +151,16 @@ export const MECHANISM_REGISTRY = {
  * the on-screen equivalent and are kept in sync with this text by hand.
  */
 export const INSTRUCTION_TEXT = {
+  'v-fold': {
+    title: '브이폴드(V-Fold) 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 삼각형 팝업 조각을 오려주세요. 조각 아래 양쪽에 붙은 초록색 날개(풀칠 자리)는 자르지 말고 남겨둡니다.',
+      '가운데 세로선(빨간 점선)은 산접기(볼록하게) 해서 능선이 앞으로 뾰족하게 서게 하고, 양옆 바닥선(파란 점선)은 골접기(오목하게) 해서 두 팔이 바깥으로 눕게 접어주세요.',
+      '카드를 반쯤 펼친 상태에서 왼쪽 팔은 왼쪽 종이면에, 오른쪽 팔은 오른쪽 종이면에 척추(가운데 접는 선)를 기준으로 좌우 대칭이 되도록 붙여주세요. 두 팔의 능선이 척추 위에서 만나야 합니다.',
+    ],
+    tips: '카드를 닫으면 삼각형이 척추를 따라 납작하게 접히고, 열면 능선이 앞으로 솟아올라야 정상입니다. 한쪽으로 기울면 두 팔을 척추 기준으로 대칭이 되게 다시 붙여 주세요.',
+  },
   generic: {
     title: '조립 설명서',
     materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
@@ -235,6 +274,19 @@ export const INSTRUCTION_TEXT = {
       '손잡이를 좌우로 슬슬 밀어보세요. 슬라이더는 곧게 옆으로 가는데, 슬롯에 걸린 핀이 원을 그리며 돌아 기둥 위의 장식이 좌우로 왔다갔다 흔들립니다. 시계추처럼, 인사하듯, 짝짝이 춤추듯 움직여요!',
     ],
     tips: '핵심은 두 가지입니다. (1) 회전축 캡은 기둥 목에만 붙이고 카드에는 붙이지 않기 — 붙이면 기둥이 못 돕니다. (2) 핀은 슬롯 안에서 위아래로 자유롭게 움직여야 하니 슬롯을 풀로 막지 마세요. 너무 뻑뻑하면 안내띠를 아주 살짝 느슨하게 붙이고, 장식이 카드 밖으로 나가면 흔들기 각도(swingAngle)를 조금 줄이세요.',
+  },
+  'flap-clap': {
+    title: '통통 플랩 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '완성 모습: 카드를 여닫으면 위쪽 면의 플랩과 아래쪽 면의 플랩이 서로 가까워졌다 멀어졌다 하면서 "탁!" 하고 마주 부딪힙니다. 물범이 지느러미로 배를 통통 치는 모습을 떠올리면 됩니다.',
+      '검은색 실선을 따라 위/아래 삼각형 플랩 2개와 지지대(프롭) 막대 2개를 오려주세요. 플랩의 밑변(가로선)은 자르지 말고 남겨두세요 — 그 선이 플랩이 척추 쪽 면에 붙어 서는 접는 선입니다.',
+      '빨간 점선(밑변)을 산접기하여 플랩을 종이면에서 들어 세우고, 도안에 적힌 각도(예: 110°)만큼 세운 채로 유지하세요.',
+      '아주 중요 — 지지대(프롭) 붙이기: 프롭 막대의 한쪽 끝(①)을 플랩 가운데쯤(초록색 점)에, 다른 쪽 끝(②)을 척추 쪽으로 더 가까운 종이면 위 초록색 점에 붙이세요. 프롭이 팽팽하게 당겨진 상태로 붙어야 플랩이 정확한 각도로 고정되어 서 있습니다. 위쪽 플랩, 아래쪽 플랩 모두 같은 방법으로 붙여주세요.',
+      '장식 그림(지느러미·손 모양 등)을 오려서 각 플랩의 앞면에 붙여주세요.',
+      '카드를 천천히 여닫아 보세요. 도안에 표시된 "탁! 각도" 근처에서 위아래 플랩(지느러미)이 서로 맞닿습니다. 완전히 닫았을 때는 플랩이 아주 살짝 눌리는 정도이니 억지로 세게 누르지 말고 살살 접어주세요.',
+    ],
+    tips: '이 메커니즘은 다른 팝업과 달리 플랩이 카드가 열리는 각도에 맞춰 저절로 접히는 구조가 아니라, 프롭으로 고정한 각도 그대로 페이지에 실려 움직입니다. 그래서 완전히 딱 닫히기보다 살짝 도톰하게 눌리는 정도가 정상입니다 — 프롭 길이를 정확히 지켜 붙이는 것이 핵심입니다.',
   },
 };
 

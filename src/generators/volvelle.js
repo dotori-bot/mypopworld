@@ -191,16 +191,33 @@ export const generateVolvelle = (svg, options = {}) => {
   addText(g, P.rotor.x, round(P.rotor.y + R + 4), '② 돌림판(끼우기)', 3, 'middle');
 
   // ── 3. Spacer ring: outer + inner cut circles + glue-annulus indicator ──
+  // The glue fill must be a true annulus (outerR..innerR), not a filled disc —
+  // the ring's own hole (< innerR) is cut away entirely and never glued.
   addPath(g, circlePath(P.spacer.x, P.spacer.y, outerR), cutStyle);
   addPath(g, circlePath(P.spacer.x, P.spacer.y, innerR), cutStyle);
-  addPath(g, circlePath(P.spacer.x, P.spacer.y, glueRingR), glueStyle);
-  addText(g, P.spacer.x, round(P.spacer.y + 1), '풀칠', 2.5, 'middle');
+  const spacerGlue = addPath(
+    g,
+    `${circlePath(P.spacer.x, P.spacer.y, outerR)} ${circlePath(P.spacer.x, P.spacer.y, innerR)}`,
+    glueStyle,
+  );
+  spacerGlue.setAttribute('fill-rule', 'evenodd');
+  const spacerLabelPos = polarToCartesian(P.spacer.x, P.spacer.y, glueRingR, 0);
+  addText(g, round(spacerLabelPos.x), round(spacerLabelPos.y + 1), '풀칠', 2.5, 'middle');
   addText(g, P.spacer.x, round(P.spacer.y + outerR + 4), '③ 간격 링(풀칠)', 3, 'middle');
 
   // ── 4. Back disc: outer cut circle + glue-annulus indicator ──
+  // Glue is confined to the rim (outerR..innerR) where the spacer ring's
+  // footprint actually lands — the center must stay bare so the rotor disc
+  // can spin freely in the pocket; filling it would glue the rotor to the floor.
   addPath(g, circlePath(P.back.x, P.back.y, outerR), cutStyle);
-  addPath(g, circlePath(P.back.x, P.back.y, glueRingR), glueStyle);
-  addText(g, P.back.x, round(P.back.y + 1), '풀칠', 2.5, 'middle');
+  const backGlue = addPath(
+    g,
+    `${circlePath(P.back.x, P.back.y, outerR)} ${circlePath(P.back.x, P.back.y, innerR)}`,
+    glueStyle,
+  );
+  backGlue.setAttribute('fill-rule', 'evenodd');
+  const backLabelPos = polarToCartesian(P.back.x, P.back.y, glueRingR, 0);
+  addText(g, round(backLabelPos.x), round(backLabelPos.y + 1), '풀칠', 2.5, 'middle');
   addText(g, P.back.x, round(P.back.y + outerR + 4), '④ 뒷판(풀칠)', 3, 'middle');
 
   return g;

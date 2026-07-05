@@ -1,29 +1,62 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
-import { CARD_SIZES } from '../../generators/constants';
-import { resolveVolvelleGeometry } from '../../generators/volvelle';
-import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
+import { resolveFlapClapGeometry } from '../../generators/flapClap';
+import { resolveAccordionGeometry } from '../../generators/accordionPopup';
+import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
+import { resolveAutoSlideWindow, sliderDistance } from '../../generators/autoSlideWindow';
 import { resolveSpiralGeometry } from '../../generators/spiralSpring';
+import { CARD_SIZES } from '../../generators/constants';
+import { FLAT_3D, buildFlatScene } from './flatScenes';
 import {
   calculateVFoldAngle,
   calculatePopupHeight,
   calculateParallelFoldHeight,
-  calculateSpiralExtension,
-  framedVolvelleSectors,
-  flipDiscLeafStates,
-  polarToCartesian,
   radToDeg,
   degToRad,
   clamp,
 } from '../../utils/math';
 import '../../styles/preview.css';
 
-// Mechanisms with a working 3D assembled-pose preview. Anything else falls
-// back to the "not ready yet" placeholder. Note: 'volvelle' is a flat top-down
-// SPINNER, not a hinged pop-up, so it opts out of the shared book/α scaffold
-// below and renders its own view (see the volvelle branch in the component).
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle', 'flip-disc', 'spiral-spring', 'straw-rocket']);
+// BOOK mechanisms: pop out of an opening card, driven by the α slider below.
+// The flat (never-leaves-the-plane) mechanisms live in flatScenes.jsx (FLAT_3D)
+// and bring their own drive slider (pull / push / turn / flip / blow).
+const BOOK_3D = new Set([
+  'v-fold',
+  'box-popup',
+  'parallel-fold',
+  'flap-clap',
+  'accordion',
+  'layered-stage',
+  'auto-slide-window',
+  'spiral-spring',
+]);
+
+// Default camera orbit — same 3/4 view the stage always used to be locked to.
+const DEFAULT_ORBIT = { rx: -52, ry: -20, zoom: 1 };
+// Flat mechanisms read best nearly face-on, with enough rx freedom to tip the
+// card right over and inspect the back-side parts (handles, retainers, caps).
+const FLAT_ORBIT = { rx: -14, ry: -28, zoom: 1 };
+const ORBIT_RX_RANGE = [-85, -10]; // deg, keeps the "look down onto the card" framing
+// ry is clamped to the front hemisphere for the same reason rx is: every
+// mechanism's popup panels (arms/flaps/steps) live in their pages' preserve-3d
+// subtrees and physically cross the page planes at the spine. CSS 3D cannot
+// intersect two planes per-pixel — it depth-sorts whole planes — so once the
+// camera swings far enough that a page turns edge-on/backwards, a popup panel
+// that should be occluded by (or fold behind) its page instead paints straight
+// over/past it, reading as a detached sliver escaping the card silhouette. The
+// panels' ridge tips stay mathematically coincident at every angle (the fold
+// math is correct); this range only keeps the camera where that coincidence
+// also composites cleanly — i.e. looking into the open card, never around its back.
+const ORBIT_RY_RANGE = [-25, 25];
+// Flat scenes are exempt from that clamp: their parts are parallel sibling
+// planes (one translateZ layer per sheet of paper, no cross-page preserve-3d
+// subtrees), which CSS depth-sorts cleanly from ANY angle — and orbiting fully
+// around to the back-side structure (handles, retainers, caps) is their whole
+// point. ±180° lets the camera reach the direct back view from either side.
+const FLAT_RX_RANGE = [-80, 80];
+const FLAT_RY_RANGE = [-180, 180];
+const ORBIT_ZOOM_RANGE = [0.6, 1.8];
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -43,27 +76,33 @@ const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'volvelle'
  * @param {number} PX          mm→px scale
  * @param {number} parentDimPx the parent's along-spine size in px (page height
  *                             for level 0, previous level's widthPx otherwise)
+ * @param {number} [insetPx=0] level-0 only: hinge offset from the spine, in px
+ *                             (0 = flush at the spine, like box-popup/parallel-fold;
+ *                             > 0 = inset, like accordion's off-spine anchor —
+ *                             same inset technique flap-clap uses inline)
  *
  * Fold DIRECTION alternates per level: even levels (0,2,4…) flex +γ ("risers",
  * lifting away from the parent surface), odd levels flex −γ ("treads", flattening
  * back parallel to the base). This is (a) the mountain/valley alternation a real
  * flat-foldable staircase requires and (b) what keeps the running frame from
  * compounding into a spiral — so the steps ascend monotonically instead of
- * rotating past vertical and retracting inside earlier levels.
+ * rotating past vertical and retracting inside earlier levels. (Accordion reuses
+ * this same alternation for its zigzag pleats — see the mechanism branch below.)
  */
-function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
+function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx, insetPx = 0) {
   if (i >= levels.length) return null;
   const depthPx = levels[i].depth * PX;  // extent away from the spine
   const widthPx = levels[i].width * PX;  // extent along the spine
   // Centre this level on its parent's along-spine span.
   const top = (parentDimPx - widthPx) / 2;
   // Spine-side (hinge) edge sits on the parent's outer edge. For level 0 the
-  // parent is the page and the hinge is AT the spine (right:0 / left:0); for
-  // deeper levels the hinge is the parent's far edge (right:100% / left:100%).
+  // parent is the page and the hinge is AT the spine (right:0 / left:0) unless
+  // insetPx pushes it further out; for deeper levels the hinge is the parent's
+  // far edge (right:100% / left:100%).
   const pos =
     side === 'left'
-      ? { right: i === 0 ? 0 : '100%' }
-      : { left: i === 0 ? 0 : '100%' };
+      ? { right: i === 0 ? insetPx : '100%' }
+      : { left: i === 0 ? insetPx : '100%' };
   // Same rotate3d axis convention as box-popup / V-fold; sign alternates.
   const angle = i % 2 === 0 ? gamma : -gamma;
   const zc = side === 'left' ? -cosA : cosA;
@@ -82,41 +121,6 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
       {renderStairLevel(levels, i + 1, side, sinA, cosA, gamma, PX, widthPx)}
     </div>
   );
-}
-
-/**
- * Annular-sector ("pie", or ring slice if rIn>0) SVG path around origin (0,0),
- * angles in degrees with the volvelle convention (0° = up, clockwise). This is a
- * RENDER helper (drawing wedges/window for the flat spinner), not a geometry
- * derivation — the radii/angles all come from resolveVolvelleGeometry. Kept local
- * to Preview3D because it draws the interactive pose, exactly like the printable
- * generator keeps its own sectorPath; they share polarToCartesian's convention so
- * the preview and the printed disc stay geometrically consistent.
- *
- * @param {number} rIn  inner radius (0 → solid pie from centre)
- * @param {number} rOut outer radius
- * @param {number} startDeg @param {number} endDeg
- * @returns {string} SVG path "d"
- */
-function arcSectorPath(rIn, rOut, startDeg, endDeg) {
-  const oL = polarToCartesian(0, 0, rOut, startDeg);
-  const oR = polarToCartesian(0, 0, rOut, endDeg);
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  if (rIn <= 0) {
-    return `M 0 0 L ${oL.x.toFixed(2)} ${oL.y.toFixed(2)} ` +
-      `A ${rOut} ${rOut} 0 ${large} 1 ${oR.x.toFixed(2)} ${oR.y.toFixed(2)} Z`;
-  }
-  const iL = polarToCartesian(0, 0, rIn, startDeg);
-  const iR = polarToCartesian(0, 0, rIn, endDeg);
-  return `M ${iL.x.toFixed(2)} ${iL.y.toFixed(2)} L ${oL.x.toFixed(2)} ${oL.y.toFixed(2)} ` +
-    `A ${rOut} ${rOut} 0 ${large} 1 ${oR.x.toFixed(2)} ${oR.y.toFixed(2)} ` +
-    `L ${iR.x.toFixed(2)} ${iR.y.toFixed(2)} ` +
-    `A ${rIn} ${rIn} 0 ${large} 0 ${iL.x.toFixed(2)} ${iL.y.toFixed(2)} Z`;
-}
-
-/** Full-circle SVG path centred on the origin. */
-function circleAtOrigin(r) {
-  return `M ${-r} 0 A ${r} ${r} 0 1 0 ${r} 0 A ${r} ${r} 0 1 0 ${-r} 0 Z`;
 }
 
 /**
@@ -195,441 +199,82 @@ function circleAtOrigin(r) {
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
   const [alpha, setAlpha] = useState(90);
-  // Volvelle spinner state: disc rotation θ (deg, clockwise +). Kept as a plain
-  // hook at the top so React's hook order stays stable regardless of mechanism.
-  const [rotation, setRotation] = useState(0);
-  // Flip-disc state: how many top leaves have been turned to the left (0..N-1).
-  // A single integer because the leaves are a strictly ordered stack — see
-  // flipDiscLeafStates() in utils/math.js for why per-leaf angles would be wrong.
-  const [flipped, setFlipped] = useState(0);
-  // Straw-rocket launch phase. A SINGLE enum — 'idle' | 'launching' | 'landed' —
-  // so no two phases (hence no two animations) can be active at once. There is no
-  // card-opening-angle physics here (it's a breath-powered launch, unrelated to a
-  // hinged card), so straw-rocket opts out of the shared book scaffold and renders
-  // its own 2.5D scene below, exactly like volvelle/flip-disc do.
-  const [rocketPhase, setRocketPhase] = useState('idle');
-  const discRef = useRef(null);
-  const drag = useRef({ active: false, last: 0 });
+  // Flat-mechanism drive value; null = "use the scene's own default". Kept as
+  // null (not a number) across mechanism switches so each mechanism opens at
+  // its own natural rest pose.
+  const [drive, setDrive] = useState(null);
+  const [orbit, setOrbit] = useState(DEFAULT_ORBIT);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef(null); // { pointerX, pointerY, rx, ry }
+  const stageRef = useRef(null);
 
   const mechanism = cardParams?.mechanism;
+  const mode = BOOK_3D.has(mechanism) ? 'book' : FLAT_3D.has(mechanism) ? 'flat' : 'none';
+  const rxRange = mode === 'flat' ? FLAT_RX_RANGE : ORBIT_RX_RANGE;
+  const ryRange = mode === 'flat' ? FLAT_RY_RANGE : ORBIT_RY_RANGE;
 
-  if (!cardParams || !SUPPORTED_3D.has(mechanism)) {
-    // Human-readable supported list derived from the registry, so this never
-    // goes stale as more mechanisms are wired up (flip-disc, spiral-spring…).
-    const supported = [...SUPPORTED_3D]
-      .map((id) => getMechanism(id)?.labelKo?.replace(/\s*\(.*/, '') ?? id)
-      .join(' · ');
+  // New mechanism → its natural rest pose and the right default framing.
+  useEffect(() => {
+    setDrive(null);
+    setOrbit(mode === 'flat' ? FLAT_ORBIT : DEFAULT_ORBIT);
+  }, [mechanism, mode]);
+
+  const handlePointerDown = useCallback(
+    (e) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      dragStart.current = { x: e.clientX, y: e.clientY, rx: orbit.rx, ry: orbit.ry };
+      setIsDragging(true);
+    },
+    [orbit.rx, orbit.ry],
+  );
+
+  const handlePointerMove = useCallback((e) => {
+    if (!dragStart.current) return;
+    // Compute the new angles NOW, outside the updater: the updater runs later,
+    // possibly after pointer-up has already nulled dragStart.current.
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    const ry = clamp(dragStart.current.ry + dx * 0.4, ryRange[0], ryRange[1]);
+    const rx = clamp(dragStart.current.rx - dy * 0.4, rxRange[0], rxRange[1]);
+    setOrbit((prev) => ({ ...prev, ry, rx }));
+  }, [rxRange, ryRange]);
+
+  const handlePointerUp = useCallback((e) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    dragStart.current = null;
+    setIsDragging(false);
+  }, []);
+
+  const resetOrbit = useCallback(
+    () => setOrbit(mode === 'flat' ? FLAT_ORBIT : DEFAULT_ORBIT),
+    [mode],
+  );
+
+  // Non-passive native listener: React's synthetic onWheel is registered
+  // passive, so preventDefault() there would warn and not stop page scroll.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      setOrbit((prev) => ({
+        ...prev,
+        zoom: clamp(prev.zoom - e.deltaY * 0.001, ORBIT_ZOOM_RANGE[0], ORBIT_ZOOM_RANGE[1]),
+      }));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+    // `mode` dep: the stage DOM node is rebuilt when switching between the
+    // book/flat render branches, so the listener must re-attach to the new one.
+  }, [mode]);
+
+  if (!cardParams || mode === 'none') {
     return (
       <div className="preview3d-root">
         <div className="preview3d-placeholder">
-          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재 지원: {supported})
-        </div>
-      </div>
-    );
-  }
-
-  // ── Volvelle: flat top-down spinner — no card-opening angle, no fold. ──────
-  // Renders its own view (a rotating disc under a fixed window) instead of the
-  // hinged two-page book scaffold the fold mechanisms share below.
-  if (mechanism === 'volvelle') {
-    const params = buildMechanismParams(cardParams, paperSize, colorMode) || {};
-    const defaults = getMechanism('volvelle').defaultParams;
-    // Single source of truth for radii/angles — same call the generator makes.
-    const geo = resolveVolvelleGeometry({
-      R: params.R ?? defaults.R,
-      sectors: params.sectors ?? defaults.sectors,
-    });
-    const { R, sectors, outerR, rOut, sigma, thetaW } = geo;
-
-    // Match the printed cover's small retained hub (volvelle.js winInner).
-    const winInner = clamp(Math.round(R * 0.18), 5, R - 8);
-    const pad = 6;
-    const box = outerR + pad;
-    const theta = ((rotation % 360) + 360) % 360; // normalised for readout/slider
-
-    const framed = framedVolvelleSectors(theta, geo);
-    const readout = framed.boundary
-      ? `돌림판 회전 θ = ${Math.round(theta)}° · 창문: ${framed.labels.join('·')}번 경계 (두 칸이 반씩 보여요)`
-      : `돌림판 회전 θ = ${Math.round(theta)}° · 창문: ${framed.primary}번 그림`;
-
-    // Pointer angle around the disc centre, using the SAME 0°=up / clockwise+
-    // convention as the disc, so drag deltas map 1:1 onto rotation θ.
-    const pointerAngle = (e) => {
-      const rect = discRef.current.getBoundingClientRect();
-      const dx = e.clientX - (rect.left + rect.width / 2);
-      const dy = e.clientY - (rect.top + rect.height / 2);
-      return radToDeg(Math.atan2(dx, -dy)); // atan2(dx,-dy): 0=up, clockwise +
-    };
-    const onDown = (e) => {
-      drag.current = { active: true, last: pointerAngle(e) };
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    };
-    const onMove = (e) => {
-      if (!drag.current.active) return;
-      const now = pointerAngle(e);
-      // Normalise the step into (−180,180] so crossing the ±180 seam doesn't
-      // make the disc jump a full turn.
-      let d = ((now - drag.current.last + 180) % 360 + 360) % 360 - 180;
-      drag.current.last = now;
-      setRotation((r) => ((r + d) % 360 + 360) % 360);
-    };
-    const onUp = () => { drag.current.active = false; };
-
-    // Wedge palette: evenly spaced hues so adjacent sectors are easy to tell
-    // apart. The disc GROUP is rotated by θ; wedges + numbers ride along, exactly
-    // like a real disc (numbers aren't upright at every angle, and shouldn't be).
-    return (
-      <div className="preview3d-root">
-        <div className="preview3d-stage preview3d-volvelle-stage">
-          <svg
-            ref={discRef}
-            className="preview3d-volvelle-disc"
-            viewBox={`${-box} ${-box} ${2 * box} ${2 * box}`}
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerLeave={onUp}
-          >
-            {/* Rotating disc: N coloured, numbered wedges. */}
-            <g transform={`rotate(${theta})`}>
-              <path d={circleAtOrigin(R)} className="preview3d-volvelle-rotor" />
-              {Array.from({ length: sectors }, (_, k) => {
-                const mid = polarToCartesian(0, 0, R * 0.62, k * sigma + sigma / 2);
-                return (
-                  <g key={k}>
-                    <path
-                      d={arcSectorPath(0, R, k * sigma, (k + 1) * sigma)}
-                      fill={`hsl(${Math.round((k * 360) / sectors)}, 72%, 62%)`}
-                      stroke="rgba(0,0,0,0.18)"
-                      strokeWidth="0.5"
-                    />
-                    <text
-                      x={mid.x.toFixed(2)}
-                      y={mid.y.toFixed(2)}
-                      className="preview3d-volvelle-num"
-                      transform={`rotate(${k * sigma + sigma / 2} ${mid.x.toFixed(2)} ${mid.y.toFixed(2)})`}
-                    >
-                      {k + 1}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-
-            {/* Fixed cover: opaque disc with the window punched out (evenodd
-                fill-rule turns the window sub-path into a see-through hole, so
-                only the framed wedge shows). */}
-            <path
-              className="preview3d-volvelle-cover"
-              fillRule="evenodd"
-              d={`${circleAtOrigin(outerR)} ${arcSectorPath(winInner, rOut, -thetaW / 2, thetaW / 2)}`}
-            />
-            {/* Window frame + rim outlines for legibility. */}
-            <path
-              className="preview3d-volvelle-window"
-              d={arcSectorPath(winInner, rOut, -thetaW / 2, thetaW / 2)}
-            />
-            <path className="preview3d-volvelle-rim" d={circleAtOrigin(outerR)} />
-            {/* Thumb notch marker at the bottom (180°) — where a fingertip spins
-                the exposed rotor rim, matching volvelle.js's notch. */}
-            <path
-              className="preview3d-volvelle-notch"
-              d={arcSectorPath(R - 4, outerR, 180 - 12, 180 + 12)}
-            />
-            <circle r="1.4" className="preview3d-volvelle-hub" />
-          </svg>
-        </div>
-
-        <div className="fold-slider-container">
-          <div className="fold-slider-labels">
-            <span>돌림판 회전</span>
-            <span>{Math.round(theta)}°</span>
-          </div>
-          <input
-            className="custom-range"
-            type="range"
-            min="0"
-            max="360"
-            step="1"
-            value={Math.round(theta)}
-            onChange={(e) => setRotation(Number(e.target.value))}
-            aria-label="돌림판 회전 각도"
-          />
-          <div className="preview3d-readout">{readout}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Flip-disc: fixed left half + a stack of right-half "leaves" turned like ──
-  // book pages about the vertical diameter. NOT a card-opening-angle mechanism
-  // and NOT a spinner — it renders its own genuinely-3D page-turn view (a leaf
-  // lifts toward the viewer, goes edge-on past 90°, and tucks behind the opaque
-  // fixed half). See flipDiscLeafStates() for the physics/state model.
-  if (mechanism === 'flip-disc') {
-    const fdParams = buildMechanismParams(cardParams, paperSize, colorMode) || {};
-    const fdDefaults = getMechanism('flip-disc').defaultParams;
-    // Single source of truth for radius/page-count — same call the generator makes.
-    const geo = resolveFlipDiscGeometry({
-      R: fdParams.R ?? fdDefaults.R,
-      pages: fdParams.pages ?? fdDefaults.pages,
-      paperSize,
-    });
-    const { R, pages } = geo;
-
-    // Normalise so the assembled disc always reads ~320px regardless of the
-    // clamped mm radius; `scale` converts flipDisc.js mm angles/nubs into px.
-    const DISC_PX = 320;
-    const Rpx = DISC_PX / 2;
-    const scale = Rpx / R;
-    const nubDepthPx = FLIPDISC_CONST.NUB_DEPTH * scale;
-
-    const showing = clamp(flipped, 0, pages - 1);
-    const { leaves } = flipDiscLeafStates(showing, pages);
-
-    // translateZ alone does not reorder how the browser PAINTS these sibling
-    // leaves: for coplanar quads this close in Z, Chromium keeps plain DOM
-    // order (later sibling paints over earlier ones) instead of depth-sorting.
-    // So the actual occlusion — turned leaves hidden behind the fixed half,
-    // topmost remaining leaf on top of the rest — has to come from DOM ORDER,
-    // not from `depth`. Paint bottom → top: turned-away leaves first (hidden
-    // either way), then the fixed half (visually covering them), then the
-    // not-yet-turned leaves from deepest-in-the-stack to topmost-remaining LAST.
-    const flippedLeaves = leaves.filter((l) => l.flipped);
-    const unflippedLeaves = leaves.filter((l) => !l.flipped).sort((a, b) => b.index - a.index);
-
-    // Match flipDisc.js's ①②③… page labels so the preview and printed part agree.
-    const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
-    const label = (i) => CIRCLED[i] || String(i + 1);
-    const advance = () => setFlipped((f) => clamp(f + 1, 0, pages - 1));
-    const retreat = () => setFlipped((f) => clamp(f - 1, 0, pages - 1));
-
-    const readout =
-      `${label(showing)}번 그림 (배경 + ${label(showing)}페이지) · ${pages}장 중 ${showing + 1}번째`;
-
-    const renderLeaf = (leaf) => {
-      // Staggered grip nub reusing flipDisc.js's angle convention, so the
-      // fan of nubs poking past the arc hints how many leaves are stacked.
-      const nubA = FLIPDISC_CONST.NUB_START_DEG + leaf.index * FLIPDISC_CONST.STAGGER_DEG;
-      // Leaf-local frame: hinge (disc centre) sits at (0, Rpx) — the leaf's
-      // left edge, vertical middle.
-      const nub = polarToCartesian(0, Rpx, Rpx + nubDepthPx / 2, nubA);
-      const hue = Math.round((leaf.index * 360) / pages);
-      const isTop = leaf.index === showing && !leaf.flipped;
-      const canAdvance = isTop && showing < pages - 1;
-      return (
-        <div
-          key={leaf.index}
-          className="preview3d-flipdisc-leaf"
-          onClick={canAdvance ? advance : undefined}
-          style={{
-            width: `${Rpx}px`,
-            height: `${DISC_PX}px`,
-            left: `${Rpx}px`,
-            transform: `translateZ(${leaf.depth}px) rotateY(${leaf.angleDeg}deg)`,
-            cursor: canAdvance ? 'pointer' : 'default',
-          }}
-        >
-          <div
-            className="preview3d-flipdisc-nub"
-            style={{ left: `${nub.x}px`, top: `${nub.y}px` }}
-          />
-          <div
-            className="preview3d-flipdisc-face preview3d-flipdisc-front"
-            style={{ background: `hsl(${hue}, 70%, 62%)` }}
-          >
-            <span className="preview3d-flipdisc-num">{label(leaf.index)}</span>
-          </div>
-          {/* Back face: mirrored border-radius so its in-place rotateY(180)
-              lands exactly on the front's right-D silhouette. */}
-          <div className="preview3d-flipdisc-face preview3d-flipdisc-back" />
-        </div>
-      );
-    };
-
-    return (
-      <div className="preview3d-root">
-        <div className="preview3d-stage preview3d-flipdisc-stage">
-          <div
-            className="preview3d-flipdisc-disc"
-            style={{ width: `${DISC_PX}px`, height: `${DISC_PX}px` }}
-          >
-            {/* Turned-away leaves first — hidden behind the fixed half below. */}
-            {flippedLeaves.map(renderLeaf)}
-
-            {/* Fixed background half-disc (LEFT). Opaque and painted AFTER the
-                turned leaves so it actually covers them (see DOM-order note above). */}
-            <div
-              className="preview3d-flipdisc-fixed"
-              style={{ width: `${Rpx}px`, height: `${DISC_PX}px` }}
-            />
-
-            {/* Not-yet-turned leaves (RIGHT half-discs), farthest-in-the-stack
-                first, topmost-remaining LAST so it paints on top of the rest. */}
-            {unflippedLeaves.map(renderLeaf)}
-
-            {/* Diameter/hinge line, drawn on top of everything. */}
-            <div className="preview3d-flipdisc-hinge" />
-          </div>
-        </div>
-
-        <div className="fold-slider-container">
-          <div className="fold-slider-labels">
-            <span>반쪽 넘김판</span>
-            <span>{showing + 1} / {pages}</span>
-          </div>
-          <div className="preview3d-flipdisc-controls">
-            <button
-              type="button"
-              className="preview3d-flipdisc-btn"
-              onClick={retreat}
-              disabled={showing === 0}
-            >
-              ← 이전 장으로
-            </button>
-            <button
-              type="button"
-              className="preview3d-flipdisc-btn"
-              onClick={advance}
-              disabled={showing >= pages - 1}
-            >
-              다음 장 넘기기 →
-            </button>
-          </div>
-          <div className="preview3d-readout">{readout}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Straw-rocket ("빨대 로켓"): a breath-powered paper tube that flies off a ──
-  // drinking straw. No card-opening angle and no fold physics, so it renders its
-  // OWN scene (a striped straw + a decorated rocket tube) plus a "불기" button that
-  // plays a launch animation, instead of the shared hinged-book scaffold.
-  //
-  // Occlusion note (the flip-disc lesson, applied): this scene is a PLAIN 2D
-  // stacking context — no `perspective`, no `preserve-3d`, no `translateZ`. The
-  // rocket must always paint over the straw; Chromium does not reliably depth-sort
-  // near-coplanar 3D siblings, so occlusion is pinned by `z-index` (straw=1,
-  // rocket=3) which IS honoured deterministically. The launch is a 2.5D
-  // transform/opacity animation, not a real 3D pose, which is all a kid's-toy
-  // preview needs here.
-  //
-  // There are no numeric geometry params to honour (registry defaultParams: {}),
-  // so — per the brief — the "authoritative source" is just the theme string and
-  // the blow→launch interaction; we lean on animation quality, not a fake formula.
-  if (mechanism === 'straw-rocket') {
-    const rocketParams = buildMechanismParams(cardParams, paperSize, colorMode) || {};
-    const theme = rocketParams.theme || 'rocket';
-    const flying = rocketPhase !== 'idle';
-
-    // --- State machine ---------------------------------------------------------
-    //   idle ──(click 불기)──▶ launching ──(fly animationend)──▶ landed
-    //   landed ──(click 다시 불기)──▶ idle   (instant reset, then blow again)
-    // The ONLY automatic transition is launching→landed, gated on the fly
-    // animation actually finishing, so the reset button can never appear before
-    // the launch completes. Every handler is guarded by the current phase, so an
-    // extra/stray click or a bubbled child animationend cannot skip or contradict
-    // a state (e.g. no double-launch, no two animations running at once).
-    const launch = () => {
-      if (rocketPhase === 'idle') setRocketPhase('launching');
-    };
-    const resetRocket = () => {
-      if (rocketPhase === 'landed') setRocketPhase('idle');
-    };
-    const onRocketAnimEnd = (e) => {
-      // Filter to the fly keyframes only: the flame flicker is `infinite` (never
-      // ends) and the puff lives outside this element, but guard by name anyway.
-      if (e.animationName === 'preview3d-rocket-fly' && rocketPhase === 'launching') {
-        setRocketPhase('landed');
-      }
-    };
-
-    const readout =
-      rocketPhase === 'launching'
-        ? '발사! 🚀 로켓이 빨대에서 쏙 날아가요'
-        : rocketPhase === 'landed'
-          ? '다 날아갔어요 — 다시 불어볼까요?'
-          : '불기 전 — 아래 버튼을 눌러 로켓을 발사해요!';
-
-    return (
-      <div className="preview3d-root">
-        <div className="preview3d-stage preview3d-rocket-stage">
-          <div className="preview3d-rocket-scene">
-            {/* Ground shadow / launch pad. */}
-            <div className="preview3d-rocket-pad" />
-
-            {/* Striped drinking straw — behind the rocket (z-index 1). */}
-            <div className="preview3d-rocket-straw" />
-
-            {/* Breath puff at the straw mouth — only while launching. */}
-            {rocketPhase === 'launching' && (
-              <div className="preview3d-rocket-puff" aria-hidden="true">💨</div>
-            )}
-
-            {/* Rocket tube. z-index 3 keeps it painted over the straw always.
-                .is-flying plays the launch keyframes; `forwards` holds the flown
-                -away end state through the 'landed' phase, and removing the class
-                on reset snaps it straight back to the pad (no reverse animation). */}
-            <div
-              className={`preview3d-rocket${flying ? ' is-flying' : ''}`}
-              onAnimationEnd={onRocketAnimEnd}
-            >
-              <svg viewBox="0 0 64 104" className="preview3d-rocket-svg" aria-hidden="true">
-                {/* Flame (shown only while flying, via CSS) — drawn first so the
-                    body overlaps its top. */}
-                <path
-                  className="preview3d-rocket-flame"
-                  d="M24 80 Q26 96 32 104 Q38 96 40 80 Q36 90 32 84 Q28 90 24 80 Z"
-                  fill="#fb923c"
-                />
-                <path
-                  className="preview3d-rocket-flame"
-                  d="M28 82 Q30 92 32 98 Q34 92 36 82 Q34 88 32 85 Q30 88 28 82 Z"
-                  fill="#fde047"
-                />
-                {/* Fins */}
-                <path d="M20 62 L8 86 L20 80 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" strokeLinejoin="round" />
-                <path d="M44 62 L56 86 L44 80 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" strokeLinejoin="round" />
-                {/* Body (the paper tube) */}
-                <rect x="20" y="30" width="24" height="52" rx="11" ry="11" fill="#f97316" stroke="#c2410c" strokeWidth="1.5" />
-                {/* Nose cone (the folded/sealed top) */}
-                <path d="M32 5 L45 34 L19 34 Z" fill="#ef4444" stroke="#b91c1c" strokeWidth="1.5" strokeLinejoin="round" />
-                {/* Trim band */}
-                <rect x="20" y="64" width="24" height="5" fill="#fbbf24" />
-                {/* Window */}
-                <circle cx="32" cy="47" r="7.5" fill="#7dd3fc" stroke="#e0f2fe" strokeWidth="2.5" />
-                <circle cx="32" cy="47" r="7.5" fill="none" stroke="#0284c7" strokeWidth="1" />
-              </svg>
-              {/* Theme-based decoration caption (reuses the theme param). */}
-              <span className="preview3d-rocket-theme">{theme}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="fold-slider-container">
-          <div className="fold-slider-labels">
-            <span>빨대 로켓</span>
-            <span>테마: {theme}</span>
-          </div>
-          <div className="preview3d-rocket-controls">
-            {rocketPhase === 'idle' && (
-              <button type="button" className="preview3d-rocket-btn" onClick={launch}>
-                불기 💨
-              </button>
-            )}
-            {rocketPhase === 'launching' && (
-              <button type="button" className="preview3d-rocket-btn" disabled>
-                발사 중… 🚀
-              </button>
-            )}
-            {rocketPhase === 'landed' && (
-              <button type="button" className="preview3d-rocket-btn" onClick={resetRocket}>
-                다시 불기 🔄
-              </button>
-            )}
-          </div>
-          <div className="preview3d-readout">{readout}</div>
+          이 메커니즘은 아직 3D 미리보기를 준비 중이에요!
         </div>
       </div>
     );
@@ -637,6 +282,56 @@ export default function Preview3D() {
 
   const params = buildMechanismParams(cardParams, paperSize, colorMode) || {};
   const defaults = getMechanism(mechanism).defaultParams;
+
+  // Flat mechanisms (sliders/spinners/…): structure-faithful scene + its own
+  // drive slider, from flatScenes.jsx. Book mechanisms continue below with α.
+  const flatScene = mode === 'flat'
+    ? buildFlatScene(mechanism, params, defaults, paperSize, drive)
+    : null;
+
+  if (flatScene) {
+    return (
+      <div className="preview3d-root">
+        <div
+          ref={stageRef}
+          className={`preview3d-stage${isDragging ? ' is-dragging' : ''}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
+          <div
+            className="preview3d-book"
+            style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})` }}
+          >
+            {flatScene.node}
+          </div>
+          <div className="preview3d-orbit-hint">드래그해서 돌려 뒷면 구조 보기 · 휠로 확대/축소</div>
+          <button type="button" className="preview3d-orbit-reset" onClick={resetOrbit}>
+            시점 초기화
+          </button>
+        </div>
+
+        <div className="fold-slider-container">
+          <div className="fold-slider-labels">
+            <span>{flatScene.slider.label}</span>
+            <span>{flatScene.slider.format(flatScene.value)}</span>
+          </div>
+          <input
+            className="custom-range"
+            type="range"
+            min={flatScene.slider.min}
+            max={flatScene.slider.max}
+            step={flatScene.slider.step}
+            value={flatScene.value}
+            onChange={(e) => setDrive(Number(e.target.value))}
+            aria-label={flatScene.slider.label}
+          />
+          <div className="preview3d-readout">{flatScene.readout}</div>
+        </div>
+      </div>
+    );
+  }
 
   // --- mm → px scale for an honest-proportioned book ---
   const card = CARD_SIZES[paperSize] || CARD_SIZES.A4;
@@ -647,6 +342,11 @@ export default function Preview3D() {
 
   let attachmentLeft;
   let attachmentRight;
+  // Extra content parented directly to .preview3d-book (not to either page) —
+  // only spiral-spring needs this, since its coil spans BETWEEN two anchors
+  // that live on two independently-rotating pages, so it can't be a child of
+  // either one.
+  let attachmentBook = null;
   let readout;
 
   if (mechanism === 'v-fold') {
@@ -709,127 +409,348 @@ export default function Preview3D() {
     const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
     const hTop = calculateParallelFoldHeight(totalDepth, alpha);
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'accordion') {
+    // Accordion (병풍 팝업) — see generators/accordionPopup.js for the closed-form
+    // physics. SAME topology as V-fold/box-popup (two attachment points at
+    // distance `a` from the spine, one per page), except instead of a single
+    // arm/flap meeting at the spine, a uniform M-panel zigzag chain spans
+    // between them. renderStairLevel's alternating ±γ recursion (built for
+    // parallel-fold's staircase) IS that zigzag verbatim once every level is
+    // the SAME size and folds by the SAME constant angle ρ(α) instead of
+    // varying per level — so we reuse it directly, nested inside a level-0
+    // hinge inset by `a` from the spine (the `insetPx` param added above).
+    //   D(α) = 2·a·sin(α/2)            anchor-to-anchor chord (authoritative)
+    //   cos ρ(α) = D(α) / L,  L = SAFETY·a = M·w   ⇒  ρ = arccos(D/L)
+    const geo = resolveAccordionGeometry({
+      a: params.a ?? defaults.a,
+      panels: params.panels ?? defaults.panels,
+      wallHeight: params.wallHeight ?? defaults.wallHeight,
+      paperSize,
+    });
+
+    const D = 2 * geo.a * Math.sin(degToRad(alpha / 2));
+    const rho = radToDeg(Math.acos(clamp(D / geo.L, -1, 1)));
+
+    const rRad = degToRad(rho);
+    const sinR = Math.sin(rRad);
+    const cosR = Math.cos(rRad);
+    const aPx = geo.a * PX;
+
+    const levels = Array.from({ length: geo.panels }, () => ({ width: geo.wallHeight, depth: geo.w }));
+
+    attachmentLeft = renderStairLevel(levels, 0, 'left', sinR, cosR, rho, PX, pageH, aPx);
+    attachmentRight = renderStairLevel(levels, 0, 'right', sinR, cosR, rho, PX, pageH, aPx);
+
+    readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rho.toFixed(0)}°`;
+  } else if (mechanism === 'layered-stage') {
+    // Layered stage (층층이 무대) — see generators/layeredStage.js. Each layer i
+    // is its OWN independent box-popup-style flap: h_i = d_i·sin(α/2), the
+    // SAME gamma = α/2 and rotate3d formula as the box-popup branch above.
+    // The only difference from box-popup is the hinge sits inset by the
+    // layer's accumulated depth `near_i` from the spine instead of flush
+    // against it — the same off-spine inset technique flap-clap uses inline
+    // (transform-origin stays the flap's own edge; only its screen position
+    // moves). Layers never overlap in depth (near_i are disjoint bands), so
+    // there's no z-order ambiguity between them.
+    const geo = resolveLayeredStageGeometry({ layers: params.layers ?? defaults.layers, paperSize });
+
+    const gamma = alpha / 2; // deg, identical to box-popup
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+    const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
+    const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+
+    attachmentLeft = geo.layers.map((layer) => {
+      const depthPx = layer.depth * PX;
+      const widthPx = layer.width * PX;
+      const top = pageH / 2 - widthPx / 2;
+      return (
+        <div
+          key={`stage-left-${layer.index}`}
+          className="preview3d-boxflap preview3d-boxflap-left"
+          style={{
+            width: `${depthPx}px`,
+            height: `${widthPx}px`,
+            top: `${top}px`,
+            right: `${layer.near * PX}px`,
+            transform: flapLiftLeft,
+          }}
+        />
+      );
+    });
+    attachmentRight = geo.layers.map((layer) => {
+      const depthPx = layer.depth * PX;
+      const widthPx = layer.width * PX;
+      const top = pageH / 2 - widthPx / 2;
+      return (
+        <div
+          key={`stage-right-${layer.index}`}
+          className="preview3d-boxflap preview3d-boxflap-right"
+          style={{
+            width: `${depthPx}px`,
+            height: `${widthPx}px`,
+            top: `${top}px`,
+            left: `${layer.near * PX}px`,
+            transform: flapLiftRight,
+          }}
+        />
+      );
+    });
+
+    const deepest = geo.layers[geo.layers.length - 1];
+    const deepestHeight = deepest ? calculateParallelFoldHeight(deepest.depth, alpha) : 0;
+    readout = `무대 ${geo.count}겹 · 가장 안쪽 벽 높이 ≈ ${deepestHeight.toFixed(1)}mm · 접힘각 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'flap-clap') {
+    // Flap-clap — see generators/flapClap.js for the full derivation. Unlike
+    // every other mechanism here, this flap's OWN fold angle does NOT track
+    // α: it is glued rigid at a fixed angle δ (its rotate3d angle below is a
+    // CONSTANT, computed once from δ, not from `alpha`). Only the page's own
+    // rotateY(±θ_page) moves it through space — two independent rigid points
+    // on two independently-rotating pages, so their separation still varies
+    // with α even though neither flap "flexes" on its own.
+    //
+    // Reuses box-popup's exact rotate3d composition (a flap hinged at some
+    // inset distance from the spine, rotating by a flex angle γ relative to
+    // its own page): γ_fixed = 180° − δ makes that formula's standing height
+    // d·sin(γ) equal h·sin(δ) = B, and its horizontal reach d·cos(γ) equal
+    // h·cos(180−δ) = −h·cos(δ), matching flapClap.js's A = a − h·cos(δ)
+    // exactly — so this pose is the same physical model as the flat-pattern
+    // math, just read off via CSS 3D instead of trig-by-hand.
+    const a = params.offset ?? defaults.offset;
+    const h = params.flapLength ?? defaults.flapLength;
+    const b = params.halfWidth ?? defaults.halfWidth;
+    const delta = params.delta ?? defaults.delta;
+
+    const gammaFixed = 180 - delta; // deg, CONSTANT — not driven by alpha
+    const gRad = degToRad(gammaFixed);
+    const sinG = Math.sin(gRad);
+    const cosG = Math.cos(gRad);
+    const flapLiftLeft = `rotate3d(${(-sinG).toFixed(5)}, 0, ${(-cosG).toFixed(5)}, ${gammaFixed}deg)`;
+    const flapLiftRight = `rotate3d(${(-sinG).toFixed(5)}, 0, ${cosG.toFixed(5)}, ${gammaFixed}deg)`;
+
+    const aPx = a * PX;
+    const hPx = h * PX;
+    const bPx = b * PX;
+    const flapTop = pageH / 2 - bPx;
+
+    attachmentLeft = (
+      <div
+        className="preview3d-flap preview3d-flap-left"
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, right: `${aPx}px`, transform: flapLiftLeft }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-flap preview3d-flap-right"
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, left: `${aPx}px`, transform: flapLiftRight }}
+      />
+    );
+
+    // Readout: authoritative A/B/clap angle straight from the same resolver
+    // the flat-pattern generator uses, so the pose and the printed template
+    // can never silently disagree.
+    const geo = resolveFlapClapGeometry({ offset: a, flapLength: h, halfWidth: b, delta, paperSize });
+    const gapNow = Math.abs(2 * (geo.A * Math.sin(degToRad(alpha / 2)) - geo.B * Math.cos(degToRad(alpha / 2))));
+    readout = `탁! 각도 α* ≈ ${geo.clapAngle}° · 지금 간격 ${gapNow.toFixed(1)}mm · 열림 간격 ${geo.openGap}mm · 닫힘 잔여간격 ${geo.closedGap}mm`;
+  } else if (mechanism === 'auto-slide-window') {
+    // Auto-slide window (열면 바뀌는 액자 카드) — see generators/autoSlideWindow.js
+    // for the closed-form slider-crank derivation. Reuses its own exported
+    // `sliderDistance(α, p, L)` verbatim (no re-derivation): pivot P rides
+    // the LEFT ("front") page at fixed distance p from the spine — same as
+    // every other arm/flap attachment, no extra rotation needed beyond the
+    // page's own rotateY. The window frame + sliding message strip live on
+    // the RIGHT ("back") page at s(α) from the spine.
+    //
+    // P and S sit on two INDEPENDENTLY-rotating pages under this file's
+    // shared symmetric book convention, whereas autoSlideWindow.js's own
+    // diagram assumes a single rigid cross-section with one face flat on a
+    // table — the two are equivalent only up to the relative dihedral angle
+    // (α either way), not a literal shared plane. So — matching this file's
+    // existing "stylised pose, invisible deviation" precedent (see the
+    // V-fold arm comment above) — we render the two functionally
+    // load-bearing parts (the pivot, and the sliding strip behind the
+    // window: the actual visual payoff of "open the card and the picture
+    // changes by itself") and skip drawing a literal connecting strut bar,
+    // rather than fake a cross-page 3D projection.
+    const geo = resolveAutoSlideWindow({
+      pivotArm: params.pivotArm ?? defaults.pivotArm,
+      strut: params.strut ?? defaults.strut,
+      windowHeight: params.windowHeight ?? defaults.windowHeight,
+      paperSize,
+    });
+
+    const s = sliderDistance(alpha, geo.p, geo.L);
+    const pPx = geo.p * PX;
+    const winHPx = geo.winH * PX; // window opening size along the travel axis
+    const winWPx = geo.winW * PX; // window opening size along the spine
+    const stripLenPx = geo.stripLen * PX;
+    const sliderWxPx = geo.sliderWx * PX;
+    // Strip's near edge sits at s(α) + uMin from the spine (uMin ≤ 0, so this
+    // is s(α) minus the strip's inward overhang past the window).
+    const stripInsetPx = (s + geo.uMin) * PX;
+    const u1Px = (geo.u1 - geo.uMin) * PX; // message-1 marker offset within the strip
+    const u2Px = (geo.u2 - geo.uMin) * PX; // message-2 marker offset within the strip
+
+    attachmentLeft = (
+      <div className="preview3d-pivot-dot" style={{ right: `${pPx}px`, top: `${pageH / 2}px` }} />
+    );
+    attachmentRight = (
+      <>
+        <div
+          className="preview3d-slide-strip"
+          style={{
+            width: `${stripLenPx}px`,
+            height: `${sliderWxPx}px`,
+            left: `${stripInsetPx}px`,
+            top: `${pageH / 2 - sliderWxPx / 2}px`,
+          }}
+        >
+          <span className="preview3d-slide-msg" style={{ left: `${u1Px}px` }}>
+            1
+          </span>
+          <span className="preview3d-slide-msg" style={{ left: `${u2Px}px` }}>
+            2
+          </span>
+        </div>
+        <div
+          className="preview3d-slide-window"
+          style={{
+            width: `${winHPx}px`,
+            height: `${winWPx}px`,
+            left: `${geo.W * PX - winHPx / 2}px`,
+            top: `${pageH / 2 - winWPx / 2}px`,
+          }}
+        />
+      </>
+    );
+
+    readout = `슬라이더 위치 s = ${s.toFixed(1)}mm · 창 위치 W = ${geo.W.toFixed(1)}mm · 오프셋 u = ${(geo.W - s).toFixed(1)}mm`;
   } else if (mechanism === 'spiral-spring') {
-    // ── Spiral-spring pose ───────────────────────────────────────────────────
-    // Same α family as V-fold/box/parallel: the physics ARE parameterised by the
-    // card-opening angle. resolveSpiralGeometry is the single source of truth for
-    // r0/rOuter/a/b/hStand/decos (same call the printable generator makes); the
-    // extension trig comes from calculateSpiralExtension (utils/math.js).
+    // Spiral spring (달팽이 스프링) — see generators/spiralSpring.js. Hub anchor
+    // (disc centre) glued to the LEFT page at distance `a` from the spine,
+    // rim tip glued to the RIGHT page at distance `b`. Placing both anchors
+    // as page-fixed points reproduces the file's own authoritative
+    //   D(α) = √(a² + b² − 2ab·cosα)
+    // for free: with H = left-page-local (−a,0,0) and T = right-page-local
+    // (b,0,0) rotated by the shared ±θ_page, |T−H|² collapses (via
+    // cosθ=sin(α/2), sinθ=cos(α/2)) to exactly a²+b²−2ab·cosα — so the
+    // coil's rendered end-to-end length IS D(α), no re-derivation needed.
+    // Because H and T live on two INDEPENDENTLY-rotating pages, the coil
+    // itself can't be a child of either page — it's parented to
+    // .preview3d-book instead (attachmentBook), spanning world-space between
+    // the two computed anchor points.
     //
-    // Anchors: hub glued to face A at distance `a` below the spine, rim tip to
-    // face B at distance `b` above it. Opening the card swings the two anchors
-    // apart on arms a, b about the spine hinge, so the coil must physically span
-    //     D(α) = √(a² + b² − 2·a·b·cos α)
-    // end-to-end. D(0) = |a−b| = rOuter (coil relaxed flat) and D(180) = a+b.
-    //
-    // VISIBLE-HEIGHT MAPPING (justified): the coil's flat printed disc already
-    // occupies the D(0) = rOuter span at rest, so the standing height it pays out
-    // is exactly the EXTRA distance beyond that rest span:
-    //     standH(α) = D(α) − rOuter,          zero at α=0, hStand (=2b) at α=180.
-    // That zero-point is the physically correct one — at α=0 the anchors are only
-    // rOuter apart, the coil lies flat in its disc, nothing stands up. The per-
-    // decoration heights (geo.decos[i].height, defined at FULL extension) are
-    // scaled by the extension fraction ext = standH/hStand ∈ [0,1] so a marker
-    // rises from the card plane and reaches its documented height only at α=180
-    // (using standH/hStand — the true extension fraction — rather than the naive
-    // D(α)/D(180), which would leave markers floating at ~58% height while the
-    // coil is still visibly flat at α=0, contradicting the flat rest state).
+    // Stylised approximation (this file already accepts these elsewhere):
+    // the coil is a fixed set of beads on a circle of radius ρ(α) that
+    // shrinks as the strip pays out (fat flat disc → narrow standing coil),
+    // swept at a constant `turns` per full span — not a physically exact
+    // Archimedean unwind, but it's flat at α=0, maximally extended at
+    // α=180, and monotonic with D(α) in between, matching this mechanism's
+    // real behaviour.
     const geo = resolveSpiralGeometry({
       turns: params.turns ?? defaults.turns,
       pitch: params.pitch ?? defaults.pitch,
       decorations: params.decorations ?? defaults.decorations,
       paperSize,
     });
-    const { r0, w, turns, rOuter, a, b, hStand, decos } = geo;
 
-    const D = calculateSpiralExtension(alpha, a, b);        // mm, end-to-end span
-    const standH = Math.max(0, D - rOuter);                 // mm, visible standing height
-    const ext = hStand > 0 ? clamp(standH / hStand, 0, 1) : 0; // extension fraction 0..1
+    const D = Math.sqrt(geo.a * geo.a + geo.b * geo.b - 2 * geo.a * geo.b * Math.cos(degToRad(alpha)));
+    const extMax = 2 * geo.b; // = hStand, the max useful payout
+    const payout = clamp((D - geo.rOuter) / extMax, 0, 1); // 0 = flat disc, 1 = fully paid out
+    const rho = geo.rOuter - (geo.rOuter - geo.r0) * payout; // coil radius shrinks as it pays out
 
-    const standPx = standH * PX;
-    // Coil display radius: the spiral's mean radius, held constant along the helix
-    // (a stylised cylinder-limit spring). Under the book's rotateX tilt each flat
-    // ring renders as an ellipse, so the stack reads as a coil that grows taller.
-    const coilRpx = ((r0 + rOuter) / 2) * PX;
-    // One ring per half-turn for a smooth helix; total twist = turns·360°.
-    const ringCount = clamp(Math.round(turns * 2), 6, 14);
-    const twistPer = (turns * 360) / Math.max(1, ringCount - 1);
+    const thetaRad = degToRad(thetaPage);
+    const cosT = Math.cos(thetaRad);
+    const sinT = Math.sin(thetaRad);
+    const Hx = -geo.a * PX * cosT;
+    const Hz = geo.a * PX * sinT;
+    const Tx = geo.b * PX * cosT;
+    const Tz = geo.b * PX * sinT;
+    const spanPx = Math.hypot(Tx - Hx, Tz - Hz); // ≈ D(α)·PX
+    const psi = radToDeg(Math.atan2(-(Tz - Hz), Tx - Hx));
 
-    // Build every 3-D element tagged with its local z (translateZ). We then sort
-    // the array by z ASCENDING and emit in that order, so DOM order == depth
-    // order (farthest-from-viewer first, nearest last). This is the flip-disc
-    // lesson applied: for these near-coplanar rings/dots Chromium paints in DOM
-    // order, NOT by translateZ, so paint order must be guaranteed by DOM order —
-    // higher-z (nearer the viewer, the top of the standing coil) is emitted LAST
-    // and therefore paints on top, exactly as it should.
-    const parts = [];
-    for (let k = 0; k < ringCount; k++) {
-      const f = ringCount === 1 ? 0 : k / (ringCount - 1);
-      const z = f * standPx;
-      // Base (f=0) tinted cool, top (f=1) warm, so the helix's rise is legible
-      // even when squat. Slightly thicker base ring to ground the coil.
-      const hue = Math.round(210 - 190 * f);
-      parts.push({
-        z,
-        node: (
-          <div
-            key={`ring-${k}`}
-            className="preview3d-spiral-ring"
-            style={{
-              width: `${coilRpx * 2}px`,
-              height: `${coilRpx * 2}px`,
-              borderColor: `hsl(${hue}, 70%, 60%)`,
-              borderWidth: k === 0 ? '3px' : '2px',
-              transform: `translate(-50%, -50%) translateZ(${z.toFixed(2)}px) rotateZ(${(k * twistPer).toFixed(2)}deg)`,
-            }}
-          />
-        ),
-      });
+    const beadCount = Math.max(8, Math.ceil(geo.turns * 8));
+    const rhoPx = rho * PX;
+    const beadSizePx = Math.max(3, geo.w * PX * 0.5);
+
+    const beads = [];
+    for (let i = 0; i <= beadCount; i++) {
+      const u = i / beadCount;
+      const isEnd = i === 0 || i === beadCount;
+      const phi = degToRad(u * geo.turns * 360);
+      const lx = u * spanPx;
+      const ly = isEnd ? 0 : rhoPx * Math.cos(phi);
+      const lz = isEnd ? 0 : rhoPx * Math.sin(phi);
+      beads.push(
+        <div
+          key={`bead-${i}`}
+          className="preview3d-spring-bead"
+          style={{
+            width: `${beadSizePx}px`,
+            height: `${beadSizePx}px`,
+            transform: `translate3d(${lx}px, ${ly}px, ${lz}px) translate(-50%, -50%)`,
+          }}
+        />,
+      );
     }
-    for (const d of decos) {
-      const z = d.height * ext * PX;                        // current marker height (px)
-      const ang = degToRad(d.f * turns * 360);              // where along the spiral it sits
-      const dx = coilRpx * Math.cos(ang);
-      const dy = coilRpx * Math.sin(ang);
-      const dotR = d.drawR * PX * 0.7;                      // planet radius (mm→px, trimmed for the pose)
-      const hue = Math.round((d.n * 360) / (decos.length + 1));
-      parts.push({
-        z,
-        node: (
-          <div
-            key={`deco-${d.n}`}
-            className="preview3d-spiral-deco"
-            style={{
-              width: `${dotR * 2}px`,
-              height: `${dotR * 2}px`,
-              background: `hsl(${hue}, 72%, 60%)`,
-              transform: `translate(-50%, -50%) translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) translateZ(${z.toFixed(2)}px)`,
-            }}
-          />
-        ),
-      });
-    }
-    // Stable sort by z: farthest (z=0, coil base) first → nearest (coil top) last.
-    parts.sort((p, q) => p.z - q.z);
 
-    // The coil stands vertically in the symmetry plane regardless of α. It lives
-    // inside the LEFT page (its hub is anchored to face A), so it inherits the
-    // page's rotateY(θ); we cancel that with rotateY(−θ) about the SAME spine
-    // point (transform-origin 0 0 sits exactly on the page's right-center pivot),
-    // leaving the coil axis welded to world-vertical +Z at every opening angle.
+    const decoNodes = geo.decos.map((d) => {
+      const phi = degToRad(d.f * geo.turns * 360);
+      const lx = d.f * spanPx;
+      const ly = rhoPx * Math.cos(phi);
+      const lz = rhoPx * Math.sin(phi);
+      const sizePx = d.drawR * 2 * PX;
+      return (
+        <div
+          key={`deco-${d.n}`}
+          className="preview3d-spring-deco"
+          style={{
+            width: `${sizePx}px`,
+            height: `${sizePx}px`,
+            transform: `translate3d(${lx}px, ${ly}px, ${lz}px) translate(-50%, -50%)`,
+          }}
+        />
+      );
+    });
+
     attachmentLeft = (
       <div
-        className="preview3d-spiral"
-        style={{ top: `${pageH / 2}px`, transform: `rotateY(${-thetaPage}deg)` }}
+        className="preview3d-spring-hub"
+        style={{
+          width: `${geo.rOuter * 2 * PX}px`,
+          height: `${geo.rOuter * 2 * PX}px`,
+          right: `${(geo.a - geo.rOuter) * PX}px`,
+          top: `${pageH / 2 - geo.rOuter * PX}px`,
+        }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-spring-hub"
+        style={{
+          width: `${geo.tab * 2 * PX}px`,
+          height: `${geo.tab * 2 * PX}px`,
+          left: `${(geo.b - geo.tab) * PX}px`,
+          top: `${pageH / 2 - geo.tab * PX}px`,
+        }}
+      />
+    );
+    attachmentBook = (
+      <div
+        className="preview3d-spring"
+        style={{
+          left: 0,
+          top: `${pageH / 2}px`,
+          transform: `translate3d(${Hx}px, 0px, ${Hz}px) rotateY(${psi}deg)`,
+        }}
       >
-        {parts.map((p) => p.node)}
+        {beads}
+        {decoNodes}
       </div>
     );
-    attachmentRight = null;
 
-    readout =
-      `늘어난 거리 D = ${D.toFixed(1)}mm · 코일 높이 h = ${standH.toFixed(1)}mm · ` +
-      `${Math.round(turns)}바퀴 · 피치 ${w}mm`;
+    readout = `신장 E = ${(D - geo.rOuter).toFixed(1)}/${extMax.toFixed(1)}mm (${Math.round(payout * 100)}%) · 반지름 ρ = ${rho.toFixed(1)}mm`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
@@ -870,8 +791,18 @@ export default function Preview3D() {
 
   return (
     <div className="preview3d-root">
-      <div className="preview3d-stage">
-        <div className="preview3d-book">
+      <div
+        ref={stageRef}
+        className={`preview3d-stage${isDragging ? ' is-dragging' : ''}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        <div
+          className="preview3d-book"
+          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})` }}
+        >
           {/* Left page — hinged on the spine (its right edge) */}
           <div
             className="preview3d-page preview3d-page-left"
@@ -894,7 +825,12 @@ export default function Preview3D() {
           >
             {attachmentRight}
           </div>
+          {attachmentBook}
         </div>
+        <div className="preview3d-orbit-hint">드래그해서 회전 · 휠로 확대/축소</div>
+        <button type="button" className="preview3d-orbit-reset" onClick={resetOrbit}>
+          시점 초기화
+        </button>
       </div>
 
       <div className="fold-slider-container">

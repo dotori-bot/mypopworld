@@ -1,10 +1,24 @@
 .preview-tabs {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: var(--bg-glass);
   border-bottom: 1px solid var(--border-glass);
   padding: 0 var(--space-lg);
   position: relative;
   z-index: 10;
+}
+
+.preview-tabs-list {
+  display: flex;
+}
+
+@media (max-width: 640px) {
+  .preview-tabs {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+  }
 }
 
 .preview-tab {
@@ -69,21 +83,6 @@
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.zoom-controls {
-  position: absolute;
-  right: var(--space-lg);
-  top: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  background: var(--bg-glass);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xs);
-  z-index: 20;
 }
 
 /* Decoration Mode Toggle (page-2 artwork style: AI image vs. freehand guide) */
@@ -160,41 +159,7 @@
   transform: scale(1.2);
 }
 
-/* Legend */
-.legend-panel {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border-glass);
-  padding: 12px 24px;
-  display: flex;
-  justify-content: center;
-  gap: var(--space-xl);
-  z-index: 20;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.legend-line {
-  width: 24px;
-  height: 2px;
-}
-
 /* 3D Preview */
-.canvas-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
 .fold-slider-container {
   position: absolute;
   bottom: 24px;
@@ -293,12 +258,6 @@
   transform: translateY(-2px);
 }
 
-.premium-badge {
-  font-size: 0.78em;
-  opacity: 0.7;
-  font-weight: 500;
-}
-
 /* ------------------------------------------------------------------ */
 /* 3D assembled preview (Preview3D.jsx) — pure CSS 3D transforms       */
 /* ------------------------------------------------------------------ */
@@ -321,8 +280,12 @@
   padding: var(--space-xl);
 }
 
-/* Perspective viewport */
+/* Perspective viewport. Orbit (drag to rotate, wheel to zoom) is applied to
+   .preview3d-book's transform in JS (Preview3D.jsx); this element just owns
+   the pointer/wheel listeners and the perspective. touch-action: none stops
+   the browser from panning/scrolling the page while dragging on touch. */
 .preview3d-stage {
+  user-select: none; /* dragging to orbit must not select the hint/label text */
   perspective: 1100px;
   perspective-origin: 50% 42%;
   width: 100%;
@@ -330,17 +293,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  touch-action: none;
+  cursor: grab;
 }
 
-/* The book coordinate space. Tilted back so we look down onto the open
-   card and the popup (rising toward +Z) reads as standing up. */
+.preview3d-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.preview3d-orbit-hint {
+  position: absolute;
+  top: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.preview3d-orbit-reset {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.preview3d-orbit-reset:hover {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+/* The book coordinate space. Orbit rx/ry/zoom are applied inline from JS
+   state (Preview3D.jsx); this transform-style + preserve-3d is what makes
+   every nested page/flap compose in the same 3D space as the camera orbit. */
 .preview3d-book {
   position: relative;
   transform-style: preserve-3d;
-  /* 3/4 view: tilt back to look down onto the card, plus a small yaw so the
-     fully-raised popup (which stands in the symmetry plane at α=180) is seen at
-     an angle rather than edge-on. */
-  transform: rotateX(-52deg) rotateY(-20deg);
 }
 
 /* Pages hinge on the central spine. Left page origin = its right edge,
@@ -436,47 +433,27 @@
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
 }
 
-/* Spiral-spring ("달팽이 스프링"): a standing coil that pays out as the card opens.
-   The root is a zero-size point welded to the spine centre (its right edge sits on
-   the page's spine, transform-origin 0 0 lands on the page's rotateY pivot) and
-   carries the rotateY(−θ) that cancels its host page's fold, so the coil axis stays
-   world-vertical (+Z) at every opening angle. preserve-3d is REQUIRED so the child
-   rings/dots keep their translateZ stack in 3D. */
-.preview3d-spiral {
+/* Flap-clap: a rigid triangular flap hinged INSET from the spine (not flush
+   against it, unlike arm/boxflap). Base (full height) at its own right/left
+   edge, tapering to a point at the far edge's middle — same silhouette as the
+   V-fold arm, just positioned with `right`/`left` > 0 (inline style, since the
+   inset distance varies per design) instead of flush against the page edge.
+   Its own rotate3d angle is FIXED (not driven by α) — see Preview3D.jsx. */
+.preview3d-flap {
   position: absolute;
-  right: 0;
-  width: 0;
-  height: 0;
-  transform-origin: 0 0;
-  transform-style: preserve-3d;
-}
-
-/* One flat ring per half-turn, stacked along +Z. Under the book's rotateX tilt a
-   flat circle renders as an ellipse, so the stack reads as a coil spring; the
-   translate(-50%,-50%) centres each ring on the spine axis (the root's origin). */
-.preview3d-spiral-ring {
-  position: absolute;
-  left: 0;
-  top: 0;
-  box-sizing: border-box;
-  border-style: solid;
-  border-radius: 50%;
-  background: transparent;
   backface-visibility: visible;
 }
 
-/* Decoration markers ("planets") floating on the coil rim; they rise with the
-   coil (translateZ scaled by the extension fraction) and reach their documented
-   height only at full open. Painted after/among the rings by ascending z so the
-   nearest element wins — DOM order, not translateZ, drives occlusion here. */
-.preview3d-spiral-deco {
-  position: absolute;
-  left: 0;
-  top: 0;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), inset -2px -3px 6px rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  backface-visibility: visible;
+.preview3d-flap-left {
+  transform-origin: right center;
+  clip-path: polygon(100% 0%, 100% 100%, 0% 50%);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+.preview3d-flap-right {
+  transform-origin: left center;
+  clip-path: polygon(0% 0%, 0% 100%, 100% 50%);
+  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
 }
 
 .preview3d-readout {
@@ -486,369 +463,409 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Volvelle spinner: flat top-down view (no book/perspective). The stage keeps
-   the shared radial-gradient backdrop for visual consistency, but the disc is a
-   plain 2D SVG the child spins with a slider or by dragging. */
-.preview3d-volvelle-stage {
-  perspective: none;
-  padding: var(--space-lg);
+/* Auto-slide-window: pivot marker on the front page, sliding message strip +
+   fixed window frame on the back page. See Preview3D.jsx for the geometry. */
+.preview3d-pivot-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: rgba(236, 72, 153, 0.8);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
 }
 
-.preview3d-volvelle-disc {
-  width: min(72%, 340px);
-  height: auto;
-  aspect-ratio: 1 / 1;
-  cursor: grab;
-  touch-action: none; /* let pointer-drag rotate instead of scrolling */
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.18));
+.preview3d-slide-strip {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(99, 102, 241, 0.5));
+  border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
-.preview3d-volvelle-disc:active {
-  cursor: grabbing;
+.preview3d-slide-msg {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary, #1a1a2e);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
-/* Rotor backing behind the wedges (fills any rounding gap at the rim). */
-.preview3d-volvelle-rotor {
-  fill: var(--bg-tertiary);
-}
-
-.preview3d-volvelle-num {
-  fill: #1f2937;
-  font-size: 9px;
-  font-weight: 700;
-  text-anchor: middle;
-  dominant-baseline: central;
+.preview3d-slide-window {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid rgba(99, 102, 241, 0.7);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
   pointer-events: none;
 }
 
-/* Opaque cover disc; the window sub-path is punched out via fill-rule:evenodd. */
-.preview3d-volvelle-cover {
-  fill: var(--bg-secondary);
-  stroke: var(--border-glass);
-  stroke-width: 0.75;
-}
-
-.preview3d-volvelle-window {
-  fill: none;
-  stroke: var(--accent-primary);
-  stroke-width: 1.2;
-}
-
-.preview3d-volvelle-rim {
-  fill: none;
-  stroke: var(--text-muted);
-  stroke-width: 1;
-}
-
-.preview3d-volvelle-notch {
-  fill: var(--bg-glass-active);
-  stroke: var(--text-muted);
-  stroke-width: 0.75;
-}
-
-.preview3d-volvelle-hub {
-  fill: var(--text-muted);
-}
-
-/* ------------------------------------------------------------------ */
-/* Flip-disc ("반쪽 넘김판"): fixed left half + a stack of right-half     */
-/* leaves turned like book pages about the vertical diameter.          */
-/* ------------------------------------------------------------------ */
-.preview3d-flipdisc-stage {
-  /* Keep the shared stage perspective (1100px) so the page-turn reads as 3D. */
-  padding: var(--space-lg);
-}
-
-/* Coordinate space for the assembled disc. A gentle backward tilt so a leaf
-   lifting toward the viewer mid-turn reads as depth, not a flat scale. */
-.preview3d-flipdisc-disc {
-  position: relative;
-  transform-style: preserve-3d;
-  transform: rotateX(-12deg) rotateY(-5deg);
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
-}
-
-/* Fixed background half-disc (LEFT, flat edge on the right at the diameter).
-   Opaque and pinned at depth 0 so turned leaves (negative depth) hide behind
-   it — this is what keeps the left half always showing the background. */
-.preview3d-flipdisc-fixed {
+/* Spiral-spring: a fixed bead ring swept between the hub (left page) and tip
+   (right page) anchors — see Preview3D.jsx for why this layer is parented to
+   .preview3d-book instead of either page. */
+.preview3d-spring {
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 100% 0 0 100% / 50% 0 0 50%;
-  background: linear-gradient(135deg, #f8fafc 0%, #dbe2ea 100%);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
 }
 
-/* Each leaf hinges on its LEFT edge (the diameter). The CSS transition turns
-   the discrete flippedCount change into a smooth book-page arc. */
-.preview3d-flipdisc-leaf {
+/* top/left: 0 is required here, not cosmetic — with both auto (the default),
+   an absolutely-positioned element with no offsets falls back to its normal-
+   flow "static position" before the transform is applied, which for a block
+   div with siblings means each bead stacks on its own flow "line" instead of
+   sitting at .preview3d-spring's origin. transform: translate3d(...) then
+   only offsets it FROM that arbitrary flow position, not from (0,0) — so
+   without this, the beads sprawl down the page instead of forming a coil. */
+.preview3d-spring-bead {
   position: absolute;
   top: 0;
-  transform-origin: left center;
-  transform-style: preserve-3d;
-  transition: transform 0.5s cubic-bezier(0.4, 0.1, 0.2, 1);
+  left: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  backface-visibility: visible;
 }
 
-.preview3d-flipdisc-face {
+.preview3d-spring-deco {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(236, 72, 153, 0.7));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  backface-visibility: visible;
+}
+
+.preview3d-spring-hub {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.15));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+/* ------------------------------------------------------------------ */
+/* Flat (non-book) mechanism scenes — flatScenes.jsx                   */
+/* Every physical paper layer sits on its own translateZ plane; the    */
+/* card face is *almost* opaque so back-side parts (handles, retainer  */
+/* bridges, caps) are properly hidden from the front and revealed by   */
+/* orbiting around to the back — that's the whole point of the scene.  */
+/* ------------------------------------------------------------------ */
+.preview3d-flat {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.preview3d-flat-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 242, 247, 0.96) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  backface-visibility: visible;
+}
+
+/* Printed scene area on the card front (rising-slide's light-beam art). */
+.preview3d-flat-scene {
+  position: absolute;
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(253, 224, 71, 0.28) 0%, rgba(147, 197, 253, 0.18) 55%, rgba(99, 102, 241, 0.14) 100%);
+}
+
+/* A through-cut slot in the card. */
+.preview3d-flat-slot {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.82);
+  border-radius: 2px;
+}
+
+/* A hole cut in the card (pivot hole etc.). */
+.preview3d-flat-hole {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.82);
+}
+
+/* Slider strips / moving paper bodies. */
+.preview3d-flat-strip {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  border-radius: 2px;
+  backface-visibility: visible;
+}
+
+/* The grip/handle zone of a strip (the part fingers actually hold). */
+.preview3d-flat-grip {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.85), rgba(190, 24, 93, 0.85));
+  border: 1px solid rgba(190, 24, 93, 0.6);
+  border-radius: 3px;
+}
+
+/* Stop flange: the wider band that jams against a retainer/guide end. */
+.preview3d-flat-flange {
+  position: absolute;
+  background: rgba(249, 115, 22, 0.8);
+  border: 1px solid rgba(194, 65, 12, 0.7);
+  border-radius: 2px;
+}
+
+/* Retainer bridges / guide strips glued across a slider's path. */
+.preview3d-flat-retainer {
+  position: absolute;
+  background: rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(100, 116, 139, 0.5);
+  border-radius: 2px;
+  backface-visibility: visible;
+}
+
+.preview3d-flat-guide {
+  opacity: 0.9;
+}
+
+/* Glue ends (the green "풀칠" zones on the printed pattern). */
+.preview3d-flat-glue {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(34, 197, 94, 0.45);
+  border-radius: 1px;
+}
+
+/* Stop nubs on the pull-tab slider corners. */
+.preview3d-flat-stopnub {
+  position: absolute;
+  background: rgba(249, 115, 22, 0.85);
+  border-radius: 1px;
+}
+
+/* The rising-slide figure (a star, like the pattern's sample cut-out). */
+.preview3d-flat-figure {
+  position: absolute;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  backface-visibility: visible;
+}
+
+/* Pull-tab handle folded forward through the slot. */
+.preview3d-flat-handle {
+  position: absolute;
+  clip-path: polygon(0 0, 100% 14%, 100% 86%, 0 100%);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.85), rgba(190, 24, 93, 0.85));
+  backface-visibility: visible;
+}
+
+/* Slide-to-swing post (arm) and its pin tab. */
+.preview3d-flat-post {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.75), rgba(67, 56, 202, 0.75));
+  border: 1px solid rgba(67, 56, 202, 0.6);
+  border-radius: 3px;
+  backface-visibility: visible;
+}
+
+.preview3d-flat-pin {
+  position: absolute;
+  background: rgba(249, 115, 22, 0.9);
+  border-radius: 1px;
+}
+
+/* Back-side pivot cap (glued disc that captures the post's neck). */
+.preview3d-flat-cap {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.9);
+  border: 1px solid rgba(71, 85, 105, 0.6);
+  backface-visibility: visible;
+}
+
+/* Swinging decoration glued on the pin. */
+.preview3d-flat-deco {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(236, 72, 153, 0.95);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  line-height: 1;
+  backface-visibility: visible;
+}
+
+/* Volvelle layers. */
+.preview3d-flat-volplate {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 242, 247, 0.96));
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  backface-visibility: visible;
+}
+
+.preview3d-flat-volspacer {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: rgba(134, 239, 172, 0.55);
+  background: transparent;
+}
+
+.preview3d-flat-volrotor {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  backface-visibility: visible;
+}
+
+.preview3d-flat-volnum {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(30, 41, 59, 0.85);
+}
+
+.preview3d-flat-volcover {
+  position: absolute;
+  border-radius: 50%;
+  backface-visibility: visible;
+}
+
+.preview3d-flat-volhub {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.preview3d-flat-volring {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Front: right-half-disc silhouette (flat edge on the left at the diameter). */
-.preview3d-flipdisc-front {
-  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  box-shadow: inset -6px 0 18px rgba(0, 0, 0, 0.08);
-}
-
-/* Back: MIRRORED (left-D) border-radius + an in-place rotateY(180) so it lands
-   exactly on the front's right-D silhouette but faces the other way. Plain
-   paper backing — the underside of a flip page carries no art. */
-.preview3d-flipdisc-back {
-  border-radius: 100% 0 0 100% / 50% 0 0 50%;
-  transform: rotateY(180deg);
-  background: repeating-linear-gradient(
-      45deg,
-      #fdfdfe,
-      #fdfdfe 6px,
-      #eef2f7 6px,
-      #eef2f7 12px
-    );
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.preview3d-flipdisc-num {
-  color: #ffffff;
-  font-size: 2.4rem;
-  font-weight: 800;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  /* Sit on the disc's right half, not the hinge edge. */
-  transform: translateX(30%);
-  pointer-events: none;
-}
-
-/* Staggered grip nub poking past the arc — one per leaf, so the fan hints how
-   many leaves are stacked (mirrors flipDisc.js's staggered nubs). Lifted a hair
-   in z so it reads as sitting on top of the leaf rim. */
-.preview3d-flipdisc-nub {
-  position: absolute;
-  width: 14px;
-  height: 14px;
   border-radius: 50%;
-  transform: translate(-50%, -50%) translateZ(1px);
-  background: var(--bg-glass-active);
-  border: 1.5px solid var(--text-muted);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   pointer-events: none;
 }
 
-/* Diameter/hinge line, drawn above the halves. */
-.preview3d-flipdisc-hinge {
+/* Flip-disc leaves. */
+.preview3d-flat-leafbox {
   position: absolute;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+}
+
+.preview3d-flat-leaf {
+  position: absolute;
+  left: 0;
   top: 0;
-  left: 50%;
-  width: 0;
-  height: 100%;
-  border-left: 1.5px dashed rgba(0, 0, 0, 0.28);
-  transform: translateX(-50%) translateZ(3px);
-  pointer-events: none;
+  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  backface-visibility: visible;
 }
 
-.preview3d-flipdisc-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.preview3d-flipdisc-btn {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.preview3d-flipdisc-btn:hover:not(:disabled) {
-  background: var(--bg-glass-hover);
-  transform: translateY(-1px);
-}
-
-.preview3d-flipdisc-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/* ------------------------------------------------------------------ */
-/* Straw-rocket ("빨대 로켓"): a breath-powered paper tube that flies off  */
-/* a drinking straw. Rendered as a PLAIN 2D/2.5D scene — no perspective, */
-/* no preserve-3d, no translateZ. Occlusion is by z-index only (straw=1, */
-/* rocket=3), which Chromium honours deterministically, unlike depth-    */
-/* sorting near-coplanar 3D siblings (the flip-disc lesson). The launch   */
-/* is a transform+opacity keyframe animation with an ease-out curve, so   */
-/* the rocket leaves fast and decelerates like a real blown paper tube.   */
-/* ------------------------------------------------------------------ */
-.preview3d-rocket-stage {
-  perspective: none;
-  padding: var(--space-lg);
-}
-
-.preview3d-rocket-scene {
-  position: relative;
-  width: 240px;
-  height: 380px;
-}
-
-/* Ground shadow beneath the straw (deepest layer). */
-.preview3d-rocket-pad {
+.preview3d-flat-halfdisc {
   position: absolute;
-  left: 50%;
-  bottom: 14px;
-  width: 120px;
-  height: 14px;
-  transform: translateX(-50%);
+  border-radius: 100% 0 0 100% / 50% 0 0 50%;
+  background: linear-gradient(225deg, #5eead4, #ffffff);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  backface-visibility: visible;
+}
+
+.preview3d-flat-hinge {
+  position: absolute;
+  background: rgba(148, 163, 184, 0.85);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  backface-visibility: visible;
+}
+
+.preview3d-flat-pagenum {
+  position: absolute;
+  left: 40%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(30, 41, 59, 0.8);
+}
+
+.preview3d-flat-nub {
+  position: absolute;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 70%);
-  z-index: 0;
+  background: rgba(249, 115, 22, 0.9);
+  border: 1px solid rgba(194, 65, 12, 0.6);
 }
 
-/* The drinking straw: striped, rounded, standing vertically behind the rocket. */
-.preview3d-rocket-straw {
+/* Straw rocket. */
+.preview3d-flat-straw {
   position: absolute;
-  left: 50%;
-  bottom: 24px;
-  width: 12px;
-  height: 300px;
-  transform: translateX(-50%);
-  border-radius: 6px;
-  background: repeating-linear-gradient(-45deg, #ef4444 0 8px, #ffffff 8px 16px);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
-  z-index: 1;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(248, 113, 113, 0.85) 0 6px,
+    rgba(255, 255, 255, 0.9) 6px 12px
+  );
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  backface-visibility: visible;
 }
 
-/* Rocket tube. Base pose sits low over the straw; z-index 3 pins it above the
-   straw at every animation frame. */
-.preview3d-rocket {
+.preview3d-flat-tube {
   position: absolute;
-  left: 50%;
-  bottom: 40px;
-  width: 64px;
-  transform: translate(-50%, 0);
-  transform-origin: 50% 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 3;
+  border-radius: 3px 3px 0 0;
+  background: rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(67, 56, 202, 0.55);
+  backface-visibility: visible;
 }
 
-/* .is-flying plays the launch keyframes; `forwards` holds the flown-away end
-   state (opacity 0, far up) through the 'landed' phase. Removing the class on
-   reset reverts to the base pose INSTANTLY — no reverse animation. */
-.preview3d-rocket.is-flying {
-  animation: preview3d-rocket-fly 0.95s cubic-bezier(0.15, 0.62, 0.32, 1) forwards;
+.preview3d-flat-tube-back {
+  background: rgba(67, 56, 202, 0.45);
 }
 
-.preview3d-rocket-svg {
-  width: 64px;
-  height: 104px;
-  display: block;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
-}
-
-/* Theme-based decoration caption riding on the tube (reuses the theme param,
-   mirroring the generator's "[theme 앞면]" placeholder). */
-.preview3d-rocket-theme {
-  margin-top: 2px;
-  max-width: 88px;
-  padding: 1px 8px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Flame flickers only while flying. transform-box:fill-box so transform-origin
-   is relative to the flame path, not the whole SVG. */
-.preview3d-rocket-flame {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: 50% 0;
-}
-
-.preview3d-rocket.is-flying .preview3d-rocket-flame {
-  opacity: 1;
-  animation: preview3d-rocket-flame 0.12s ease-in-out infinite alternate;
-}
-
-/* Breath puff at the straw mouth (mounted only during 'launching'). */
-.preview3d-rocket-puff {
+.preview3d-flat-tubecap {
   position: absolute;
-  left: calc(50% + 14px);
-  bottom: 30px;
-  font-size: 1.4rem;
-  z-index: 2;
-  pointer-events: none;
-  animation: preview3d-rocket-puff 0.6s ease-out forwards;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 22%;
+  background: rgba(67, 56, 202, 0.85);
+  border-radius: 3px 3px 0 0;
 }
 
-@keyframes preview3d-rocket-fly {
-  0%   { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 1; }
-  55%  { transform: translate(calc(-50% + 12px), -180px) rotate(-6deg) scale(0.92); opacity: 1; }
-  85%  { opacity: 1; }
-  100% { transform: translate(calc(-50% + 28px), -340px) rotate(-13deg) scale(0.66); opacity: 0; }
+.preview3d-flat-rocket {
+  position: absolute;
+  background: linear-gradient(180deg, #fb7185 0%, #f97316 55%, #fbbf24 100%);
+  backface-visibility: visible;
 }
 
-@keyframes preview3d-rocket-flame {
-  from { transform: scaleY(0.8); }
-  to   { transform: scaleY(1.28); }
+.preview3d-flat-rocket-back {
+  background: linear-gradient(180deg, #fda4af 0%, #fdba74 55%, #fde68a 100%);
+  filter: saturate(0.6) brightness(0.95);
 }
 
-@keyframes preview3d-rocket-puff {
-  0%   { opacity: 0; transform: translate(0, 0) scale(0.5); }
-  30%  { opacity: 0.9; }
-  100% { opacity: 0; transform: translate(10px, -28px) scale(1.6); }
-}
-
-.preview3d-rocket-controls {
-  display: flex;
-  justify-content: center;
-}
-
-.preview3d-rocket-btn {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: var(--radius-lg);
-  background: var(--accent-gradient);
-  border: none;
+/* Floating part labels. Front tags face the default camera; back tags are
+   flipped (rotateY 180°) and pushed behind the card so they read correctly
+   when the user orbits around to inspect the back-side structure. */
+.preview3d-tag {
+  position: absolute;
+  transform: translate(-50%, -50%) translateZ(30px);
+  font-size: 9px;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(30, 30, 55, 0.72);
   color: #fff;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  white-space: nowrap;
+  pointer-events: none;
+  backface-visibility: hidden;
 }
 
-.preview3d-rocket-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-glow);
-}
-
-.preview3d-rocket-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-  background: var(--bg-glass-active);
-  color: var(--text-secondary);
+.preview3d-tag-back {
+  transform: translate(-50%, -50%) translateZ(-30px) rotateY(180deg);
 }

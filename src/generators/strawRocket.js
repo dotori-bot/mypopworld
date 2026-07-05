@@ -21,9 +21,12 @@ export const generateStrawRocket = (svg, options = {}) => {
 
   // 1. The Tube (Fits a standard 6mm straw)
   // Tube width needs to wrap around 6mm straw = circumference ≈ 19mm
-  // We'll make it 25mm to have a loose fit + glue tab
-  const tubeWidth = 25; 
-  const tubeHeight = 40;
+  // We'll make it 22mm (snug fit + glue tab) so a short tube still grips.
+  // Tube height is insertion depth onto the straw tip only — launch force comes
+  // from air pressure on the sealed cap, not insertion depth, so this stays
+  // shallow (~3x the straw diameter) rather than reaching down the straw.
+  const tubeWidth = 22;
+  const tubeHeight = 20;
   const tabWidth = 6;
   const tubeX = cx - (tubeWidth + tabWidth) / 2;
   const tubeY = cy + 20; // Place below the decoration
