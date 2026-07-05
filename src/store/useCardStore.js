@@ -33,6 +33,7 @@ const useCardStore = create((set) => ({
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),
+  setGenerating: (v) => set({ isGenerating: v }),
   setPages: (p) => set({ pages: p, currentPage: 0 }),
   setCurrentPage: (p) => set({ currentPage: p }),
   resetChat: () => set({ messages: [], cardParams: null, pages: [] }),
