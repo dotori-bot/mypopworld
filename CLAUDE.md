@@ -17,6 +17,8 @@
 - `src/generators/registry.js` — 메커니즘 id → 렌더 함수/기본 파라미터/조립 설명서를 매핑하는 단일 소스(`MECHANISM_REGISTRY`, `INSTRUCTION_TEXT`). 새 메커니즘 추가 시 이 파일 한 곳만 건드리면 된다.
 - `src/components/Chat/ChatWindow.jsx` + `api/chat.js` — Gemini 기반 대화형 아이디어 제안 챗봇.
 - `src/components/Preview/SVGPreview.jsx` — 메커니즘별 도안을 조립해 미리보기/PDF로 만드는 곳. 현재 메커니즘 분기가 if/else로 하드코딩되어 있다.
+- `src/components/Preview/Preview3D.jsx` — CSS 3D 기반 조립 자세 시뮬레이터. 카드를 여닫는 "책형" 메커니즘은 열림 각도 α 슬라이더로, 평면형(슬라이더·돌림판 등) 메커니즘은 `flatScenes.jsx`의 전용 드라이브 슬라이더(당기기/밀기/돌리기/넘기기/불기)로 구동한다.
+- `src/components/Preview/flatScenes.jsx` — 평면형 메커니즘 6종(pull-tab, rising-slide, slide-to-swing, volvelle, flip-disc, straw-rocket)의 구조 충실 3D 장면 빌더. 부품 배치는 생성기의 resolver 지오메트리를 그대로 쓰고, 종이 한 장당 translateZ 한 층씩 쌓아 카메라를 돌리면 뒷면 구조(손잡이·멈춤 띠·안내 띠·고정 캡)가 실제 조립 순서대로 보인다.
 - `src/components/Preview/Instructions.jsx` — 메커니즘별 조립 가이드(정적).
 
 ## 종이공예 메커니즘 목록
