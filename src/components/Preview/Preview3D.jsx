@@ -33,6 +33,17 @@ const SUPPORTED_3D = new Set([
 // Default camera orbit — same 3/4 view the stage always used to be locked to.
 const DEFAULT_ORBIT = { rx: -52, ry: -20, zoom: 1 };
 const ORBIT_RX_RANGE = [-85, -10]; // deg, keeps the "look down onto the card" framing
+// ry is clamped to the front hemisphere for the same reason rx is: every
+// mechanism's popup panels (arms/flaps/steps) live in their pages' preserve-3d
+// subtrees and physically cross the page planes at the spine. CSS 3D cannot
+// intersect two planes per-pixel — it depth-sorts whole planes — so once the
+// camera swings far enough that a page turns edge-on/backwards, a popup panel
+// that should be occluded by (or fold behind) its page instead paints straight
+// over/past it, reading as a detached sliver escaping the card silhouette. The
+// panels' ridge tips stay mathematically coincident at every angle (the fold
+// math is correct); this range only keeps the camera where that coincidence
+// also composites cleanly — i.e. looking into the open card, never around its back.
+const ORBIT_RY_RANGE = [-25, 25];
 const ORBIT_ZOOM_RANGE = [0.6, 1.8];
 
 /**
@@ -196,7 +207,7 @@ export default function Preview3D() {
     const dy = e.clientY - dragStart.current.y;
     setOrbit((prev) => ({
       ...prev,
-      ry: dragStart.current.ry + dx * 0.4,
+      ry: clamp(dragStart.current.ry + dx * 0.4, ORBIT_RY_RANGE[0], ORBIT_RY_RANGE[1]),
       rx: clamp(dragStart.current.rx - dy * 0.4, ORBIT_RX_RANGE[0], ORBIT_RX_RANGE[1]),
     }));
   }, []);
