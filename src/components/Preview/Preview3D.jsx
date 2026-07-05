@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildMechanismParams } from '../../generators/registry';
 import { resolveFlapClapGeometry } from '../../generators/flapClap';
+import { resolveAccordionGeometry } from '../../generators/accordionPopup';
+import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
+import { resolveAutoSlideWindow, sliderDistance } from '../../generators/autoSlideWindow';
+import { resolveSpiralGeometry } from '../../generators/spiralSpring';
 import { CARD_SIZES } from '../../generators/constants';
 import {
   calculateVFoldAngle,
@@ -15,7 +19,21 @@ import '../../styles/preview.css';
 
 // Mechanisms with a working 3D assembled-pose preview. Anything else falls
 // back to the "not ready yet" placeholder.
-const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'flap-clap']);
+const SUPPORTED_3D = new Set([
+  'v-fold',
+  'box-popup',
+  'parallel-fold',
+  'flap-clap',
+  'accordion',
+  'layered-stage',
+  'auto-slide-window',
+  'spiral-spring',
+]);
+
+// Default camera orbit — same 3/4 view the stage always used to be locked to.
+const DEFAULT_ORBIT = { rx: -52, ry: -20, zoom: 1 };
+const ORBIT_RX_RANGE = [-85, -10]; // deg, keeps the "look down onto the card" framing
+const ORBIT_ZOOM_RANGE = [0.6, 1.8];
 
 /**
  * Recursively build the nested DOM for a parallel-fold staircase on one side of
@@ -35,27 +53,33 @@ const SUPPORTED_3D = new Set(['v-fold', 'box-popup', 'parallel-fold', 'flap-clap
  * @param {number} PX          mm→px scale
  * @param {number} parentDimPx the parent's along-spine size in px (page height
  *                             for level 0, previous level's widthPx otherwise)
+ * @param {number} [insetPx=0] level-0 only: hinge offset from the spine, in px
+ *                             (0 = flush at the spine, like box-popup/parallel-fold;
+ *                             > 0 = inset, like accordion's off-spine anchor —
+ *                             same inset technique flap-clap uses inline)
  *
  * Fold DIRECTION alternates per level: even levels (0,2,4…) flex +γ ("risers",
  * lifting away from the parent surface), odd levels flex −γ ("treads", flattening
  * back parallel to the base). This is (a) the mountain/valley alternation a real
  * flat-foldable staircase requires and (b) what keeps the running frame from
  * compounding into a spiral — so the steps ascend monotonically instead of
- * rotating past vertical and retracting inside earlier levels.
+ * rotating past vertical and retracting inside earlier levels. (Accordion reuses
+ * this same alternation for its zigzag pleats — see the mechanism branch below.)
  */
-function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
+function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx, insetPx = 0) {
   if (i >= levels.length) return null;
   const depthPx = levels[i].depth * PX;  // extent away from the spine
   const widthPx = levels[i].width * PX;  // extent along the spine
   // Centre this level on its parent's along-spine span.
   const top = (parentDimPx - widthPx) / 2;
   // Spine-side (hinge) edge sits on the parent's outer edge. For level 0 the
-  // parent is the page and the hinge is AT the spine (right:0 / left:0); for
-  // deeper levels the hinge is the parent's far edge (right:100% / left:100%).
+  // parent is the page and the hinge is AT the spine (right:0 / left:0) unless
+  // insetPx pushes it further out; for deeper levels the hinge is the parent's
+  // far edge (right:100% / left:100%).
   const pos =
     side === 'left'
-      ? { right: i === 0 ? 0 : '100%' }
-      : { left: i === 0 ? 0 : '100%' };
+      ? { right: i === 0 ? insetPx : '100%' }
+      : { left: i === 0 ? insetPx : '100%' };
   // Same rotate3d axis convention as box-popup / V-fold; sign alternates.
   const angle = i % 2 === 0 ? gamma : -gamma;
   const zc = side === 'left' ? -cosA : cosA;
@@ -152,6 +176,56 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx) {
 export default function Preview3D() {
   const { cardParams, paperSize, colorMode } = useCardStore();
   const [alpha, setAlpha] = useState(90);
+  const [orbit, setOrbit] = useState(DEFAULT_ORBIT);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef(null); // { pointerX, pointerY, rx, ry }
+  const stageRef = useRef(null);
+
+  const handlePointerDown = useCallback(
+    (e) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      dragStart.current = { x: e.clientX, y: e.clientY, rx: orbit.rx, ry: orbit.ry };
+      setIsDragging(true);
+    },
+    [orbit.rx, orbit.ry],
+  );
+
+  const handlePointerMove = useCallback((e) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setOrbit((prev) => ({
+      ...prev,
+      ry: dragStart.current.ry + dx * 0.4,
+      rx: clamp(dragStart.current.rx - dy * 0.4, ORBIT_RX_RANGE[0], ORBIT_RX_RANGE[1]),
+    }));
+  }, []);
+
+  const handlePointerUp = useCallback((e) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    dragStart.current = null;
+    setIsDragging(false);
+  }, []);
+
+  const resetOrbit = useCallback(() => setOrbit(DEFAULT_ORBIT), []);
+
+  // Non-passive native listener: React's synthetic onWheel is registered
+  // passive, so preventDefault() there would warn and not stop page scroll.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      setOrbit((prev) => ({
+        ...prev,
+        zoom: clamp(prev.zoom - e.deltaY * 0.001, ORBIT_ZOOM_RANGE[0], ORBIT_ZOOM_RANGE[1]),
+      }));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const mechanism = cardParams?.mechanism;
 
@@ -159,7 +233,7 @@ export default function Preview3D() {
     return (
       <div className="preview3d-root">
         <div className="preview3d-placeholder">
-          이 메커니즘은 아직 3D 미리보기를 준비 중이에요! (현재는 브이폴드 · 상자 팝업만 지원)
+          이 메커니즘은 아직 3D 미리보기를 준비 중이에요!
         </div>
       </div>
     );
@@ -177,6 +251,11 @@ export default function Preview3D() {
 
   let attachmentLeft;
   let attachmentRight;
+  // Extra content parented directly to .preview3d-book (not to either page) —
+  // only spiral-spring needs this, since its coil spans BETWEEN two anchors
+  // that live on two independently-rotating pages, so it can't be a child of
+  // either one.
+  let attachmentBook = null;
   let readout;
 
   if (mechanism === 'v-fold') {
@@ -239,6 +318,98 @@ export default function Preview3D() {
     const totalDepth = levels.reduce((s, l) => s + l.depth, 0);
     const hTop = calculateParallelFoldHeight(totalDepth, alpha);
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
+  } else if (mechanism === 'accordion') {
+    // Accordion (병풍 팝업) — see generators/accordionPopup.js for the closed-form
+    // physics. SAME topology as V-fold/box-popup (two attachment points at
+    // distance `a` from the spine, one per page), except instead of a single
+    // arm/flap meeting at the spine, a uniform M-panel zigzag chain spans
+    // between them. renderStairLevel's alternating ±γ recursion (built for
+    // parallel-fold's staircase) IS that zigzag verbatim once every level is
+    // the SAME size and folds by the SAME constant angle ρ(α) instead of
+    // varying per level — so we reuse it directly, nested inside a level-0
+    // hinge inset by `a` from the spine (the `insetPx` param added above).
+    //   D(α) = 2·a·sin(α/2)            anchor-to-anchor chord (authoritative)
+    //   cos ρ(α) = D(α) / L,  L = SAFETY·a = M·w   ⇒  ρ = arccos(D/L)
+    const geo = resolveAccordionGeometry({
+      a: params.a ?? defaults.a,
+      panels: params.panels ?? defaults.panels,
+      wallHeight: params.wallHeight ?? defaults.wallHeight,
+      paperSize,
+    });
+
+    const D = 2 * geo.a * Math.sin(degToRad(alpha / 2));
+    const rho = radToDeg(Math.acos(clamp(D / geo.L, -1, 1)));
+
+    const rRad = degToRad(rho);
+    const sinR = Math.sin(rRad);
+    const cosR = Math.cos(rRad);
+    const aPx = geo.a * PX;
+
+    const levels = Array.from({ length: geo.panels }, () => ({ width: geo.wallHeight, depth: geo.w }));
+
+    attachmentLeft = renderStairLevel(levels, 0, 'left', sinR, cosR, rho, PX, pageH, aPx);
+    attachmentRight = renderStairLevel(levels, 0, 'right', sinR, cosR, rho, PX, pageH, aPx);
+
+    readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rho.toFixed(0)}°`;
+  } else if (mechanism === 'layered-stage') {
+    // Layered stage (층층이 무대) — see generators/layeredStage.js. Each layer i
+    // is its OWN independent box-popup-style flap: h_i = d_i·sin(α/2), the
+    // SAME gamma = α/2 and rotate3d formula as the box-popup branch above.
+    // The only difference from box-popup is the hinge sits inset by the
+    // layer's accumulated depth `near_i` from the spine instead of flush
+    // against it — the same off-spine inset technique flap-clap uses inline
+    // (transform-origin stays the flap's own edge; only its screen position
+    // moves). Layers never overlap in depth (near_i are disjoint bands), so
+    // there's no z-order ambiguity between them.
+    const geo = resolveLayeredStageGeometry({ layers: params.layers ?? defaults.layers, paperSize });
+
+    const gamma = alpha / 2; // deg, identical to box-popup
+    const aRad = degToRad(gamma);
+    const sinA = Math.sin(aRad);
+    const cosA = Math.cos(aRad);
+    const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
+    const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+
+    attachmentLeft = geo.layers.map((layer) => {
+      const depthPx = layer.depth * PX;
+      const widthPx = layer.width * PX;
+      const top = pageH / 2 - widthPx / 2;
+      return (
+        <div
+          key={`stage-left-${layer.index}`}
+          className="preview3d-boxflap preview3d-boxflap-left"
+          style={{
+            width: `${depthPx}px`,
+            height: `${widthPx}px`,
+            top: `${top}px`,
+            right: `${layer.near * PX}px`,
+            transform: flapLiftLeft,
+          }}
+        />
+      );
+    });
+    attachmentRight = geo.layers.map((layer) => {
+      const depthPx = layer.depth * PX;
+      const widthPx = layer.width * PX;
+      const top = pageH / 2 - widthPx / 2;
+      return (
+        <div
+          key={`stage-right-${layer.index}`}
+          className="preview3d-boxflap preview3d-boxflap-right"
+          style={{
+            width: `${depthPx}px`,
+            height: `${widthPx}px`,
+            top: `${top}px`,
+            left: `${layer.near * PX}px`,
+            transform: flapLiftRight,
+          }}
+        />
+      );
+    });
+
+    const deepest = geo.layers[geo.layers.length - 1];
+    const deepestHeight = deepest ? calculateParallelFoldHeight(deepest.depth, alpha) : 0;
+    readout = `무대 ${geo.count}겹 · 가장 안쪽 벽 높이 ≈ ${deepestHeight.toFixed(1)}mm · 접힘각 γ = ${gamma.toFixed(0)}°`;
   } else if (mechanism === 'flap-clap') {
     // Flap-clap — see generators/flapClap.js for the full derivation. Unlike
     // every other mechanism here, this flap's OWN fold angle does NOT track
@@ -291,6 +462,204 @@ export default function Preview3D() {
     const geo = resolveFlapClapGeometry({ offset: a, flapLength: h, halfWidth: b, delta, paperSize });
     const gapNow = Math.abs(2 * (geo.A * Math.sin(degToRad(alpha / 2)) - geo.B * Math.cos(degToRad(alpha / 2))));
     readout = `탁! 각도 α* ≈ ${geo.clapAngle}° · 지금 간격 ${gapNow.toFixed(1)}mm · 열림 간격 ${geo.openGap}mm · 닫힘 잔여간격 ${geo.closedGap}mm`;
+  } else if (mechanism === 'auto-slide-window') {
+    // Auto-slide window (열면 바뀌는 액자 카드) — see generators/autoSlideWindow.js
+    // for the closed-form slider-crank derivation. Reuses its own exported
+    // `sliderDistance(α, p, L)` verbatim (no re-derivation): pivot P rides
+    // the LEFT ("front") page at fixed distance p from the spine — same as
+    // every other arm/flap attachment, no extra rotation needed beyond the
+    // page's own rotateY. The window frame + sliding message strip live on
+    // the RIGHT ("back") page at s(α) from the spine.
+    //
+    // P and S sit on two INDEPENDENTLY-rotating pages under this file's
+    // shared symmetric book convention, whereas autoSlideWindow.js's own
+    // diagram assumes a single rigid cross-section with one face flat on a
+    // table — the two are equivalent only up to the relative dihedral angle
+    // (α either way), not a literal shared plane. So — matching this file's
+    // existing "stylised pose, invisible deviation" precedent (see the
+    // V-fold arm comment above) — we render the two functionally
+    // load-bearing parts (the pivot, and the sliding strip behind the
+    // window: the actual visual payoff of "open the card and the picture
+    // changes by itself") and skip drawing a literal connecting strut bar,
+    // rather than fake a cross-page 3D projection.
+    const geo = resolveAutoSlideWindow({
+      pivotArm: params.pivotArm ?? defaults.pivotArm,
+      strut: params.strut ?? defaults.strut,
+      windowHeight: params.windowHeight ?? defaults.windowHeight,
+      paperSize,
+    });
+
+    const s = sliderDistance(alpha, geo.p, geo.L);
+    const pPx = geo.p * PX;
+    const winHPx = geo.winH * PX; // window opening size along the travel axis
+    const winWPx = geo.winW * PX; // window opening size along the spine
+    const stripLenPx = geo.stripLen * PX;
+    const sliderWxPx = geo.sliderWx * PX;
+    // Strip's near edge sits at s(α) + uMin from the spine (uMin ≤ 0, so this
+    // is s(α) minus the strip's inward overhang past the window).
+    const stripInsetPx = (s + geo.uMin) * PX;
+    const u1Px = (geo.u1 - geo.uMin) * PX; // message-1 marker offset within the strip
+    const u2Px = (geo.u2 - geo.uMin) * PX; // message-2 marker offset within the strip
+
+    attachmentLeft = (
+      <div className="preview3d-pivot-dot" style={{ right: `${pPx}px`, top: `${pageH / 2}px` }} />
+    );
+    attachmentRight = (
+      <>
+        <div
+          className="preview3d-slide-strip"
+          style={{
+            width: `${stripLenPx}px`,
+            height: `${sliderWxPx}px`,
+            left: `${stripInsetPx}px`,
+            top: `${pageH / 2 - sliderWxPx / 2}px`,
+          }}
+        >
+          <span className="preview3d-slide-msg" style={{ left: `${u1Px}px` }}>
+            1
+          </span>
+          <span className="preview3d-slide-msg" style={{ left: `${u2Px}px` }}>
+            2
+          </span>
+        </div>
+        <div
+          className="preview3d-slide-window"
+          style={{
+            width: `${winHPx}px`,
+            height: `${winWPx}px`,
+            left: `${geo.W * PX - winHPx / 2}px`,
+            top: `${pageH / 2 - winWPx / 2}px`,
+          }}
+        />
+      </>
+    );
+
+    readout = `슬라이더 위치 s = ${s.toFixed(1)}mm · 창 위치 W = ${geo.W.toFixed(1)}mm · 오프셋 u = ${(geo.W - s).toFixed(1)}mm`;
+  } else if (mechanism === 'spiral-spring') {
+    // Spiral spring (달팽이 스프링) — see generators/spiralSpring.js. Hub anchor
+    // (disc centre) glued to the LEFT page at distance `a` from the spine,
+    // rim tip glued to the RIGHT page at distance `b`. Placing both anchors
+    // as page-fixed points reproduces the file's own authoritative
+    //   D(α) = √(a² + b² − 2ab·cosα)
+    // for free: with H = left-page-local (−a,0,0) and T = right-page-local
+    // (b,0,0) rotated by the shared ±θ_page, |T−H|² collapses (via
+    // cosθ=sin(α/2), sinθ=cos(α/2)) to exactly a²+b²−2ab·cosα — so the
+    // coil's rendered end-to-end length IS D(α), no re-derivation needed.
+    // Because H and T live on two INDEPENDENTLY-rotating pages, the coil
+    // itself can't be a child of either page — it's parented to
+    // .preview3d-book instead (attachmentBook), spanning world-space between
+    // the two computed anchor points.
+    //
+    // Stylised approximation (this file already accepts these elsewhere):
+    // the coil is a fixed set of beads on a circle of radius ρ(α) that
+    // shrinks as the strip pays out (fat flat disc → narrow standing coil),
+    // swept at a constant `turns` per full span — not a physically exact
+    // Archimedean unwind, but it's flat at α=0, maximally extended at
+    // α=180, and monotonic with D(α) in between, matching this mechanism's
+    // real behaviour.
+    const geo = resolveSpiralGeometry({
+      turns: params.turns ?? defaults.turns,
+      pitch: params.pitch ?? defaults.pitch,
+      decorations: params.decorations ?? defaults.decorations,
+      paperSize,
+    });
+
+    const D = Math.sqrt(geo.a * geo.a + geo.b * geo.b - 2 * geo.a * geo.b * Math.cos(degToRad(alpha)));
+    const extMax = 2 * geo.b; // = hStand, the max useful payout
+    const payout = clamp((D - geo.rOuter) / extMax, 0, 1); // 0 = flat disc, 1 = fully paid out
+    const rho = geo.rOuter - (geo.rOuter - geo.r0) * payout; // coil radius shrinks as it pays out
+
+    const thetaRad = degToRad(thetaPage);
+    const cosT = Math.cos(thetaRad);
+    const sinT = Math.sin(thetaRad);
+    const Hx = -geo.a * PX * cosT;
+    const Hz = geo.a * PX * sinT;
+    const Tx = geo.b * PX * cosT;
+    const Tz = geo.b * PX * sinT;
+    const spanPx = Math.hypot(Tx - Hx, Tz - Hz); // ≈ D(α)·PX
+    const psi = radToDeg(Math.atan2(-(Tz - Hz), Tx - Hx));
+
+    const beadCount = Math.max(8, Math.ceil(geo.turns * 8));
+    const rhoPx = rho * PX;
+    const beadSizePx = Math.max(3, geo.w * PX * 0.5);
+
+    const beads = [];
+    for (let i = 0; i <= beadCount; i++) {
+      const u = i / beadCount;
+      const isEnd = i === 0 || i === beadCount;
+      const phi = degToRad(u * geo.turns * 360);
+      const lx = u * spanPx;
+      const ly = isEnd ? 0 : rhoPx * Math.cos(phi);
+      const lz = isEnd ? 0 : rhoPx * Math.sin(phi);
+      beads.push(
+        <div
+          key={`bead-${i}`}
+          className="preview3d-spring-bead"
+          style={{
+            width: `${beadSizePx}px`,
+            height: `${beadSizePx}px`,
+            transform: `translate3d(${lx}px, ${ly}px, ${lz}px) translate(-50%, -50%)`,
+          }}
+        />,
+      );
+    }
+
+    const decoNodes = geo.decos.map((d) => {
+      const phi = degToRad(d.f * geo.turns * 360);
+      const lx = d.f * spanPx;
+      const ly = rhoPx * Math.cos(phi);
+      const lz = rhoPx * Math.sin(phi);
+      const sizePx = d.drawR * 2 * PX;
+      return (
+        <div
+          key={`deco-${d.n}`}
+          className="preview3d-spring-deco"
+          style={{
+            width: `${sizePx}px`,
+            height: `${sizePx}px`,
+            transform: `translate3d(${lx}px, ${ly}px, ${lz}px) translate(-50%, -50%)`,
+          }}
+        />
+      );
+    });
+
+    attachmentLeft = (
+      <div
+        className="preview3d-spring-hub"
+        style={{
+          width: `${geo.rOuter * 2 * PX}px`,
+          height: `${geo.rOuter * 2 * PX}px`,
+          right: `${(geo.a - geo.rOuter) * PX}px`,
+          top: `${pageH / 2 - geo.rOuter * PX}px`,
+        }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-spring-hub"
+        style={{
+          width: `${geo.tab * 2 * PX}px`,
+          height: `${geo.tab * 2 * PX}px`,
+          left: `${(geo.b - geo.tab) * PX}px`,
+          top: `${pageH / 2 - geo.tab * PX}px`,
+        }}
+      />
+    );
+    attachmentBook = (
+      <div
+        className="preview3d-spring"
+        style={{
+          left: 0,
+          top: `${pageH / 2}px`,
+          transform: `translate3d(${Hx}px, 0px, ${Hz}px) rotateY(${psi}deg)`,
+        }}
+      >
+        {beads}
+        {decoNodes}
+      </div>
+    );
+
+    readout = `신장 E = ${(D - geo.rOuter).toFixed(1)}/${extMax.toFixed(1)}mm (${Math.round(payout * 100)}%) · 반지름 ρ = ${rho.toFixed(1)}mm`;
   } else {
     // box-popup. Same topology as V-fold (two attachments offset from the
     // spine by d, one shared crease AT the spine) so it reuses V-fold's
@@ -331,8 +700,18 @@ export default function Preview3D() {
 
   return (
     <div className="preview3d-root">
-      <div className="preview3d-stage">
-        <div className="preview3d-book">
+      <div
+        ref={stageRef}
+        className={`preview3d-stage${isDragging ? ' is-dragging' : ''}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        <div
+          className="preview3d-book"
+          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})` }}
+        >
           {/* Left page — hinged on the spine (its right edge) */}
           <div
             className="preview3d-page preview3d-page-left"
@@ -355,7 +734,12 @@ export default function Preview3D() {
           >
             {attachmentRight}
           </div>
+          {attachmentBook}
         </div>
+        <div className="preview3d-orbit-hint">드래그해서 회전 · 휠로 확대/축소</div>
+        <button type="button" className="preview3d-orbit-reset" onClick={resetOrbit}>
+          시점 초기화
+        </button>
       </div>
 
       <div className="fold-slider-container">
