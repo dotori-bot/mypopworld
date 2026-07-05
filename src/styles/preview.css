@@ -266,7 +266,10 @@
   padding: var(--space-xl);
 }
 
-/* Perspective viewport */
+/* Perspective viewport. Orbit (drag to rotate, wheel to zoom) is applied to
+   .preview3d-book's transform in JS (Preview3D.jsx); this element just owns
+   the pointer/wheel listeners and the perspective. touch-action: none stops
+   the browser from panning/scrolling the page while dragging on touch. */
 .preview3d-stage {
   perspective: 1100px;
   perspective-origin: 50% 42%;
@@ -275,17 +278,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  touch-action: none;
+  cursor: grab;
 }
 
-/* The book coordinate space. Tilted back so we look down onto the open
-   card and the popup (rising toward +Z) reads as standing up. */
+.preview3d-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.preview3d-orbit-hint {
+  position: absolute;
+  top: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.preview3d-orbit-reset {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.preview3d-orbit-reset:hover {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+/* The book coordinate space. Orbit rx/ry/zoom are applied inline from JS
+   state (Preview3D.jsx); this transform-style + preserve-3d is what makes
+   every nested page/flap compose in the same 3D space as the camera orbit. */
 .preview3d-book {
   position: relative;
   transform-style: preserve-3d;
-  /* 3/4 view: tilt back to look down onto the card, plus a small yaw so the
-     fully-raised popup (which stands in the symmetry plane at α=180) is seen at
-     an angle rather than edge-on. */
-  transform: rotateX(-52deg) rotateY(-20deg);
 }
 
 /* Pages hinge on the central spine. Left page origin = its right edge,
@@ -409,4 +446,93 @@
   color: var(--text-muted);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+/* Auto-slide-window: pivot marker on the front page, sliding message strip +
+   fixed window frame on the back page. See Preview3D.jsx for the geometry. */
+.preview3d-pivot-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: rgba(236, 72, 153, 0.8);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
+}
+
+.preview3d-slide-strip {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(99, 102, 241, 0.5));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.preview3d-slide-msg {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary, #1a1a2e);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.preview3d-slide-window {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid rgba(99, 102, 241, 0.7);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+/* Spiral-spring: a fixed bead ring swept between the hub (left page) and tip
+   (right page) anchors — see Preview3D.jsx for why this layer is parented to
+   .preview3d-book instead of either page. */
+.preview3d-spring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
+}
+
+/* top/left: 0 is required here, not cosmetic — with both auto (the default),
+   an absolutely-positioned element with no offsets falls back to its normal-
+   flow "static position" before the transform is applied, which for a block
+   div with siblings means each bead stacks on its own flow "line" instead of
+   sitting at .preview3d-spring's origin. transform: translate3d(...) then
+   only offsets it FROM that arbitrary flow position, not from (0,0) — so
+   without this, the beads sprawl down the page instead of forming a coil. */
+.preview3d-spring-bead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  backface-visibility: visible;
+}
+
+.preview3d-spring-deco {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(236, 72, 153, 0.7));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  backface-visibility: visible;
+}
+
+.preview3d-spring-hub {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.15));
+  border: 1px solid rgba(99, 102, 241, 0.35);
 }
