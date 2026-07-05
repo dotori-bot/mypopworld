@@ -13,7 +13,7 @@ import { renderParallelFold } from './parallelFold.js';
 import { renderPullTab } from './pullTab.js';
 import { renderStrawRocket } from './strawRocket.js';
 import { renderAccordion } from './accordionPopup.js';
-import { renderVolvelle } from './volvelle.js';
+import { renderVolvelle, resolveVolvelleGeometry } from './volvelle.js';
 import { renderFlipDisc } from './flipDisc.js';
 import { renderSpiralSpring } from './spiralSpring.js';
 import { renderRisingSlide } from './risingSlide.js';
@@ -64,6 +64,18 @@ export const MECHANISM_REGISTRY = {
     render: (params) => renderVolvelle(params),
     defaultParams: { R: 40, sectors: 6 },
     instructionStyle: 'volvelle',
+    // Rotor disc is a flat circle of diameter 2R, not the generic 100x100mm
+    // square hint — size the reference-image slot to match it so the AI
+    // image (and the "직접 그리기" guide circle) actually fits the real disc
+    // instead of floating at an unrelated size/position.
+    decorationSlots: (params) => {
+      const geo = resolveVolvelleGeometry(params);
+      return [{
+        label: '돌림판 전체 그림 (동그랗게, 바로 위에서 내려다본 모습으로 창문에 꽉 차게)',
+        width: geo.R * 2,
+        height: geo.R * 2,
+      }];
+    },
   },
   'flip-disc': {
     labelKo: '반쪽 넘김판 (넘기면 그림이 바뀌는 접시)',

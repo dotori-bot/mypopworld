@@ -83,6 +83,9 @@ export default async function handler(req, res) {
 }
 \`\`\`
 "layered-stage"가 아닌 다른 모든 메커니즘에서는 "decorationVariants" 필드를 아예 포함하지 마세요.
+
+[volvelle 전용 imagePrompt 유의사항]
+"mechanism"이 "volvelle"일 때, 그림은 평평하게 누운 원형 돌림판에 인쇄되어 동그란 창문 너머로 보입니다. 케이크·접시·행성처럼 위아래가 뚜렷한 사물이 주제라면 imagePrompt에 "top-down view, viewed from directly above, flat circular composition" 같은 구도 설명을 반드시 포함해서, 옆에서 본 모습이 아니라 위에서 내려다본 모습으로 생성되게 하세요. (날씨 아이콘·표정처럼 원래부터 위아래 구분이 없는 평면 아이콘 주제라면 이 구도 지시는 필요 없습니다.)
     `;
 
     const response = await ai.models.generateContent({
