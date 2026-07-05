@@ -536,3 +536,166 @@
   background: radial-gradient(circle, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.15));
   border: 1px solid rgba(99, 102, 241, 0.35);
 }
+
+/* Pull-tab / rising-slide: a flat decal riding one page, translated by the
+   independent handlePos control (never folds — see Preview3D.jsx). */
+.preview3d-track {
+  position: absolute;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.preview3d-slider {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.preview3d-slider-handle {
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  width: 10px;
+  height: 60%;
+  transform: translateY(-50%);
+  background: rgba(236, 72, 153, 0.7);
+  border-radius: 0 4px 4px 0;
+}
+
+.preview3d-rising-figure {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(236, 72, 153, 0.7));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Slide-to-swing: a flat, in-plane Scotch-yoke linkage — the post's swing is
+   a plain rotateZ (no 3D axis composition, unlike the fold mechanisms). */
+.preview3d-swing-arm {
+  position: absolute;
+  transform-style: preserve-3d;
+  transform-origin: right center;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.5), rgba(236, 72, 153, 0.6));
+  border-radius: 3px;
+}
+
+.preview3d-swing-deco {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(236, 72, 153, 0.7));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ------------------------------------------------------------------ */
+/* NO_BOOK mechanisms (volvelle, flip-disc, straw-rocket) — no spine, no  */
+/* card-opening angle, so they get their own top-level 3D container      */
+/* instead of .preview3d-book. Orbit (rx/ry/zoom) still applies here.     */
+/* ------------------------------------------------------------------ */
+.preview3d-orbit-frame {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.preview3d-disc-stack {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+/* Volvelle: four stacked discs (back/spacer/rotor/cover), the rotor
+   spinning in-plane (rotateZ) behind the cover's clip-path window. */
+.preview3d-disc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  backface-visibility: visible;
+}
+
+.preview3d-disc-back {
+  background: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.preview3d-disc-spacer {
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.preview3d-disc-rotor {
+  overflow: hidden;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.preview3d-disc-cover {
+  background: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.preview3d-rotor-num {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+}
+
+/* Flip-disc: a fixed left half-disc + N right half-page leaves, all
+   centred ON the hinge (diameter) and clipped to a semicircle — see
+   Preview3D.jsx for why the box is margin-centred rather than edge-aligned. */
+.preview3d-disc-leaf {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  clip-path: inset(0 0 0 50%);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  backface-visibility: visible;
+  transition: transform 0.35s ease;
+}
+
+.preview3d-disc-leaf-fixed {
+  clip-path: inset(0 50% 0 0);
+  background: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  transition: none;
+}
+
+.preview3d-disc-leaf-label {
+  position: absolute;
+  left: 68%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+}
+
+/* Straw rocket: a static rolled tube (N flat strips forming a low-poly
+   cylinder) with front/back decoration panels — no fold state, camera
+   orbit only. */
+.preview3d-rocket-strip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.35), rgba(236, 72, 153, 0.35));
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.preview3d-rocket-deco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 80px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
