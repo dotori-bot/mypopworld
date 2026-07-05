@@ -26,7 +26,7 @@ export const MECHANISM_REGISTRY = {
   'v-fold': {
     labelKo: '브이폴드 (V-Fold)',
     render: (params) => renderVFold(params),
-    defaultParams: { armLength: 40, angle: 45 },
+    defaultParams: { armLength: 40, angle: 45, armExtension: null },
     instructionStyle: 'v-fold',
   },
   'box-popup': {
@@ -301,7 +301,10 @@ export function getMechanism(id) {
 /**
  * Build the params object to hand to `mech.render(...)` for the current
  * card/paper/color settings.
- * @param {{ mechanism?: string, theme?: string }} cardParams
+ * @param {{ mechanism?: string, theme?: string, params?: object }} cardParams
+ *   `cardParams.params` (AI-authored, e.g. `vfoldParams`, or a manual UI
+ *   override) is merged over the mechanism's defaultParams so both the
+ *   printed SVG and the 3D preview pick up the same numbers.
  * @param {'A4'|'LETTER'} paperSize
  * @param {'color'|'bw'} colorMode
  * @returns {object | null}
@@ -309,7 +312,7 @@ export function getMechanism(id) {
 export function buildMechanismParams(cardParams, paperSize, colorMode) {
   const mech = getMechanism(cardParams?.mechanism);
   if (!mech) return null;
-  return { ...mech.defaultParams, paperSize, colorMode, theme: cardParams.theme };
+  return { ...mech.defaultParams, ...cardParams.params, paperSize, colorMode, theme: cardParams.theme };
 }
 
 /**

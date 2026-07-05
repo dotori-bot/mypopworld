@@ -84,6 +84,23 @@ export default async function handler(req, res) {
 \`\`\`
 "layered-stage"가 아닌 다른 모든 메커니즘에서는 "decorationVariants" 필드를 아예 포함하지 마세요.
 
+[v-fold 전용 추가 필드: params]
+"mechanism"이 "v-fold"일 때, 튀어나오는 부분의 모양을 주제에 맞게 조절하고 싶다면(항상 필요한 것은 아님) 위 JSON 블록에 "params"라는 객체를 추가로 포함하세요.
+- "armLength"(팔 길이, mm)와 "angle"(척추 기준 반각, 도 단위 — 클수록 넓고 얕게, 작을수록 좁고 뾰족하게 튀어나옴)로 기본 V 모양을 조절할 수 있습니다.
+- 주제가 "길고 가늘게 뻗어나가는" 형태(날름거리는 혀, 뾰족한 뿔, 코끼리 코, 촛불, 로켓 불꽃, 유니콘 뿔 등)라면, 그 부분을 "armExtension" 객체(예: `{ "armLength": 90, "angle": 12 }` — 길이는 크게, 각도는 작게)로 추가하세요. 이 확장부는 기본 V 모양의 뾰족한 끝(능선 꼭짓점)에 이어 붙어 더 멀리 튀어나옵니다.
+- 주제가 "넓고 짧게" 튀어나오는 형태(입, 상자, 산 모양 등)라면 "armExtension"은 넣지 말고, "angle"을 크게(예: 50~65) / "armLength"를 작게(예: 25~40) 설정하세요.
+- 예시("개구리 얼굴, 입을 열면 긴 혀가 튀어나오는 카드"):
+\`\`\`json
+{
+  "theme": "개구리",
+  "imagePrompt": "A cute green frog face with a big smile",
+  "mechanism": "v-fold",
+  "difficulty": "medium",
+  "params": { "armLength": 30, "angle": 55, "armExtension": { "armLength": 90, "angle": 12 } }
+}
+\`\`\`
+"v-fold"가 아닌 다른 메커니즘에서는 "params" 필드를 포함하지 마세요.
+
 [volvelle 전용 imagePrompt 유의사항]
 "mechanism"이 "volvelle"일 때, 그림은 평평하게 누운 원형 돌림판에 인쇄되어 동그란 창문 너머로 보입니다. 케이크·접시·행성처럼 위아래가 뚜렷한 사물이 주제라면 imagePrompt에 "top-down view, viewed from directly above, flat circular composition" 같은 구도 설명을 반드시 포함해서, 옆에서 본 모습이 아니라 위에서 내려다본 모습으로 생성되게 하세요. (날씨 아이콘·표정처럼 원래부터 위아래 구분이 없는 평면 아이콘 주제라면 이 구도 지시는 필요 없습니다.)
     `;
