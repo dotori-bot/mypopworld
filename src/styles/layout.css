@@ -30,6 +30,18 @@
   font-weight: 700;
 }
 
+.logo-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.logo-button:hover {
+  opacity: 0.85;
+}
+
 .logo-icon {
   color: var(--accent-secondary);
 }

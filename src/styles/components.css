@@ -147,6 +147,13 @@
   color: var(--text-primary);
 }
 
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
 /* Spinners */
 .spinner {
   width: 20px;
