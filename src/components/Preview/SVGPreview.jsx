@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/preview.css';
 
 export default function SVGPreview() {
-  const { cardParams, isTyping, paperSize, colorMode, language, decorationMode, setDecorationMode } = useCardStore();
+  const { cardParams, isTyping, paperSize, colorMode, language, decorationMode, setDecorationMode, isGenerating, setGenerating } = useCardStore();
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const containerRef = useRef(null);
@@ -26,7 +26,14 @@ export default function SVGPreview() {
       return;
     }
 
+    // Guards against a stale, slower-finishing generation (e.g. from the
+    // previous idea) clearing the spinner or overwriting pages after the
+    // user has already switched to a newer idea.
+    let cancelled = false;
+
     const generatePages = async () => {
+      setGenerating(true);
+      try {
       // --- Page 1: Mechanism Template ---
       const mech = getMechanism(cardParams.mechanism);
       let svg1;
@@ -158,13 +165,18 @@ export default function SVGPreview() {
         return svg;
       }));
 
+      if (cancelled) return;
       pageElementsRef.current = [svg1, ...decorationPages];
       setPages([svgToString(svg1), ...decorationPages.map(svgToString)]);
       setCurrentPage(0);
+      } finally {
+        if (!cancelled) setGenerating(false);
+      }
     };
 
     generatePages();
 
+    return () => { cancelled = true; };
   }, [cardParams, paperSize, colorMode, decorationMode]);
 
   useEffect(() => {
@@ -271,10 +283,10 @@ export default function SVGPreview() {
         </button>
       </div>
       <div className="svg-preview-container">
-        {isTyping ? (
+        {(isTyping || isGenerating) ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
             <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '4px' }}></div>
-            <div>AI가 도안과 일러스트를 열심히 설계하고 있어요...</div>
+            <div>{isGenerating ? '도안과 일러스트를 새로 그리고 있어요...' : 'AI가 도안과 일러스트를 열심히 설계하고 있어요...'}</div>
           </div>
         ) : pages.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)' }}>
@@ -287,7 +299,7 @@ export default function SVGPreview() {
         )}
       </div>
 
-      {pages.length > 0 && !isTyping && (
+      {pages.length > 0 && !isTyping && !isGenerating && (
         <>
           <div className="page-navigator">
             <button
