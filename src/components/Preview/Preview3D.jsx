@@ -38,7 +38,24 @@ const DEFAULT_ORBIT = { rx: -52, ry: -20, zoom: 1 };
 // card right over and inspect the back-side parts (handles, retainers, caps).
 const FLAT_ORBIT = { rx: -14, ry: -28, zoom: 1 };
 const ORBIT_RX_RANGE = [-85, -10]; // deg, keeps the "look down onto the card" framing
+// ry is clamped to the front hemisphere for the same reason rx is: every
+// mechanism's popup panels (arms/flaps/steps) live in their pages' preserve-3d
+// subtrees and physically cross the page planes at the spine. CSS 3D cannot
+// intersect two planes per-pixel — it depth-sorts whole planes — so once the
+// camera swings far enough that a page turns edge-on/backwards, a popup panel
+// that should be occluded by (or fold behind) its page instead paints straight
+// over/past it, reading as a detached sliver escaping the card silhouette. The
+// panels' ridge tips stay mathematically coincident at every angle (the fold
+// math is correct); this range only keeps the camera where that coincidence
+// also composites cleanly — i.e. looking into the open card, never around its back.
+const ORBIT_RY_RANGE = [-25, 25];
+// Flat scenes are exempt from that clamp: their parts are parallel sibling
+// planes (one translateZ layer per sheet of paper, no cross-page preserve-3d
+// subtrees), which CSS depth-sorts cleanly from ANY angle — and orbiting fully
+// around to the back-side structure (handles, retainers, caps) is their whole
+// point. ±180° lets the camera reach the direct back view from either side.
 const FLAT_RX_RANGE = [-80, 80];
+const FLAT_RY_RANGE = [-180, 180];
 const ORBIT_ZOOM_RANGE = [0.6, 1.8];
 
 /**
@@ -194,6 +211,7 @@ export default function Preview3D() {
   const mechanism = cardParams?.mechanism;
   const mode = BOOK_3D.has(mechanism) ? 'book' : FLAT_3D.has(mechanism) ? 'flat' : 'none';
   const rxRange = mode === 'flat' ? FLAT_RX_RANGE : ORBIT_RX_RANGE;
+  const ryRange = mode === 'flat' ? FLAT_RY_RANGE : ORBIT_RY_RANGE;
 
   // New mechanism → its natural rest pose and the right default framing.
   useEffect(() => {
@@ -216,10 +234,10 @@ export default function Preview3D() {
     // possibly after pointer-up has already nulled dragStart.current.
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    const ry = dragStart.current.ry + dx * 0.4;
+    const ry = clamp(dragStart.current.ry + dx * 0.4, ryRange[0], ryRange[1]);
     const rx = clamp(dragStart.current.rx - dy * 0.4, rxRange[0], rxRange[1]);
     setOrbit((prev) => ({ ...prev, ry, rx }));
-  }, [rxRange]);
+  }, [rxRange, ryRange]);
 
   const handlePointerUp = useCallback((e) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {

@@ -915,10 +915,18 @@ export default function Instructions() {
                 <p>카드를 반쯤 펼친 상태에서 왼쪽 팔은 왼쪽 종이면에, 오른쪽 팔은 오른쪽 종이면에 <b>척추를 기준으로 좌우 대칭</b>이 되게 붙이세요. 두 팔의 능선이 척추 위에서 만나고, 열면 능선이 앞으로 솟아오릅니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="160" viewBox="0 0 100 80" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    {/* Isometric open card: diamond, spine vertical front→back */}
-                    <path d="M20 60 L50 75 L80 60 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <path d="M50 75 L50 10" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" />
-                    <text x="53" y="18" fontSize="5" fill="var(--text-secondary)">척추</text>
+                    <text x="50" y="8" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">카드를 펼쳐서 위에서 내려다본 모습</text>
+                    {/* Opened card viewed from directly above, split at the spine
+                        into its two separate page halves (NOT one solid shape) so
+                        it doesn't read as a single pyramid — left half a touch
+                        lighter, right half a touch darker, same convention as the
+                        layered-stage diagram's top-down diamond. */}
+                    <path d="M10 56 L50 74 L50 12 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M90 56 L50 74 L50 12 Z" fill="rgba(0,0,0,0.06)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="24" y="46" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">왼쪽 페이지</text>
+                    <text x="76" y="46" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">오른쪽 페이지</text>
+                    <path d="M50 74 L50 12" stroke="var(--text-secondary)" strokeWidth="1.5" strokeDasharray="3 2" />
+                    <text x="53" y="18" fontSize="5.5" fontWeight="bold" fill="var(--text-secondary)">척추</text>
                     {/* V-fold: symmetric about the spine, apex rising toward viewer */}
                     <path d="M50 26 L50 50 L34 56 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
                     <path d="M50 26 L50 50 L66 56 Z" fill="var(--primary-main)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.55" />
@@ -1026,11 +1034,30 @@ export default function Instructions() {
                 <p>안내된 풀칠 기호에 맞춰 배경 카드에 팝업 조각을 붙여주세요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="160" viewBox="0 0 100 80" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    {/* Isometric card open */}
-                    <path d="M20 60 L50 75 L80 60 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <path d="M20 60 L50 75 L50 45 L20 30 Z" fill="rgba(0,0,0,0.05)" stroke="var(--text-primary)" strokeWidth="1" />
-                    {/* Pop-up mechanism abstract */}
-                    <path d="M40 50 L60 60 L60 30 L40 20 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <text x="50" y="8" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">카드를 펼쳐서 위에서 내려다본 모습</text>
+                    {/* Opened card viewed from directly above, split at the
+                        spine into its two actual page halves (not one solid
+                        outline) — same convention as the v-fold / layered-stage
+                        diagrams, so this reads as "two hinged pages", not a
+                        single pyramid. */}
+                    <path d="M10 56 L50 74 L50 12 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M90 56 L50 74 L50 12 Z" fill="rgba(0,0,0,0.06)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="24" y="46" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">왼쪽 페이지</text>
+                    <text x="76" y="46" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">오른쪽 페이지</text>
+                    <path d="M50 74 L50 12" stroke="var(--text-secondary)" strokeWidth="1.5" strokeDasharray="3 2" />
+                    <text x="53" y="18" fontSize="5.5" fontWeight="bold" fill="var(--text-secondary)">척추</text>
+                    {/* Pop-up mechanism abstract — deliberately generic (this
+                        step covers box-popup, parallel-fold and pull-tab,
+                        which don't share one shape), but anchored to the
+                        spine with the same left/right glue-foot markers used
+                        elsewhere so at least the attachment is unambiguous. */}
+                    <path d="M50 32 L50 52 L34 58 L34 38 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <path d="M50 32 L50 52 L66 58 L66 38 Z" fill="var(--primary-main)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.55" />
+                    <path d="M50 52 L34 58" stroke="green" strokeWidth="2" />
+                    <path d="M50 52 L66 58" stroke="green" strokeWidth="2" />
+                    <circle cx="34" cy="58" r="2" fill="green" />
+                    <circle cx="66" cy="58" r="2" fill="green" />
+                    <text x="50" y="70" fontSize="4.5" textAnchor="middle" fill="green">양쪽 페이지에 대칭으로 풀칠</text>
                   </svg>
                 </div>
               </div>
