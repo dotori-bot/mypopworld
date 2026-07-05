@@ -51,15 +51,35 @@ function PrintSettings() {
 
 function App() {
   const [activeTab, setActiveTab] = useState('2d');
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const { messages, pages, resetChat } = useCardStore();
+
+  const hasUnsavedWork = messages.length > 0 || pages.length > 0;
+
+  const handleLogoClick = () => {
+    if (hasUnsavedWork) {
+      setShowLeaveConfirm(true);
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    resetChat();
+    setActiveTab('2d');
+    setShowLeaveConfirm(false);
+  };
 
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="logo-container">
+        <button
+          type="button"
+          className="logo-container logo-button"
+          onClick={handleLogoClick}
+          aria-label="MyPopWorld 처음 화면으로 이동"
+        >
           <Sparkles className="logo-icon" />
           <span className="logo-text">MyPopWorld</span>
-        </div>
-        <PrintSettings />
+        </button>
       </header>
 
       <main className="app-main">
@@ -69,23 +89,46 @@ function App() {
 
         <div className="preview-panel">
           <div className="preview-tabs" role="tablist" aria-label="도안 미리보기 종류">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                className={`preview-tab ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-                <div className="preview-tab-indicator" />
-              </button>
-            ))}
+            <div className="preview-tabs-list">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  className={`preview-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                  <div className="preview-tab-indicator" />
+                </button>
+              ))}
+            </div>
+            <PrintSettings />
           </div>
           {activeTab === '2d' ? <SVGPreview /> : activeTab === 'instructions' ? <Instructions /> : <Preview3D />}
         </div>
       </main>
+
+      {showLeaveConfirm && (
+        <div className="modal-overlay" onClick={() => setShowLeaveConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>작업 중인 내용이 있어요</h3>
+            <p>
+              처음 화면으로 돌아가면 지금까지 만든 카드 아이디어와 대화 내용이 사라져요.
+              그래도 나가시겠어요?
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-secondary btn-md" onClick={() => setShowLeaveConfirm(false)}>
+                취소
+              </button>
+              <button type="button" className="btn btn-primary btn-md" onClick={handleConfirmLeave}>
+                나가기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
