@@ -942,6 +942,28 @@ export default function Instructions() {
                 </div>
               </div>
             </div>
+            {cardParams.params?.armExtension && (
+              <div className="instruction-step card">
+                <div className="step-badge">4</div>
+                <div className="step-content">
+                  <h4>혀/뿔 확장 조각 이어 붙이기</h4>
+                  <p>도안에 함께 있는 길고 좁은 삼각형 조각(혀·뿔처럼 튀어나오는 부분)도 같은 방법(가운데 산접기, 바닥 골접기)으로 접어주세요. 이 조각의 바닥 풀칠 자리는 방금 붙인 삼각형 팝업의 능선 쪽 앞면(꼭짓점 근처)에 이어서 붙입니다 — 두 능선이 일직선으로 이어져야 카드를 열 때 훨씬 더 멀리 튀어나옵니다.</p>
+                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                    <svg width="200" height="140" viewBox="0 0 100 70" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                      {/* Main mouth wedge, shorter/wider */}
+                      <path d="M50 40 L34 62 L66 62 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" />
+                      <path d="M50 40 L50 62" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
+                      {/* Extension wedge, longer/narrower, glued at the mouth's apex */}
+                      <path d="M50 8 L44 40 L56 40 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" strokeDasharray="4 2" />
+                      <path d="M50 8 L50 40" stroke="red" strokeWidth="1.5" strokeDasharray="3 2" />
+                      <path d="M44 40 L56 40" stroke="green" strokeWidth="2" />
+                      <text x="66" y="38" fontSize="4.5" fill="green">여기에 풀칠</text>
+                      <text x="50" y="6" fontSize="4.2" textAnchor="middle" fill="var(--primary-main)">혀/뿔 확장부</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         );
 

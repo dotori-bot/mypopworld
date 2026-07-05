@@ -176,6 +176,20 @@
   gap: 8px;
 }
 
+/* Mechanism-specific extra sliders (e.g. v-fold's armLength/angle/armExtension)
+   stacked below the shared card-opening slider, inside the same floating
+   panel — capped and scrollable so it never grows past the stage. */
+.fold-slider-vfold-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-glass);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .fold-slider-labels {
   display: flex;
   justify-content: space-between;
@@ -373,6 +387,10 @@
 .preview3d-arm {
   position: absolute;
   backface-visibility: visible;
+  /* Required so a nested armExtension wedge (a child of this div, see
+     Preview3D.jsx) keeps composing in 3D instead of flattening onto this
+     arm's own plane — same reason .preview3d-step needs it for staircases. */
+  transform-style: preserve-3d;
 }
 
 .preview3d-arm-left {
@@ -389,6 +407,14 @@
   /* triangle O(0 50%) – T(0 0) – P(100% 50%) */
   clip-path: polygon(0 0, 0 50%, 100% 50%);
   background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+}
+
+/* An optional armExtension wedge (tongue/horn/tail/...) glued at the mouth
+   arm's ridge tip — same triangle shape/pivot convention as .preview3d-arm-
+   left/right (whichever it's paired with), just a distinct tint so it reads
+   as a separate glued-on piece. See Preview3D.jsx for how it's nested. */
+.preview3d-arm-extension {
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.75), rgba(217, 70, 239, 0.75));
 }
 
 /* Box-popup's flap is a plain rectangle (not a narrowing triangle like the

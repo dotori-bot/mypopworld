@@ -6,6 +6,7 @@ import { resolveAccordionGeometry } from '../../generators/accordionPopup';
 import { resolveLayeredStageGeometry } from '../../generators/layeredStage';
 import { resolveAutoSlideWindow, sliderDistance } from '../../generators/autoSlideWindow';
 import { resolveSpiralGeometry } from '../../generators/spiralSpring';
+import { vFoldLimits, EXTENSION_LIMIT_OPTS } from '../../generators/vfold';
 import { CARD_SIZES } from '../../generators/constants';
 import { FLAT_3D, buildFlatScene } from './flatScenes';
 import {
@@ -197,7 +198,7 @@ function renderStairLevel(levels, i, side, sinA, cosA, gamma, PX, parentDimPx, i
  * α, forming one continuous flat box face.
  */
 export default function Preview3D() {
-  const { cardParams, paperSize, colorMode } = useCardStore();
+  const { cardParams, paperSize, colorMode, setCardParams } = useCardStore();
   const [alpha, setAlpha] = useState(90);
   // Flat-mechanism drive value; null = "use the scene's own default". Kept as
   // null (not a number) across mechanism switches so each mechanism opens at
@@ -348,16 +349,26 @@ export default function Preview3D() {
   // either one.
   let attachmentBook = null;
   let readout;
+  // v-fold only: current values/bounds for the manual armLength/angle/
+  // armExtension sliders rendered near the bottom of this component.
+  let vFoldControls = null;
 
   if (mechanism === 'v-fold') {
-    const armLength = params.armLength ?? defaults.armLength; // mm
+    // Clamp against the SAME bounds vfold.js uses when printing, so the 3D
+    // preview never shows a shape the SVG generator would silently shrink.
+    const vLimits = vFoldLimits(params.angle ?? defaults.angle ?? 45, card.height, paperSize);
+    const vAngle = vLimits.angle;                              // deg, half-angle from spine
+    const armLength = clamp(params.armLength ?? defaults.armLength, vLimits.armMin, vLimits.armMax); // mm
+    const armExtension = params.armExtension ?? defaults.armExtension ?? null;
 
     // --- Kinematics (authoritative math.js formulas) ---
+    // γ = α/2 regardless of this wedge's own armLength/angle — any symmetric
+    // V-fold crease driven by the same card-opening motion folds by the same
+    // dihedral amount, only its own L/θ change what SHAPE is doing the folding.
     const beta = calculateVFoldAngle(alpha);                   // deg (= α)
     const h = calculatePopupHeight(armLength, beta);           // mm
     const gamma = radToDeg(Math.asin(clamp(h / armLength, 0, 1))); // deg (= α/2)
 
-    const armPx = armLength * PX;
     const aRad = degToRad(gamma);
     const sinA = Math.sin(aRad);
     const cosA = Math.cos(aRad);
@@ -365,24 +376,82 @@ export default function Preview3D() {
     const armLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
 
     // Arm panel box: a triangle whose pivot corner O sits at the page's spine
-    // centre. Height 2·armPx so its box straddles the spine centre; top offset
-    // places that centre at the page's vertical middle.
-    const armH = armPx * 2;
-    const armTop = pageH / 2 - armPx;
+    // centre and whose far corner P splays out to the arm tip. Width/height
+    // scale with cos(θ)/sin(θ) (not both pinned to armLength) so a wide
+    // shallow angle ("mouth") and a narrow deep angle ("tongue") actually look
+    // different instead of every angle rendering the same 1:2 box.
+    const vAngleRad = degToRad(vAngle);
+    const armWidthPx = armLength * Math.cos(vAngleRad) * PX;
+    const armDepthPx = armLength * Math.sin(vAngleRad) * PX;
+    const armH = armDepthPx * 2;
+    const armTop = pageH / 2 - armDepthPx;
+
+    // Optional armExtension: a second, usually longer/narrower wedge glued at
+    // this arm's ridge tip T (box-local top corner, see .preview3d-arm-left/
+    // right clip-path). It's a DOM child of the arm div, so preserve-3d makes
+    // it inherit the arm's own rotateLift on top of the page's rotateY — i.e.
+    // it re-applies the SAME γ fold a second time, relative to the already-
+    // folded mouth. That deliberate compounding (≈2γ of total world lift, vs.
+    // the mouth's γ) is what makes a long/narrow extension snap out further
+    // and faster than the mouth for the same α, matching how a real glued-on
+    // tongue/horn/tail insert visibly leads the base shape it's attached to.
+    let extLimits = null;
+    let extAngle = null;
+    let extArmLength = null;
+    if (armExtension) {
+      // topY of the flat (print-time) mouth wedge — how much vertical room the
+      // extension inherits, exactly mirroring vfold.js's own anchor point.
+      const flatTopY = card.height - armLength * Math.sin(vAngleRad);
+      extLimits = vFoldLimits(armExtension.angle ?? 12, flatTopY, paperSize, EXTENSION_LIMIT_OPTS);
+      extAngle = extLimits.angle;
+      extArmLength = clamp(armExtension.armLength ?? 80, extLimits.armMin, extLimits.armMax);
+    }
+
+    const buildExtensionNode = (side, lift) => {
+      if (!armExtension) return null;
+      const extAngleRad = degToRad(extAngle);
+      const extWidthPx = extArmLength * Math.cos(extAngleRad) * PX;
+      const extDepthPx = extArmLength * Math.sin(extAngleRad) * PX;
+      const extH = extDepthPx * 2;
+      // Lands this wedge's own pivot O (its vertical middle) exactly on the
+      // parent arm's ridge tip T (parent-local y=0).
+      const extTop = -extDepthPx;
+      return (
+        <div
+          className={`preview3d-arm preview3d-arm-${side} preview3d-arm-extension`}
+          style={{
+            width: `${extWidthPx}px`,
+            height: `${extH}px`,
+            top: `${extTop}px`,
+            transform: `${lift} translateZ(0.5px)`, // nudge forward to avoid z-fighting with the mouth ridge near α≈0
+          }}
+        />
+      );
+    };
 
     attachmentLeft = (
       <div
         className="preview3d-arm preview3d-arm-left"
-        style={{ width: `${armPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftLeft }}
-      />
+        style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftLeft }}
+      >
+        {buildExtensionNode('left', armLiftLeft)}
+      </div>
     );
     attachmentRight = (
       <div
         className="preview3d-arm preview3d-arm-right"
-        style={{ width: `${armPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftRight }}
-      />
+        style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftRight }}
+      >
+        {buildExtensionNode('right', armLiftRight)}
+      </div>
     );
-    readout = `팝업 높이 h = ${h.toFixed(1)}mm · 팔 길이 L = ${armLength}mm · 팔 각도 γ = ${gamma.toFixed(0)}°`;
+    readout = `팝업 높이 h = ${h.toFixed(1)}mm · 팔 길이 L = ${armLength}mm · 각도 θ = ${vAngle.toFixed(0)}° · 팔 각도 γ = ${gamma.toFixed(0)}°`;
+
+    // Exposed to the slider block rendered near the bottom of this component.
+    vFoldControls = {
+      armLength, vAngle, vLimits,
+      armExtension, extArmLength, extAngle, extLimits,
+    };
   } else if (mechanism === 'parallel-fold') {
     // Parallel-fold staircase — see the "Parallel-fold pose" comment block
     // above. N nested rectangular levels, each folding by the SAME local flex
@@ -848,6 +917,106 @@ export default function Preview3D() {
           onChange={(e) => setAlpha(Number(e.target.value))}
           aria-label="카드 열림 각도"
         />
+        {vFoldControls && (
+          <div className="fold-slider-vfold-controls">
+          <div className="fold-slider-labels">
+            <span>브이폴드 팔 길이 (armLength)</span>
+            <span>{Math.round(vFoldControls.armLength)}mm</span>
+          </div>
+          <input
+            className="custom-range"
+            type="range"
+            min={Math.round(vFoldControls.vLimits.armMin)}
+            max={Math.round(vFoldControls.vLimits.armMax)}
+            step="1"
+            value={vFoldControls.armLength}
+            onChange={(e) =>
+              setCardParams({ ...cardParams, params: { ...cardParams.params, armLength: Number(e.target.value) } })
+            }
+            aria-label="브이폴드 팔 길이"
+          />
+          <div className="fold-slider-labels">
+            <span>브이폴드 각도 (angle)</span>
+            <span>{Math.round(vFoldControls.vAngle)}°</span>
+          </div>
+          <input
+            className="custom-range"
+            type="range"
+            min={vFoldControls.vLimits.angleMin}
+            max={vFoldControls.vLimits.angleMax}
+            step="1"
+            value={vFoldControls.vAngle}
+            onChange={(e) =>
+              setCardParams({ ...cardParams, params: { ...cardParams.params, angle: Number(e.target.value) } })
+            }
+            aria-label="브이폴드 각도"
+          />
+          <label className="fold-slider-labels" style={{ cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={!!vFoldControls.armExtension}
+              onChange={(e) =>
+                setCardParams({
+                  ...cardParams,
+                  params: {
+                    ...cardParams.params,
+                    armExtension: e.target.checked ? { armLength: 80, angle: 12 } : null,
+                  },
+                })
+              }
+            />
+            <span>혀/뿔처럼 길게 늘이기 (armExtension)</span>
+          </label>
+          {vFoldControls.armExtension && (
+            <>
+              <div className="fold-slider-labels">
+                <span>확장부 길이</span>
+                <span>{Math.round(vFoldControls.extArmLength)}mm</span>
+              </div>
+              <input
+                className="custom-range"
+                type="range"
+                min={Math.round(vFoldControls.extLimits.armMin)}
+                max={Math.round(vFoldControls.extLimits.armMax)}
+                step="1"
+                value={vFoldControls.extArmLength}
+                onChange={(e) =>
+                  setCardParams({
+                    ...cardParams,
+                    params: {
+                      ...cardParams.params,
+                      armExtension: { ...cardParams.params?.armExtension, armLength: Number(e.target.value) },
+                    },
+                  })
+                }
+                aria-label="확장부 길이"
+              />
+              <div className="fold-slider-labels">
+                <span>확장부 각도</span>
+                <span>{Math.round(vFoldControls.extAngle)}°</span>
+              </div>
+              <input
+                className="custom-range"
+                type="range"
+                min={vFoldControls.extLimits.angleMin}
+                max={vFoldControls.extLimits.angleMax}
+                step="1"
+                value={vFoldControls.extAngle}
+                onChange={(e) =>
+                  setCardParams({
+                    ...cardParams,
+                    params: {
+                      ...cardParams.params,
+                      armExtension: { ...cardParams.params?.armExtension, angle: Number(e.target.value) },
+                    },
+                  })
+                }
+                aria-label="확장부 각도"
+              />
+            </>
+          )}
+          </div>
+        )}
         <div className="preview3d-readout">{readout}</div>
       </div>
     </div>
