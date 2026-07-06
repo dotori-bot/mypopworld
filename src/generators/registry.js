@@ -22,45 +22,53 @@ import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
+import { PARAM_SCHEMAS } from './paramSchemas.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
+    sceneType: 'book',
     labelKo: '브이폴드 (V-Fold)',
     render: (params) => renderVFold(params),
     defaultParams: { armLength: 40, angle: 45, armExtension: null },
     instructionStyle: 'v-fold',
   },
   'box-popup': {
+    sceneType: 'book',
     labelKo: '상자 팝업 (Box Popup)',
     render: (params) => renderBoxPopup(params),
     defaultParams: { width: 40, height: 30 },
     instructionStyle: 'generic',
   },
   'parallel-fold': {
+    sceneType: 'book',
     labelKo: '평행 접기 (계단식 팝업)',
     render: (params) => renderParallelFold(params),
     defaultParams: { width: 80, depth: 30 },
     instructionStyle: 'generic',
   },
   'pull-tab': {
+    sceneType: 'flat',
     labelKo: '풀탭 (당기면 움직이는 장치)',
     render: (params) => renderPullTab(params),
     defaultParams: { sliderWidth: 30, sliderHeight: 15, trackLength: 80 },
     instructionStyle: 'generic',
   },
   'straw-rocket': {
+    sceneType: 'flat',
     labelKo: '빨대 로켓',
     render: (params) => renderStrawRocket(params),
     defaultParams: {},
     instructionStyle: 'straw-rocket',
   },
   'accordion': {
+    sceneType: 'book',
     labelKo: '병풍 팝업 (지그재그 무대)',
     render: (params) => renderAccordion(params),
     defaultParams: { a: 40, panels: 6, wallHeight: 60 },
     instructionStyle: 'accordion',
   },
   'volvelle': {
+    sceneType: 'flat',
     labelKo: '돌림판 (돌리면 그림이 바뀌는 창문)',
     render: (params) => renderVolvelle(params),
     defaultParams: { R: 40, sectors: 6 },
@@ -79,24 +87,28 @@ export const MECHANISM_REGISTRY = {
     },
   },
   'flip-disc': {
+    sceneType: 'flat',
     labelKo: '반쪽 넘김판 (넘기면 그림이 바뀌는 접시)',
     render: (params) => renderFlipDisc(params),
     defaultParams: { R: 42, pages: 4 },
     instructionStyle: 'flip-disc',
   },
   'spiral-spring': {
+    sceneType: 'book',
     labelKo: '달팽이 스프링 (늘어나며 떠오르는 팝업)',
     render: (params) => renderSpiralSpring(params),
     defaultParams: { turns: 4, pitch: 8, decorations: 4 },
     instructionStyle: 'spiral-spring',
   },
   'rising-slide': {
+    sceneType: 'flat',
     labelKo: '빛줄기 상승 슬라이드 (당기면 그림이 위로 올라가는 장치)',
     render: (params) => renderRisingSlide(params),
     defaultParams: { riseFraction: 0.62, sliderWidth: 12, grip: 20 },
     instructionStyle: 'rising-slide',
   },
   'layered-stage': {
+    sceneType: 'book',
     labelKo: '층층이 무대 (성·마을이 겹겹이 솟는 팝업)',
     render: (params) => renderLayeredStage(params),
     defaultParams: { layers: 3 },
@@ -116,18 +128,21 @@ export const MECHANISM_REGISTRY = {
     },
   },
   'auto-slide-window': {
+    sceneType: 'book',
     labelKo: '열면 바뀌는 액자 카드 (열면 창문 속 그림이 저절로 바뀜)',
     render: (params) => renderAutoSlideWindow(params),
     defaultParams: { pivotArm: 16, strut: 44, windowHeight: 12 },
     instructionStyle: 'auto-slide-window',
   },
   'slide-to-swing': {
+    sceneType: 'flat',
     labelKo: '흔들 장치 (손잡이를 밀면 그림이 좌우로 흔들림)',
     render: (params) => renderSlideToSwing(params),
     defaultParams: { armLength: 34, swingAngle: 35 },
     instructionStyle: 'slide-to-swing',
   },
   'flap-clap': {
+    sceneType: 'book',
     labelKo: '통통 플랩 (카드를 열고 닫으면 두 조각이 마주 부딪힘)',
     render: (params) => renderFlapClap(params),
     defaultParams: { offset: 18, flapLength: 22, halfWidth: 18, delta: 110 },
@@ -144,6 +159,7 @@ export const MECHANISM_REGISTRY = {
     },
   },
   'camera-print-pull': {
+    sceneType: 'flat',
     labelKo: '카메라 인화 손잡이 (아래로 당기면 사진이 위로 올라오는 장치)',
     render: (params) => renderCameraPrintPull(params),
     defaultParams: { riseFraction: 0.5, clearance: 0.9, stripWidth: 14, grip: 24, photoWidth: 46 },
@@ -157,6 +173,23 @@ export const MECHANISM_REGISTRY = {
     },
   },
 };
+
+// Attach each mechanism's editable-parameter metadata (see paramSchemas.js).
+// Kept in a separate module purely for file size; the registry entry is still
+// the single lookup point (`getMechanism(id).paramSchema`).
+for (const [id, mech] of Object.entries(MECHANISM_REGISTRY)) {
+  mech.paramSchema = PARAM_SCHEMAS[id] || [];
+  if (import.meta.env?.DEV) {
+    const defaultKeys = new Set(Object.keys(mech.defaultParams));
+    const schemaKeys = new Set(mech.paramSchema.map((f) => f.key));
+    for (const k of defaultKeys) {
+      if (!schemaKeys.has(k)) console.warn(`[registry] '${id}' defaultParams.${k} has no paramSchema entry`);
+    }
+    for (const k of schemaKeys) {
+      if (!defaultKeys.has(k)) console.warn(`[registry] '${id}' paramSchema key '${k}' not in defaultParams`);
+    }
+  }
+}
 
 /**
  * Plain-text assembly instruction content, keyed by `instructionStyle`.

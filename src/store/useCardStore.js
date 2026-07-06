@@ -12,7 +12,11 @@ const useCardStore = create((set) => ({
   // 'freehand' (default): show a draw-it-yourself guide (outline/size/position)
   // with the AI image reduced to a small inspirational reference thumbnail.
   decorationMode: 'freehand',
-  
+
+  // 'kids' (default): AI-chat-driven flow. 'expert': direct mechanism picking
+  // + full parameter editing without the AI in the loop.
+  appMode: 'kids',
+
   // Chat
   messages: [],
   isTyping: false,
@@ -30,6 +34,7 @@ const useCardStore = create((set) => ({
   setColorMode: (mode) => set({ colorMode: mode }),
   setLanguage: (lang) => set({ language: lang }),
   setDecorationMode: (mode) => set({ decorationMode: mode }),
+  setAppMode: (mode) => set({ appMode: mode }),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),
