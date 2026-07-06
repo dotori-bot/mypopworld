@@ -52,6 +52,7 @@ export default async function handler(req, res) {
 - "auto-slide-window": 카드를 열면 액자(창문·문 모양) 속 그림이나 메시지가 저절로 짠! 하고 바뀌는 장치. 손잡이를 당기지 않고 카드를 여닫는 동작만으로, 지지대(팔)가 뒤에서 메시지 띠를 밀고 당겨 창문 속 그림이 지나갑니다. 살짝 열 때와 활짝 열 때 서로 다른 두 메시지가 보입니다 (생일 축하→선물 그림, 낮→밤, "사랑해"→하트, 애벌레→나비 등). 닫으면 책처럼 납작하게 접힙니다. 지지대 경첩을 척추와 나란히 붙여야 해서 조립에 주의가 필요합니다 (난이도: 중~상, 8세 이상 추천)
 - "slide-to-swing": 손잡이를 옆으로 밀면 기둥 위의 그림(하트·인형·동물 등)이 좌우로 왔다갔다 흔들리는 장치. 손잡이는 곧게 옆으로만 가는데 그림은 팽이축을 중심으로 원을 그리며 흔들려서, 시계추·인사하는 인형·짝짝이 춤추는 캐릭터·메트로놈 같은 주제에 잘 어울립니다 (흔들 그네, 손 흔들며 인사하는 친구, 좌우로 헤엄치는 물고기, 똑딱이는 시계추 등). 뒷면 걸림 장치로 세게 밀어도 빠지지 않습니다 (난이도: 중, 7세 이상 추천)
 - "flap-clap": 카드를 열고 닫으면 위쪽 면과 아래쪽 면에 붙은 두 조각(지느러미·손·발 등)이 서로 가까워졌다 멀어졌다 하면서 "탁!" 하고 마주 부딪히는 장치. 물범이 배를 통통 치거나, 손뼉을 치거나, 발을 구르는 듯한 주제에 잘 어울립니다 (배를 통통 두드리는 물범·바다표범, 손뼉 치는 원숭이, 발 구르는 펭귄 등). 지지대(프롭)로 각도를 고정해 붙여야 해서 조립에 약간 주의가 필요합니다 (난이도: 중, 7세 이상 추천)
+- "spin-flap": 동그란 꽃 모양 도안에서, 맨 위 꽃잎 한 장을 손가락으로 잡고 돌리면 그 밑에 숨어있던 손글씨 메시지가 짠! 하고 나타나는 장치 (꽃잎 점치기, 사랑 고백, 비밀 편지, 생일 축하 메시지 등). 다른 꽃잎은 움직이지 않고, 회전하는 꽃잎 하나만 가운데 축을 중심으로 자유롭게 빙글빙글 돕니다. 메시지는 이미지가 아니라 아이가 직접 손으로 쓰는 짧은 문구입니다. 뒷면에 붙이는 회전축 캡이 있어 잘 안 빠집니다 (난이도: 중, 7세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap | spin-flap",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`
@@ -103,6 +104,9 @@ export default async function handler(req, res) {
 
 [volvelle 전용 imagePrompt 유의사항]
 "mechanism"이 "volvelle"일 때, 그림은 평평하게 누운 원형 돌림판에 인쇄되어 동그란 창문 너머로 보입니다. 케이크·접시·행성처럼 위아래가 뚜렷한 사물이 주제라면 imagePrompt에 "top-down view, viewed from directly above, flat circular composition" 같은 구도 설명을 반드시 포함해서, 옆에서 본 모습이 아니라 위에서 내려다본 모습으로 생성되게 하세요. (날씨 아이콘·표정처럼 원래부터 위아래 구분이 없는 평면 아이콘 주제라면 이 구도 지시는 필요 없습니다.)
+
+[spin-flap 전용 imagePrompt 유의사항]
+"mechanism"이 "spin-flap"일 때, imagePrompt는 꽃 앞면(꽃잎·꽃술) 색칠에 참고할 "a cute simple flower, top-down view, flat circular composition" 같은 그림 묘사여야 합니다. 절대로 imagePrompt에 특정 문구를 이미지에 그려 넣으라고 요청하지 마세요 (AI 이미지 생성기는 원하는 글자를 정확히 그리지 못합니다). 숨겨질 메시지는 이미지가 아니라, 도안에 표시된 자리에 아이가 직접 손으로 쓰는 것이므로 imagePrompt와는 무관합니다.
     `;
 
     const response = await ai.models.generateContent({

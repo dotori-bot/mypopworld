@@ -4,6 +4,7 @@ import { resolveRisingSlide, RISING_LIMITS } from '../../generators/risingSlide'
 import { resolveSlideToSwing, SLIDE_SWING_LIMITS } from '../../generators/slideToSwing';
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
+import { resolveSpinFlapGeometry, SPIN_FLAP_LIMITS, petalTipPosition } from '../../generators/spinFlap';
 import { clamp, degToRad, radToDeg } from '../../utils/math';
 
 /**
@@ -46,6 +47,7 @@ export const FLAT_3D = new Set([
   'volvelle',
   'flip-disc',
   'straw-rocket',
+  'spin-flap',
 ]);
 
 /** Z separation per physical paper layer, in px (exaggerated for legibility). */
@@ -809,6 +811,143 @@ function buildFlipDisc(params, defaults, paperSize, driveRaw) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+ * Spin-flap (돌려 펼치는 숨은 글자 꽃)
+ *
+ * Real stack, front → back (see generators/spinFlap.js header): ① rotating
+ * petal, with the yellow hub glued to ITS base (so the hub silently rides
+ * along, invisible since a circle looks identical at any spin angle) → ②
+ * fixed petal ring + background disc, SAME layer (glued flat, never move) →
+ * ③ retention cap, glued to the petal's pivot neck BEHIND the disc. The drive
+ * spins ONLY the top petal about the shared centre; the hidden-message badge
+ * lives on the disc layer, so it visually reads as "covered" whenever the
+ * rotating petal's rest sector still overlaps it, and "revealed" once the
+ * petal has swung past resolveSpinFlapGeometry's own proven minReveal — the
+ * exact same threshold the flat pattern guarantees text coverage/exposure by.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildSpinFlap(params, defaults, paperSize, driveRaw) {
+  const slider = {
+    label: '꽃잎 돌리기',
+    min: 0, max: 360, step: 1, defaultValue: 0,
+    format: (v) => `${Math.round(v)}°`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const L = SPIN_FLAP_LIMITS;
+  const geo = resolveSpinFlapGeometry({
+    R: params.R ?? defaults.R,
+    petalCount: params.petalCount ?? defaults.petalCount,
+    paperSize,
+  });
+  const { R, sigma, fixedPetals, petalROut, petalHalfW, hubR, textRIn, textROut, textThetaDeg } = geo;
+
+  const S = (R + L.PIVOT_CAP_R + 6) * 2;
+  const PX = 230 / S;
+  const px = (mm) => mm * PX;
+  const G = Z_STEP;
+  const cx = S / 2;
+  const cy = S / 2;
+
+  // Circular distance from rest (0°) — how far the petal has swung either
+  // way — matches the coverage/reveal geometry spinFlap.js already proves.
+  const dNorm = ((drive % 360) + 360) % 360;
+  const angularDist = Math.min(dNorm, 360 - dNorm);
+  const revealed = angularDist >= geo.minReveal;
+
+  const petalStyle = (angleDeg, extra) => ({
+    left: px(cx) - px(petalHalfW),
+    top: px(cy) - px(petalROut),
+    width: px(petalHalfW * 2),
+    height: px(petalROut),
+    transformOrigin: '50% 100%',
+    transform: `rotate(${angleDeg}deg)`,
+    ...extra,
+  });
+
+  const fixed = Array.from({ length: fixedPetals }, (_, i) => {
+    const angle = (i + 1) * sigma;
+    return (
+      <div
+        key={`fixed-${i}`}
+        className="preview3d-flat-petal"
+        style={petalStyle(angle, { transform: `translateZ(${-G}px) rotate(${angle}deg)` })}
+      />
+    );
+  });
+
+  const textMidR = (textRIn + textROut) / 2;
+  const textWpx = Math.max(10, px(geo.textWidthMM));
+  const textHpx = Math.max(8, px(geo.textHeightMM));
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(S), height: px(S), left: -px(S) / 2, top: -px(S) / 2 }}>
+      {/* ③ retention cap — glued to the petal's neck, BEHIND the disc */}
+      <div
+        className="preview3d-flat-cap"
+        style={{
+          left: px(cx - L.PIVOT_CAP_R),
+          top: px(cy - L.PIVOT_CAP_R),
+          width: px(L.PIVOT_CAP_R * 2),
+          height: px(L.PIVOT_CAP_R * 2),
+          transform: `translateZ(${-3 * G}px)`,
+        }}
+      />
+      <Tag side="back" x={px(cx)} y={px(cy + L.PIVOT_CAP_R) + 10}>축 캡 (뒷면, 목에만 풀칠)</Tag>
+
+      {/* ② background disc, hidden-message badge, and the fixed petal ring — never move */}
+      <div
+        className="preview3d-flat-volplate"
+        style={{ left: 0, top: 0, width: px(S), height: px(S), transform: `translateZ(${-2 * G}px)` }}
+      />
+      <div
+        className="preview3d-flat-spintext"
+        style={{
+          left: px(cx) - textWpx / 2,
+          top: px(cy) - px(textMidR) - textHpx / 2,
+          width: textWpx,
+          height: textHpx,
+          opacity: revealed ? 1 : 0.35,
+          transform: `translateZ(${-2 * G + 0.6}px)`,
+        }}
+      >
+        {revealed ? '💌' : '🔒'}
+      </div>
+      <Tag x={px(cx)} y={px(cy) - px(textMidR) - textHpx / 2 - 12}>
+        {revealed ? '숨은 메시지 — 보여요!' : '숨은 메시지 — 덮여있음'}
+      </Tag>
+      {fixed}
+      <Tag x={px(cx) + px(petalROut) * 0.6} y={px(cy) - px(petalROut) * 0.5}>고정 꽃잎 ×{fixedPetals} (배경에 풀칠)</Tag>
+
+      {/* ① rotating petal (+ hub riding on its base), spun by the drive */}
+      <div
+        className="preview3d-flat-petal preview3d-flat-petal-rot"
+        style={petalStyle(0, { transform: `translateZ(${G}px) rotate(${drive}deg)` })}
+      />
+      <div
+        className="preview3d-flat-hub"
+        style={{
+          left: px(cx - hubR),
+          top: px(cy - hubR),
+          width: px(hubR * 2),
+          height: px(hubR * 2),
+          transform: `translateZ(${2 * G}px)`,
+        }}
+      />
+      <Tag x={px(cx)} y={px(cy) + px(hubR) + 10}>노란 꽃술 (회전 꽃잎에만 풀칠)</Tag>
+      {(() => {
+        const tip = petalTipPosition(drive, cx, cy, petalROut + 6, geo.restAngle);
+        return <Tag x={px(tip.x)} y={px(tip.y)}>여기를 잡고 돌려요</Tag>;
+      })()}
+    </div>
+  );
+
+  return {
+    node,
+    readout: `꽃잎 회전 θ = ${Math.round(dNorm)}° · 반전까지 최소 ${geo.minReveal}° · 지금 메시지: ${revealed ? '보임' : '덮임'}`,
+    slider,
+    value: drive,
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
  * Straw rocket (빨대 로켓)
  *
  * A paper tube (rolled, top sealed) slips over a straw; two decoration
@@ -931,6 +1070,7 @@ const BUILDERS = {
   'volvelle': buildVolvelle,
   'flip-disc': buildFlipDisc,
   'straw-rocket': buildStrawRocket,
+  'spin-flap': buildSpinFlap,
 };
 
 /**

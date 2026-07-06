@@ -895,3 +895,43 @@
 .preview3d-tag-back {
   transform: translate(-50%, -50%) translateZ(-30px) rotateY(180deg);
 }
+
+/* Spin-flap petals (leaf shape via lopsided border-radius, spoke points up). */
+.preview3d-flat-petal {
+  position: absolute;
+  border-radius: 50% 50% 12% 12% / 65% 65% 12% 12%;
+  background: linear-gradient(180deg, #ffffff, #e2e8f0);
+  border: 1px solid rgba(100, 116, 139, 0.5);
+  backface-visibility: visible;
+}
+
+.preview3d-flat-petal-rot {
+  background: linear-gradient(180deg, #ffffff, #fde68a);
+  border-color: rgba(217, 119, 6, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Yellow flower hub, glued to the rotating petal's base (rides along, but a
+   plain circle looks identical at any spin angle, so it's rendered static). */
+.preview3d-flat-hub {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde047, #f59e0b);
+  border: 1px solid rgba(180, 83, 9, 0.6);
+  backface-visibility: visible;
+}
+
+/* Hidden-message badge printed on the background disc under the petal's rest
+   spoke — hidden at rest, "revealed" (readable) once the petal swings clear. */
+.preview3d-flat-spintext {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  border: 1px dashed rgba(99, 102, 241, 0.5);
+  background: rgba(224, 231, 255, 0.5);
+  font-size: 11px;
+  transition: opacity 0.2s ease;
+  backface-visibility: visible;
+}
