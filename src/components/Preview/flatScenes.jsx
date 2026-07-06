@@ -1,6 +1,7 @@
 import React from 'react';
 import { PAPER_SIZES, CARD_SIZES, PRINT } from '../../generators/constants';
 import { resolveRisingSlide, RISING_LIMITS } from '../../generators/risingSlide';
+import { resolvePullTab, PULL_TAB } from '../../generators/pullTab';
 import { resolveSlideToSwing, SLIDE_SWING_LIMITS } from '../../generators/slideToSwing';
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
@@ -426,12 +427,16 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * Pull tab (풀탭)
+ * Pull tab (풀탭 · 슬롯 통과형)
  *
- * Stack: handle tab (front, folded through the slot) → card face with the
- * horizontal track slot → slider body (back, with 4 stop nubs) → two guide
- * strips glued across the back. Numbers reproduce generatePullTab's own
- * computations (travel = trackLength − sliderWidth − 2·buffer, etc.).
+ * Stack: knob (front, glued on the mount flap) → card face with the horizontal
+ * track slot → slider body (back, with a carved MOUNT flap + 4 stop nubs) → two
+ * guide strips glued across the back. The knob is a separate front grip glued
+ * onto the mount flap, which folds forward through the 1.1 mm slot flat-wise
+ * (only the paper's 0.3 mm thickness crosses it). The knob rides at the slider
+ * centre, NOT off the slider's right edge. Numbers come from resolvePullTab so
+ * the sim shares the generator's single source of truth (travel = trackLength −
+ * sliderWidth − 2·buffer, mount/knob dims, slot width, …).
  * ──────────────────────────────────────────────────────────────────────────── */
 function buildPullTab(params, defaults, paperSize, driveRaw) {
   const slider = {
@@ -443,36 +448,39 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
   const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
   const card = CARD_SIZES[paperSize] || CARD_SIZES.A4;
 
-  // Same clamps/derived numbers as generatePullTab (validatePullTabParams).
-  const sliderW = clamp(params.sliderWidth ?? defaults.sliderWidth, 8, 60);
-  const sliderH = clamp(params.sliderHeight ?? defaults.sliderHeight, 5, 40);
-  const trackLength = clamp(params.trackLength ?? defaults.trackLength, 20, card.width - 2 * PRINT.MARGIN - 20);
-  const buffer = 2;
-  const slotWidth = 1.1; // paperThickness 0.3 + clearance 0.8
-  const travel = trackLength - sliderW - 2 * buffer;
+  const geo = resolvePullTab({
+    paperSize,
+    sliderWidth: params.sliderWidth ?? defaults.sliderWidth,
+    sliderHeight: params.sliderHeight ?? defaults.sliderHeight,
+    trackLength: params.trackLength ?? defaults.trackLength,
+  });
+  const {
+    sliderWidth: sliderW, sliderHeight: sliderH, trackLength, slotWidth,
+    buffer, travel, mountW, mountLen, knobW, knobH,
+  } = geo;
 
   const spineY = paper.height / 2;
   const y0 = spineY - card.height; // card-face top edge on the sheet
   const W = card.width;
   const H = card.height;
-  const trackCX = paper.width / 2;
-  const trackCY = spineY - card.height / 4 - y0; // face-local
+  const trackCX = geo.trackCenterX;
+  const trackCY = geo.trackCenterY - y0; // face-local
   const trackLeft = trackCX - trackLength / 2;
 
   const t = drive / 100;
   const xSlider = trackLeft + buffer + t * travel; // slider body's left edge
+  const cxSlider = xSlider + sliderW / 2;          // slider (and knob) centre X
 
   const PX = 310 / W;
   const px = (mm) => mm * PX;
   const slotHpx = Math.max(3, px(slotWidth));
-  const guideW = 4;
-  const handleW = 8;
+  const guideW = PULL_TAB.GUIDE_W;
 
   const nub = (dx, dy, key) => (
     <span
       key={key}
       className="preview3d-flat-stopnub"
-      style={{ left: px(dx), top: px(dy), width: px(3), height: px(1.5) }}
+      style={{ left: px(dx), top: px(dy), width: px(PULL_TAB.STOP_W), height: px(PULL_TAB.STOP_H) }}
     />
   );
 
@@ -488,14 +496,14 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
         transform: `translateZ(${-2 * Z_STEP}px)`,
       }}
     >
-      <span className="preview3d-flat-glue" style={{ left: 0, width: px(5) }} />
-      <span className="preview3d-flat-glue" style={{ right: 0, width: px(5) }} />
+      <span className="preview3d-flat-glue" style={{ left: 0, width: px(PULL_TAB.GUIDE_GLUE_END) }} />
+      <span className="preview3d-flat-glue" style={{ right: 0, width: px(PULL_TAB.GUIDE_GLUE_END) }} />
     </div>
   );
 
   const node = (
     <div className="preview3d-flat" style={{ width: px(W), height: px(H), left: -px(W) / 2, top: -px(H) / 2 }}>
-      {/* ── BACK: guide strips + slider body with stop nubs ── */}
+      {/* ── BACK: guide strips + slider body (carved mount flap + stop nubs) ── */}
       {guide(trackCY - slotWidth / 2 - guideW - 1, 'guide-top')}
       {guide(trackCY + slotWidth / 2 + 1, 'guide-bot')}
       <div
@@ -508,12 +516,23 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
           transform: `translateZ(${-Z_STEP}px)`,
         }}
       >
-        {nub(0, -1.5, 'nub-tl')}
-        {nub(sliderW - 3, -1.5, 'nub-tr')}
+        {nub(0, -PULL_TAB.STOP_H, 'nub-tl')}
+        {nub(sliderW - PULL_TAB.STOP_W, -PULL_TAB.STOP_H, 'nub-tr')}
         {nub(0, sliderH, 'nub-bl')}
-        {nub(sliderW - 3, sliderH, 'nub-br')}
+        {nub(sliderW - PULL_TAB.STOP_W, sliderH, 'nub-br')}
+        {/* carved mount flap: centred, hinged on the slider's Y-centre (= slot) */}
+        <span
+          className="preview3d-flat-glue"
+          style={{
+            position: 'absolute',
+            left: px(sliderW / 2 - mountW / 2),
+            top: px(sliderH / 2 - mountLen),
+            width: px(mountW),
+            height: px(mountLen),
+          }}
+        />
       </div>
-      <Tag side="back" x={px(xSlider + sliderW / 2)} y={px(trackCY - sliderH / 2) - 12}>슬라이더 몸통 (뒷면)</Tag>
+      <Tag side="back" x={px(cxSlider)} y={px(trackCY - sliderH / 2) - 12}>슬라이더 몸통 + 마운트 (뒷면)</Tag>
       <Tag side="back" x={px(trackCX)} y={px(trackCY + slotWidth / 2 + 1 + guideW + 6)}>안내 띠 ×2 (뒷면 풀칠)</Tag>
 
       {/* ── Card face with the horizontal track slot ── */}
@@ -530,24 +549,32 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag x={px(trackCX)} y={px(trackCY) - 16}>가로 슬롯 {trackLength}×{slotWidth}mm</Tag>
 
-      {/* ── FRONT: the handle tab folded forward through the slot ── */}
+      {/* ── FRONT: the knob glued on the mount flap, riding at the slider centre ── */}
       <div
         className="preview3d-flat-handle"
         style={{
-          left: px(xSlider + sliderW),
-          top: px(trackCY - sliderH / 2),
-          width: px(handleW),
-          height: px(sliderH),
+          left: px(cxSlider - knobW / 2),
+          top: px(trackCY - knobH / 2),
+          width: px(knobW),
+          height: px(knobH),
+          borderRadius: px(PULL_TAB.KNOB_R),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: Math.max(7, px(4)),
+          fontWeight: 700,
           transform: `translateZ(${Z_STEP}px)`,
         }}
-      />
-      <Tag x={px(xSlider + sliderW + handleW / 2)} y={px(trackCY + sliderH / 2) + 12}>손잡이 (앞면)</Tag>
+      >
+        PULL ↔
+      </div>
+      <Tag x={px(cxSlider)} y={px(trackCY + knobH / 2) + 12}>손잡이 (앞면 · 좌우로 당김)</Tag>
     </div>
   );
 
   return {
     node,
-    readout: `이동 ${(t * travel).toFixed(0)} / ${travel.toFixed(0)}mm · 슬라이더 ${sliderW}×${sliderH}mm`,
+    readout: `이동 ${(t * travel).toFixed(0)} / ${travel.toFixed(0)}mm · 슬라이더 ${sliderW}×${sliderH}mm · 손잡이 ${knobW}×${knobH}mm`,
     slider,
     value: drive,
   };
