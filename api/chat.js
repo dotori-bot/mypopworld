@@ -15,10 +15,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Server is missing GEMINI_API_KEY configuration' });
+    }
+
     // Get conversation history from request
-    const { messages } = req.body;
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Request body must include a non-empty "messages" array' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const systemInstruction = `
 당신은 'MyPopWorld'의 친절한 아동용 종이 공예 및 팝업 설계 선생님입니다.
