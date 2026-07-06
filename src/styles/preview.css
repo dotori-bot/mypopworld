@@ -708,6 +708,16 @@
   border-radius: 1px;
 }
 
+/* Camera-print-pull's roller (a rolled paper tube glued by its two ends only,
+   so the middle arches free and the reversing strip wraps 180° over it). */
+.preview3d-flat-roller {
+  position: absolute;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(203, 213, 225, 0.95));
+  border: 1px solid rgba(100, 116, 139, 0.55);
+  backface-visibility: visible;
+}
+
 /* Back-side pivot cap (glued disc that captures the post's neck). */
 .preview3d-flat-cap {
   position: absolute;

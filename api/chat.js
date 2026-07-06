@@ -52,6 +52,7 @@ export default async function handler(req, res) {
 - "auto-slide-window": 카드를 열면 액자(창문·문 모양) 속 그림이나 메시지가 저절로 짠! 하고 바뀌는 장치. 손잡이를 당기지 않고 카드를 여닫는 동작만으로, 지지대(팔)가 뒤에서 메시지 띠를 밀고 당겨 창문 속 그림이 지나갑니다. 살짝 열 때와 활짝 열 때 서로 다른 두 메시지가 보입니다 (생일 축하→선물 그림, 낮→밤, "사랑해"→하트, 애벌레→나비 등). 닫으면 책처럼 납작하게 접힙니다. 지지대 경첩을 척추와 나란히 붙여야 해서 조립에 주의가 필요합니다 (난이도: 중~상, 8세 이상 추천)
 - "slide-to-swing": 손잡이를 옆으로 밀면 기둥 위의 그림(하트·인형·동물 등)이 좌우로 왔다갔다 흔들리는 장치. 손잡이는 곧게 옆으로만 가는데 그림은 팽이축을 중심으로 원을 그리며 흔들려서, 시계추·인사하는 인형·짝짝이 춤추는 캐릭터·메트로놈 같은 주제에 잘 어울립니다 (흔들 그네, 손 흔들며 인사하는 친구, 좌우로 헤엄치는 물고기, 똑딱이는 시계추 등). 뒷면 걸림 장치로 세게 밀어도 빠지지 않습니다 (난이도: 중, 7세 이상 추천)
 - "flap-clap": 카드를 열고 닫으면 위쪽 면과 아래쪽 면에 붙은 두 조각(지느러미·손·발 등)이 서로 가까워졌다 멀어졌다 하면서 "탁!" 하고 마주 부딪히는 장치. 물범이 배를 통통 치거나, 손뼉을 치거나, 발을 구르는 듯한 주제에 잘 어울립니다 (배를 통통 두드리는 물범·바다표범, 손뼉 치는 원숭이, 발 구르는 펭귄 등). 지지대(프롭)로 각도를 고정해 붙여야 해서 조립에 약간 주의가 필요합니다 (난이도: 중, 7세 이상 추천)
+- "camera-print-pull": 카메라 모양 카드 아래쪽 손잡이를 당기면, 위쪽 슬롯에서 사진이 스르륵 올라오는 장치. 즉석카메라가 사진을 인화하는 모습을 흉내냅니다 (인스타 카메라로 찍은 사진이 나오는 장면, 폴라로이드 사진, 신기한 발명품 등). 뒷면 롤러(도르래) 구조로 아래로 당기는 힘을 위로 올라가는 움직임으로 바꾸는 것이 특징입니다 (난이도: 중~상, 7세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap | camera-print-pull",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`

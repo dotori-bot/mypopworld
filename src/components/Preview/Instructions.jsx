@@ -448,6 +448,104 @@ export default function Instructions() {
           </>
         );
 
+      case 'camera-print-pull':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>카메라 카드·슬롯·띠·롤러 오리기</h4>
+                <p>카메라 모양 앞면 카드, 사진이 나오는 세로 슬롯, 손잡이가 나오는 아래쪽 슬롯, 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 실선대로 오려주세요. 카메라·렌즈 그림은 인쇄된 안내선이라 오리지 않습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="130" viewBox="0 0 120 65" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* camera card with vertical photo slot + horizontal tab slot */}
+                    <rect x="10" y="6" width="36" height="52" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <circle cx="28" cy="36" r="9" fill="none" stroke="var(--text-primary)" strokeWidth="1" strokeDasharray="4 2" />
+                    <rect x="25" y="12" width="4" height="16" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="16" y="50" width="24" height="4" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* reversing strip */}
+                    <rect x="58" y="10" width="40" height="9" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="78" y="8" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">되돌림 띠</text>
+                    {/* roller tube (rolled) */}
+                    <ellipse cx="66" cy="34" rx="4" ry="9" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="66" y="25" width="26" height="18" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <ellipse cx="92" cy="34" rx="4" ry="9" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="79" y="49" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">① 롤러</text>
+                    {/* retainer strip */}
+                    <rect x="60" y="54" width="30" height="6" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="75" y="63" fontSize="4.5" textAnchor="middle" fill="green">② 멈춤/안내 띠</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>⚠️ 롤러 말아서 양 끝만 붙이기</h4>
+                <p>가장 긴 네모(<b>① 롤러</b>)를 둥글게 말아 튜브로 만든 뒤, 카드 맨 위 뒷면에 다리처럼 얹고 <b>양 끝 초록색만</b> 붙이세요. 가운데는 절대 붙이지 마세요 — 가운데가 붕 뜬 채로 남아야 되돌림 띠가 그 위로 180도 넘어갈 수 있어요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* Isometric rolled tube, same convention as the straw-rocket tube */}
+                    <ellipse cx="50" cy="15" rx="16" ry="5" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M34 15 L34 30 A16 5 0 0 0 66 30 L66 15 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <ellipse cx="50" cy="30" rx="16" ry="5" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    {/* glue ends only, centre arches free */}
+                    <rect x="30" y="38" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <rect x="60" y="38" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <path d="M40 41 L60 41" stroke="green" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">양 끝만 붙이기 (가운데 X)</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>띠 걸고 사진·멈춤 띠 붙이기</h4>
+                <p>되돌림 띠를 롤러 위에 걸쳐주세요. 한쪽 끝(마운트)에 <b>사진</b>을 붙이고, 반대쪽 끝(손잡이)은 아래쪽 슬롯을 통해 앞면으로 빼냅니다. 사진 슬롯 바로 위 뒷면에는 <b>② 멈춤/안내 띠</b>를 양 끝만 붙이세요. 중요: 되돌림 띠는 사진 쪽 끝과 손잡이 쪽 끝, 이 두 곳 말고는 어디에도 붙이지 마세요!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="140" viewBox="0 0 100 70" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* roller at top, strip wraps down both sides */}
+                    <rect x="35" y="4" width="30" height="8" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="50" y="2" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">① 롤러</text>
+                    <path d="M40 12 L40 40" stroke="var(--primary-main)" strokeWidth="3" />
+                    <path d="M60 12 L60 30" stroke="var(--primary-main)" strokeWidth="3" />
+                    {/* photo at mount end */}
+                    <rect x="50" y="30" width="20" height="24" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <path d="M50 48 L70 48" stroke="var(--text-secondary)" strokeWidth="1" />
+                    <text x="60" y="60" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">사진</text>
+                    {/* retainer above photo */}
+                    <rect x="48" y="26" width="24" height="4" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1" />
+                    <text x="20" y="28" fontSize="4.2" textAnchor="middle" fill="green">② 멈춤 띠</text>
+                    {/* handle tab at bottom */}
+                    <rect x="35" y="40" width="10" height="18" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="40" y="65" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">PULL 손잡이</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>아래로 당기면 사진이 위로!</h4>
+                <p>카드 아래로 나온 "PULL ↓" 손잡이를 잡고 아래로 당기면, 띠가 롤러를 넘어가면서 사진이 위쪽 슬롯 밖으로 쑤욱 올라옵니다. 끝까지 당기면 멈춤 띠에 걸려 멈추고, 사진을 살살 눌러 내리면(손잡이가 도로 위로 올라가며) 다시 처음 모습으로 돌아갑니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="28" y="8" width="44" height="60" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* photo risen near the top slot */}
+                    <rect x="38" y="12" width="24" height="20" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.2" />
+                    <path d="M50 26 l0 -10 M46 20 l4 -4 l4 4" stroke="red" strokeWidth="1.3" fill="none" />
+                    {/* pull tab hanging well below the card, pulled down */}
+                    <rect x="46" y="68" width="8" height="16" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M50 68 l0 10 M47 74 l3 4 l3 -4" stroke="red" strokeWidth="1.3" fill="none" />
+                    <text x="50" y="94" fontSize="5" textAnchor="middle" fill="red">아래로 당기면 사진이 위로!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'layered-stage':
         return (
           <>
