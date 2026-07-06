@@ -593,8 +593,11 @@ function buildSlideToSwing(params, defaults, paperSize, driveRaw) {
   const PX = 310 / W;
   const px = (mm) => mm * PX;
 
-  const bodyW = L.SLIDER_BODY_W;
-  const rigW = L.FLANGE_W + bodyW + L.FLANGE_W + geo.grip;
+  // SLIDER_BODY_W is the slider's FULL along-travel width (the generator's
+  // outline spans exactly SLIDER_BODY_W and carves the two flanges out of its
+  // ends). So the middle body between the flanges is SLIDER_BODY_W − 2·FLANGE_W.
+  const bodyW = L.SLIDER_BODY_W - 2 * L.FLANGE_W;
+  const rigW = L.FLANGE_W + bodyW + L.FLANGE_W + geo.grip; // = SLIDER_BODY_W + grip
   const decoCx = geo.px + (geo.r + L.DECO_OFF) * sinT;
   const decoCyL = pyL - (geo.r + L.DECO_OFF) * cosT; // py − (r+off)·cosθ, face-local
   const decoSize = px(L.DECO_R * 2);
@@ -1047,7 +1050,7 @@ function buildStrawRocket(params, defaults, paperSize, driveRaw) {
   const tubeH = 20;
   const strawD = 6;
   const strawL = 130;
-  const decoW = 44;
+  const decoW = 60;
   const decoH = 50;
   const riseMax = 105;
 
