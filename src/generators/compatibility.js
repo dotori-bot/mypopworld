@@ -157,6 +157,83 @@ export function validateCombination(elements, paperSize) {
 }
 
 /**
+ * Sanitize an AI-authored v2 (combination) cardParams before it reaches the
+ * store. Gemini is prompted with the combination rules, but an LLM will
+ * still occasionally emit invalid JSON — unknown mechanisms, solo-only
+ * mechanisms in a combo, two flats, overlapping placements. This never
+ * rejects: it repairs what it can (drop invalid members, re-space overlapping
+ * book footprints left-to-right) and degrades the rest (a combo that can't
+ * be repaired collapses to a v1 single-mechanism card of its first element),
+ * so the child always gets a printable card.
+ *
+ * v1 input (no `elements`) is returned untouched.
+ *
+ * @param {object} cardParams - parsed AI JSON
+ * @param {'A4'|'LETTER'} paperSize
+ * @returns {object|null} safe cardParams (v1 or v2), or null if nothing usable
+ */
+export function sanitizeAiCombination(cardParams, paperSize) {
+  if (!cardParams || !Array.isArray(cardParams.elements)) return cardParams;
+  const { elements: rawElements, mechanism: _m, params: _p, ...rest } = cardParams;
+
+  // Keep only known mechanisms, normalize shape, cap the count.
+  let els = rawElements
+    .filter((el) => getMechanism(el?.mechanism))
+    .slice(0, MAX_ELEMENTS)
+    .map((el, i) => ({
+      id: `ai-${i + 1}`,
+      mechanism: el.mechanism,
+      params: el.params && typeof el.params === 'object' ? el.params : {},
+      placement: { spineOffset: num(el.placement?.spineOffset, 0) },
+    }));
+
+  // Structural repairs (only meaningful for actual combos).
+  if (els.length > 1) {
+    els = els.filter((el) => !SOLO_ONLY.has(el.mechanism));
+  }
+  if (els.length > 1) {
+    const isFlat = (el) => getMechanism(el.mechanism)?.sceneType === 'flat';
+    const flats = els.filter((el) => isFlat(el) && FLAT_COMBINABLE.has(el.mechanism));
+    const books = els.filter((el) => !isFlat(el));
+    // Non-whitelisted flats are dropped by construction above; at most one
+    // whitelisted flat, and with a flat present at most one book.
+    els = flats.length > 0 ? [...books.slice(0, 1), ...flats.slice(0, 1)] : books;
+  }
+
+  // Placement repair: lay overlapping/colliding book footprints out
+  // left-to-right with a 4mm gap, honoring requested offsets when they fit.
+  if (els.length > 1) {
+    const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
+    const half = paper.width / 2 - PRINT.MARGIN;
+    const boxed = els
+      .map((el) => ({ el, fp: spineFootprint(el, paperSize) }))
+      .filter((b) => b.fp)
+      .sort((a, b) => a.el.placement.spineOffset - b.el.placement.spineOffset);
+    let prevHi = -Infinity;
+    for (const b of boxed) {
+      const w = b.fp.width;
+      let off = Math.max(b.el.placement.spineOffset, prevHi === -Infinity ? -half + w / 2 : prevHi + 4 + w / 2);
+      off = Math.min(off, half - w / 2);
+      b.el.placement.spineOffset = Math.round(off);
+      prevHi = off + w / 2;
+    }
+  }
+
+  // Last resort: if the repaired combo still doesn't validate, degrade by
+  // dropping trailing elements until it does.
+  while (els.length > 1 && !validateCombination(els, paperSize).ok) {
+    els = els.slice(0, -1);
+  }
+
+  if (els.length === 0) return null;
+  if (els.length === 1) {
+    // Collapse to v1 so the card is byte-compatible with the classic flow.
+    return { ...rest, version: undefined, mechanism: els[0].mechanism, params: els[0].params };
+  }
+  return { ...rest, version: 2, elements: els };
+}
+
+/**
  * Can `mechanismId` be added to the current element list? Used to disable
  * picker cards. Simulates the add and reuses validateCombination, minus the
  * overlap rule (the user can still fix placement after adding).

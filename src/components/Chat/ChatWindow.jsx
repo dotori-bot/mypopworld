@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import useCardStore from '../../store/useCardStore';
+import { sanitizeAiCombination } from '../../generators/compatibility';
 import { SendHorizonal, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import '../../styles/chat.css';
 
 export default function ChatWindow() {
-  const { messages, addMessage, isTyping, setTyping, setCardParams } = useCardStore();
+  const { messages, addMessage, isTyping, setTyping, setCardParams, paperSize } = useCardStore();
   const [input, setInput] = useState('');
 
   const sendMessage = async (text) => {
@@ -36,7 +37,11 @@ export default function ChatWindow() {
           if (params.options) {
             options = params.options;
           } else {
-            setCardParams(params);
+            // v2 combination cards from the AI pass through a repair layer
+            // (drops invalid members, re-spaces overlapping placements,
+            // degrades to v1 when needed); v1 cards pass through unchanged.
+            const safe = sanitizeAiCombination(params, paperSize);
+            if (safe) setCardParams(safe);
           }
           content = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
         } catch (e) {

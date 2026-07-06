@@ -102,6 +102,33 @@ export default async function handler(req, res) {
 \`\`\`
 "v-fold"가 아닌 다른 메커니즘에서는 "params" 필드를 포함하지 마세요.
 
+[조합 카드 (장치 2개를 한 카드에): elements]
+아이의 아이디어가 두 가지 움직임을 함께 원하거나(예: "상어가 입을 벌리는데 옆에서 보물상자도 나왔으면 좋겠어"), 주제가 풍성한 장면(생일 파티, 바닷속 세상, 마을 축제 등)이어서 장치를 2개 조합하면 훨씬 재미있어질 때는, 단일 "mechanism" 대신 아래 v2 형식(elements 배열)으로 조합 카드를 발행할 수 있습니다.
+- 항상 필요한 것은 아닙니다. 어울릴 때만 아이디어 표의 선택지 중 하나로 "특별 조합 카드"를 제안하고, 난이도는 한 단계 높게 표시하세요. 7세 이상에게만 제안하세요.
+
+조합 규칙 (반드시 지키세요):
+1. elements는 최대 3개, 권장 2개.
+2. 책형 팝업끼리는 자유롭게 조합 가능: v-fold, box-popup, parallel-fold, accordion, layered-stage, spiral-spring, flap-clap.
+3. 당기는 장치 중에서는 pull-tab 또는 rising-slide 1개만, 책형 팝업 1개와 조합할 수 있습니다.
+4. straw-rocket, auto-slide-window, volvelle, flip-disc, slide-to-swing, camera-print-pull은 절대 조합에 넣지 마세요 (단독 카드 전용).
+5. 책형끼리 조합할 때는 두 장치가 겹치지 않도록 각 element의 "placement": { "spineOffset": mm } 값을 충분히 벌려주세요 (척추 중심 기준, 왼쪽 음수/오른쪽 양수, 예: -45와 +45).
+6. 장식 그림은 최상위 "imagePrompt" 하나를 공유합니다. 각 element에 imagePrompt를 넣지 마세요.
+
+형식 예 ("상어 생일 파티" — 입을 벌리는 상어 + 옆에서 솟는 선물상자):
+\`\`\`json
+{
+  "version": 2,
+  "theme": "상어 생일 파티",
+  "imagePrompt": "A cute smiling shark next to a colorful birthday gift box",
+  "difficulty": "hard",
+  "elements": [
+    { "mechanism": "v-fold", "params": { "armLength": 35, "angle": 50 }, "placement": { "spineOffset": -45 } },
+    { "mechanism": "box-popup", "params": { "width": 30, "height": 25 }, "placement": { "spineOffset": 45 } }
+  ]
+}
+\`\`\`
+단일 장치 카드는 지금까지처럼 "mechanism" 필드가 있는 기존(v1) 형식을 그대로 사용하세요. 조합 카드에서는 "decorationVariants"를 포함하지 마세요.
+
 [volvelle 전용 imagePrompt 유의사항]
 "mechanism"이 "volvelle"일 때, 그림은 평평하게 누운 원형 돌림판에 인쇄되어 동그란 창문 너머로 보입니다. 케이크·접시·행성처럼 위아래가 뚜렷한 사물이 주제라면 imagePrompt에 "top-down view, viewed from directly above, flat circular composition" 같은 구도 설명을 반드시 포함해서, 옆에서 본 모습이 아니라 위에서 내려다본 모습으로 생성되게 하세요. (날씨 아이콘·표정처럼 원래부터 위아래 구분이 없는 평면 아이콘 주제라면 이 구도 지시는 필요 없습니다.)
     `;
