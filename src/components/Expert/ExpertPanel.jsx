@@ -13,6 +13,7 @@ import { PAPER_SIZES, PRINT } from '../../generators/constants';
 import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import MechanismPicker from './MechanismPicker';
 import ParamPanel from './ParamPanel';
+import PlacementCanvas from './PlacementCanvas';
 import '../../styles/expert.css';
 
 /**
@@ -187,6 +188,16 @@ export default function ExpertPanel() {
 
           {showPicker && (
             <MechanismPicker onPick={pickMechanism} disabledReasons={disabledReasons} />
+          )}
+
+          {multi && elements.some((el) => getMechanism(el.mechanism)?.sceneType === 'book') && (
+            <PlacementCanvas
+              elements={elements}
+              paperSize={paperSize}
+              selectedId={selected?.id}
+              onSelect={setSelectedId}
+              onMove={(id, spineOffset) => commitElement(id, { placement: { spineOffset } })}
+            />
           )}
 
           {(combo.errors.length > 0 || combo.warnings.length > 0) && (

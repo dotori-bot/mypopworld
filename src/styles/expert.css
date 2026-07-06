@@ -247,6 +247,90 @@
   font-weight: 600;
 }
 
+/* --- Placement canvas (drag-to-place assembly map) --- */
+
+.placement-canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.placement-canvas-title {
+  font-size: var(--fs-caption, 12px);
+  font-weight: 700;
+  color: var(--text-secondary, #777);
+}
+
+.placement-canvas {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  align-self: center;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 10px;
+  background: var(--bg-surface, #fff);
+  touch-action: none;
+}
+
+.placement-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.placement-margin {
+  fill: none;
+  stroke: var(--border-glass, #ccc);
+  stroke-width: 0.6;
+}
+
+.placement-spine {
+  stroke: var(--accent-secondary, #4a90d9);
+  stroke-width: 0.7;
+  stroke-dasharray: 4 2;
+}
+
+.placement-rect rect {
+  fill: rgba(124, 92, 255, 0.1);
+  stroke: var(--accent-primary, #7c5cff);
+  stroke-width: 0.8;
+  stroke-dasharray: 3 2;
+  cursor: grab;
+}
+
+.placement-rect.active rect {
+  fill: rgba(124, 92, 255, 0.22);
+  stroke-width: 1.4;
+}
+
+.placement-rect.overlap rect {
+  fill: rgba(220, 60, 60, 0.15);
+  stroke: var(--color-danger, #d33);
+}
+
+.placement-canvas.is-dragging .placement-rect rect {
+  cursor: grabbing;
+}
+
+.placement-label {
+  font-size: 6px;
+  font-weight: 700;
+  fill: var(--text-primary, #333);
+  pointer-events: none;
+  user-select: none;
+}
+
+.placement-caption {
+  font-size: 5px;
+  fill: var(--text-secondary, #888);
+  pointer-events: none;
+  user-select: none;
+}
+
+.placement-note {
+  font-size: var(--fs-caption, 12px);
+  color: var(--text-secondary, #888);
+  line-height: 1.4;
+}
+
 /* 3D view toggle for multi-mechanism cards */
 .preview3d-view-toggle {
   display: flex;
