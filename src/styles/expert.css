@@ -1,0 +1,297 @@
+/* Expert mode — mechanism picker + parameter editor (left panel) */
+
+.expert-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.expert-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expert-section-title {
+  font-size: var(--fs-body, 15px);
+  font-weight: 700;
+  color: var(--text-primary, #222);
+  margin: 0;
+}
+
+.expert-theme-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 10px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #222);
+  font-size: var(--fs-body-sm, 14px);
+}
+
+.expert-theme-input:focus {
+  outline: 2px solid var(--accent-primary, #7c5cff);
+  outline-offset: 1px;
+}
+
+/* --- Mechanism grid --- */
+
+.mechanism-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.mechanism-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 12px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #222);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.mechanism-card:hover {
+  background: var(--bg-glass-hover, #f4f2ff);
+  transform: translateY(-1px);
+}
+
+.mechanism-card.active {
+  border-color: var(--accent-primary, #7c5cff);
+  background: var(--bg-glass-active, #efeaff);
+  box-shadow: 0 0 0 1px var(--accent-primary, #7c5cff);
+}
+
+.mechanism-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mechanism-name {
+  font-size: var(--fs-body-sm, 13px);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.mechanism-badge {
+  font-size: var(--fs-caption, 11px);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.mechanism-badge-book {
+  background: rgba(124, 92, 255, 0.14);
+  color: var(--accent-primary, #7c5cff);
+}
+
+.mechanism-badge-flat {
+  background: rgba(24, 160, 120, 0.14);
+  color: var(--color-success, #18a078);
+}
+
+/* --- Parameter panel --- */
+
+.param-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.param-panel-empty {
+  color: var(--text-secondary, #777);
+  font-size: var(--fs-body-sm, 13px);
+}
+
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.param-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.param-field-row .custom-range {
+  flex: 1;
+}
+
+.param-number {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #222);
+  font-size: var(--fs-body-sm, 13px);
+  text-align: right;
+}
+
+.param-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px dashed var(--border-glass, #ddd);
+  border-radius: 10px;
+}
+
+.param-group-toggle {
+  cursor: pointer;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.param-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 170, 40, 0.12);
+  border: 1px solid rgba(255, 170, 40, 0.45);
+}
+
+.param-warning {
+  font-size: var(--fs-body-sm, 13px);
+  color: var(--text-primary, #222);
+  line-height: 1.4;
+}
+
+/* --- Element list (multi-mechanism composition) --- */
+
+.expert-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expert-add-btn {
+  border: 1px solid var(--accent-primary, #7c5cff);
+  color: var(--accent-primary, #7c5cff);
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: var(--fs-caption, 12px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.expert-add-btn:hover {
+  background: var(--bg-glass-hover, #f4f2ff);
+}
+
+.element-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.element-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 10px;
+  background: var(--bg-surface, #fff);
+  cursor: pointer;
+}
+
+.element-row.active {
+  border-color: var(--accent-primary, #7c5cff);
+  background: var(--bg-glass-active, #efeaff);
+}
+
+.element-no {
+  font-weight: 700;
+  color: var(--accent-primary, #7c5cff);
+}
+
+.element-name {
+  flex: 1;
+  font-size: var(--fs-body-sm, 13px);
+  font-weight: 600;
+  color: var(--text-primary, #222);
+}
+
+.element-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.element-remove:hover {
+  color: var(--color-danger, #d33);
+  background: rgba(220, 50, 50, 0.08);
+}
+
+.param-error {
+  font-weight: 600;
+}
+
+/* 3D view toggle for multi-mechanism cards */
+.preview3d-view-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+.preview3d-view-toggle .toggle-btn {
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: var(--fs-caption, 12px);
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #222);
+  cursor: pointer;
+}
+
+.preview3d-view-toggle .toggle-btn.active {
+  border-color: var(--accent-primary, #7c5cff);
+  background: var(--bg-glass-active, #efeaff);
+  color: var(--accent-primary, #7c5cff);
+  font-weight: 700;
+}
+
+/* Header mode toggle */
+.app-mode-toggle {
+  margin-left: auto;
+}
+
+/* Decoration-regeneration badge shown over the 2D preview in expert mode */
+.svg-preview-container {
+  position: relative;
+}
+
+.deco-generating-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: var(--fs-caption, 12px);
+  pointer-events: none;
+}

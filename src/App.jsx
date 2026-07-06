@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChatWindow from './components/Chat/ChatWindow';
+import ExpertPanel from './components/Expert/ExpertPanel';
 import SVGPreview from './components/Preview/SVGPreview';
 import Instructions from './components/Preview/Instructions';
 import Preview3D from './components/Preview/Preview3D';
@@ -52,7 +53,7 @@ function PrintSettings() {
 function App() {
   const [activeTab, setActiveTab] = useState('2d');
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const { messages, pages, resetChat } = useCardStore();
+  const { messages, pages, resetChat, appMode, setAppMode } = useCardStore();
 
   const hasUnsavedWork = messages.length > 0 || pages.length > 0;
 
@@ -80,11 +81,24 @@ function App() {
           <Sparkles className="logo-icon" />
           <span className="logo-text">MyPopWorld</span>
         </button>
+        <div className="toggle-group toggle-group-sm app-mode-toggle" role="group" aria-label="사용 모드">
+          {[{ id: 'kids', label: '어린이 모드' }, { id: 'expert', label: '전문가 모드' }].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={`toggle-btn ${appMode === m.id ? 'active' : ''}`}
+              aria-pressed={appMode === m.id}
+              onClick={() => setAppMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       <main className="app-main">
         <div className="chat-panel">
-          <ChatWindow />
+          {appMode === 'expert' ? <ExpertPanel /> : <ChatWindow />}
         </div>
 
         <div className="preview-panel">

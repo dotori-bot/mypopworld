@@ -1,6 +1,8 @@
 import React from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism } from '../../generators/registry';
+import { getElements } from '../../store/cardModel';
+import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { Scissors, Palette, Tent, HelpCircle } from 'lucide-react';
 
 export default function Instructions() {
@@ -14,8 +16,10 @@ export default function Instructions() {
     );
   }
 
-  const renderSteps = () => {
-    const instructionStyle = getMechanism(cardParams.mechanism)?.instructionStyle;
+  const elements = getElements(cardParams);
+
+  const renderSteps = (element) => {
+    const instructionStyle = getMechanism(element.mechanism)?.instructionStyle;
 
     switch (instructionStyle) {
       case 'straw-rocket':
@@ -1040,7 +1044,7 @@ export default function Instructions() {
                 </div>
               </div>
             </div>
-            {cardParams.params?.armExtension && (
+            {element.params?.armExtension && (
               <div className="instruction-step card">
                 <div className="step-badge">4</div>
                 <div className="step-content">
@@ -1194,7 +1198,21 @@ export default function Instructions() {
     <div className="preview-content" style={{ overflowY: 'auto', padding: 'var(--space-xl)' }}>
       <h3 style={{ marginBottom: 'var(--space-lg)' }}>{cardParams.theme} - 조립 설명서</h3>
       <div className="instructions-container" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-        {renderSteps()}
+        {elements.map((element, i) => (
+          <React.Fragment key={element.id || i}>
+            {elements.length > 1 && (
+              <h4 style={{ margin: 'var(--space-md) 0 0' }}>
+                {CIRCLED_NUMBERS[i] || i + 1} {getMechanism(element.mechanism)?.labelKo || element.mechanism}
+              </h4>
+            )}
+            {renderSteps(element)}
+          </React.Fragment>
+        ))}
+        {elements.length > 1 && (
+          <p style={{ color: 'var(--text-secondary)' }}>
+            여러 부품을 조합할 때는 2D 도안의 마지막 페이지(조립 배치도)에 표시된 위치에 각 번호 부품을 붙이세요.
+          </p>
+        )}
       </div>
     </div>
   );
