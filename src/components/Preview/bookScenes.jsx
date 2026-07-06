@@ -322,16 +322,25 @@ export function buildBookScene(mechanism, params, ctx) {
     readout = `계단 ${levels.length}단 · 총 높이 h ≈ ${hTop.toFixed(1)}mm · 접힘 각도 γ = ${gamma.toFixed(0)}°`;
   } else if (mechanism === 'accordion') {
     // Accordion (병풍 팝업) — see generators/accordionPopup.js for the closed-form
-    // physics. SAME topology as V-fold/box-popup (two attachment points at
-    // distance `a` from the spine, one per page), except instead of a single
-    // arm/flap meeting at the spine, a uniform M-panel zigzag chain spans
-    // between them. renderStairLevel's alternating ±γ recursion (built for
-    // parallel-fold's staircase) IS that zigzag verbatim once every level is
-    // the SAME size and folds by the SAME constant angle ρ(α) instead of
-    // varying per level — so we reuse it directly, nested inside a level-0
-    // hinge inset by `a` from the spine (the `insetPx` param added above).
-    //   D(α) = 2·a·sin(α/2)            anchor-to-anchor chord (authoritative)
-    //   cos ρ(α) = D(α) / L,  L = SAFETY·a = M·w   ⇒  ρ = arccos(D/L)
+    // physics. ONE continuous zigzag strip spans the gutter: its two end glue-
+    // panels are fixed on the two card faces at distance `a` from the spine, and
+    // the M pleat panels concertina freely between them. Like spiral-spring, the
+    // strip bridges two INDEPENDENTLY-rotating pages, so it CANNOT be a child of
+    // either page — it is parented to .preview3d-book (attachmentBook) and spans
+    // world-space between the two page-fixed anchors. (The previous version
+    // reused renderStairLevel PER PAGE, drawing 2·M panels as two combs growing
+    // AWAY from the spine — off the page edge at default a — instead of one
+    // M-panel strip bridging across it.)
+    //
+    //   D(α) = 2·a·sin(α/2)                 anchor-to-anchor chord (authoritative)
+    //   cos ρ(α) = D(α) / L,  L = M·w       per-pleat half-angle ⇒ ρ = arccos(D/L)
+    //   pop-up amplitude per pleat = w·sin ρ         (tents toward the viewer)
+    //
+    // Both page anchors sit at distance a, so (mirroring spiral-spring's anchor
+    // algebra) their world z is equal and the chord lies along world x with
+    // length 2a·cosθ = 2a·sin(α/2) = D — no container yaw needed. Even pleats
+    // tent up (+z), odd pleats return to the chord, so the strip is flat (z=0
+    // amplitude baseline) and closes into a stack as α→0 (D→0, ρ→90°).
     const geo = resolveAccordionGeometry({
       a: params.a ?? defaults.a,
       panels: params.panels ?? defaults.panels,
@@ -340,19 +349,81 @@ export function buildBookScene(mechanism, params, ctx) {
     });
 
     const D = 2 * geo.a * Math.sin(degToRad(alpha / 2));
-    const rho = radToDeg(Math.acos(clamp(D / geo.L, -1, 1)));
+    const rhoRad = Math.acos(clamp(D / geo.L, -1, 1));
+    const rhoDeg = radToDeg(rhoRad);
+    const cosR = Math.cos(rhoRad);
+    const sinR = Math.sin(rhoRad);
 
-    const rRad = degToRad(rho);
-    const sinR = Math.sin(rRad);
-    const cosR = Math.cos(rRad);
-    const aPx = geo.a * PX;
+    const thetaRad = degToRad(thetaPage);
+    const cosT = Math.cos(thetaRad);
+    const sinT = Math.sin(thetaRad);
+    const Hx = -geo.a * PX * cosT; // left-page end anchor (world x)
+    const Hz = geo.a * PX * sinT;  // both anchors share this world z
 
-    const levels = Array.from({ length: geo.panels }, () => ({ width: geo.wallHeight, depth: geo.w }));
+    const wPx = geo.w * PX;
+    const wallPx = geo.wallHeight * PX;
+    const dxPx = wPx * cosR; // per-pleat advance across the gutter
+    const dzPx = wPx * sinR; // per-pleat pop-up half-amplitude
 
-    attachmentLeft = renderStairLevel(levels, 0, 'left', sinR, cosR, rho, PX, pageH, aPx);
-    attachmentRight = renderStairLevel(levels, 0, 'right', sinR, cosR, rho, PX, pageH, aPx);
+    // Pleat panels, each independently placed at its own start vertex (vx,vz) in
+    // the container-local frame (x across the gutter, z toward the viewer) then
+    // folded ±ρ about its spine-parallel (vertical) hinge. Vertices accumulate
+    // so panel j's far edge is exactly panel j+1's near edge (continuous strip).
+    const pleats = [];
+    let vx = 0;
+    let vz = 0;
+    for (let j = 0; j < geo.panels; j++) {
+      const up = j % 2 === 0;
+      const phi = up ? -rhoDeg : rhoDeg; // rotateY(−ρ) tilts +x toward +z (viewer)
+      pleats.push(
+        <div
+          key={`pleat-${j}`}
+          className="preview3d-step preview3d-step-left"
+          style={{
+            width: `${wPx}px`,
+            height: `${wallPx}px`,
+            top: 0,
+            left: 0,
+            transformOrigin: 'left center',
+            transform: `translate3d(${vx.toFixed(3)}px, ${(-wallPx / 2).toFixed(3)}px, ${vz.toFixed(3)}px) rotateY(${phi.toFixed(3)}deg)`,
+          }}
+        />,
+      );
+      vx += dxPx;
+      vz += up ? dzPx : -dzPx;
+    }
 
-    readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rho.toFixed(0)}°`;
+    attachmentBook = (
+      <div
+        className="preview3d-spring"
+        style={{
+          left: 0,
+          top: `${pageH / 2}px`,
+          transform: `translate3d(${Hx.toFixed(3)}px, 0px, ${Hz.toFixed(3)}px)`,
+        }}
+      >
+        {pleats}
+      </div>
+    );
+
+    // The two end glue-panels, lying flat on their own pages at distance a from
+    // the spine (part inventory — these are what is actually glued down).
+    const tabDepthPx = geo.tabDepth * PX;
+    const endTop = pageH / 2 - wallPx / 2;
+    attachmentLeft = (
+      <div
+        className="preview3d-boxflap preview3d-boxflap-left"
+        style={{ width: `${tabDepthPx}px`, height: `${wallPx}px`, top: `${endTop}px`, right: `${geo.a * PX}px`, transform: 'none' }}
+      />
+    );
+    attachmentRight = (
+      <div
+        className="preview3d-boxflap preview3d-boxflap-right"
+        style={{ width: `${tabDepthPx}px`, height: `${wallPx}px`, top: `${endTop}px`, left: `${geo.a * PX}px`, transform: 'none' }}
+      />
+    );
+
+    readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rhoDeg.toFixed(0)}°`;
   } else if (mechanism === 'layered-stage') {
     // Layered stage (층층이 무대) — see generators/layeredStage.js. Each layer i
     // is its OWN independent box-popup-style flap: h_i = d_i·sin(α/2), the
