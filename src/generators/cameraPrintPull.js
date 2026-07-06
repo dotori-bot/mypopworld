@@ -111,8 +111,10 @@ export const CAMERA_PULL_LIMITS = {
   RISE_MAX: 0.6,         // riseFraction of the printable face height
   STRIP_W_MIN: 12,
   STRIP_W_MAX: 18,       // reversing-strip width (mm)
-  PHOTO_W_MIN: 34,
-  PHOTO_W_MAX: 56,       // photo width (mm)
+  PHOTO_W_MIN: 40,
+  PHOTO_W_MAX: 78,       // photo width (mm) — keeps the print proportioned to
+                         // the camera body like a real instax photo (~50-55%
+                         // of the body width), not a postage-stamp inset.
   PHOTO_RATIO: 1.2,      // photoH = photoW · ratio (portrait instax print)
   GRIP_MIN: 16,
   GRIP_MAX: 28,          // exposed "PULL" grip below the bottom slot (mm)
@@ -195,7 +197,7 @@ export function resolveCameraPull(opts = {}) {
 
   // Photo must leave a print margin on both sides of the face.
   const photoMax = Math.min(L.PHOTO_W_MAX, printableW - 20);
-  const photoW = clamp(numOr(opts.photoWidth, 46), L.PHOTO_W_MIN, photoMax);
+  const photoW = clamp(numOr(opts.photoWidth, 64), L.PHOTO_W_MIN, photoMax);
   const photoH = round(photoW * L.PHOTO_RATIO, 1);
   const mountW = round(Math.min(stripW, photoW - 2 * L.PHOTO_OVERHANG), 1);
 
@@ -326,7 +328,7 @@ function drawCameraBody(g, geo, style) {
  * @param {number} [options.clearance=0.9]
  * @param {number} [options.stripWidth=14]
  * @param {number} [options.grip=24]
- * @param {number} [options.photoWidth=46]
+ * @param {number} [options.photoWidth=64]
  * @param {boolean} [options.isColor=true]
  * @returns {SVGGElement}
  */
@@ -466,7 +468,7 @@ export const generateCameraPrintPull = (svg, options = {}) => {
  * @param {number} [params.clearance=0.9]
  * @param {number} [params.stripWidth=14]
  * @param {number} [params.grip=24]
- * @param {number} [params.photoWidth=46]
+ * @param {number} [params.photoWidth=64]
  * @returns {{ svg: SVGSVGElement, geometry: CameraPullGeometry }}
  */
 export function renderCameraPrintPull(params = {}) {

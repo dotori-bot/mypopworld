@@ -266,7 +266,6 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
   // the mount is drawn up); the tab-run stays the fixed roller→slot span, and
   // the freed-up strip length reappears as MORE exposed grip below the card.
   const mountY = geo.slotBotY - rise;          // photo mount fold line, in the slot
-  const photoRunNow = Math.max(1, geo.photoRun - rise);
   const exposedGrip = geo.grip + rise;
 
   const sceneBottom = Math.max(H, geo.botSlotY + geo.grip + geo.travel * tStop) + 8;
@@ -274,31 +273,25 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
   const px = (mm) => mm * PX;
 
   const retW = geo.channelGap + 2 * L.GLUE_END;
-  // The two back runs meet at the roller but are offset a touch left/right so
-  // both threaded strands read as separate parts instead of one overlapping
-  // line — a schematic simplification (the real strip is one straight piece).
-  const stripOffset = geo.stripW * 0.6 + 2;
-  const xTabRun = geo.cx - stripOffset;
-  const xPhotoRun = geo.cx + stripOffset;
   const flangeTopY = mountY - L.NECK_H - L.FLANGE_H;
   const botSlotLen = geo.stripW + geo.slotWidth * 2;
   const slotWpx = Math.max(3, px(geo.slotWidth));
 
+  // The roller + the two threaded runs are, physically, ONE strip of paper —
+  // draw them as a SINGLE rolled "tube" spanning the whole photo↔handle span
+  // (its rounded top IS the roller) instead of a pale pill plus two thin,
+  // easy-to-miss lines. A front half (nearer, warmer) + back half (further,
+  // muted) shade it like a cylinder, matching the .preview3d-flat-tube trick
+  // straw-rocket uses. Green dashed "mount" patches mark the two glue points:
+  // the photo at the front, near the top; the handle/grip at the back, near
+  // the bottom (it then pokes through the bottom slot to hang out front).
+  const tubeW = geo.stripW + 8;
+  const tubeTopY = geo.yRoller - geo.rollerR - 2;
+  const tubeBotY = geo.botSlotY;
+  const tubeH = tubeBotY - tubeTopY;
+
   const node = (
     <div className="preview3d-flat" style={{ width: px(W), height: px(H), left: -px(W) / 2, top: -px(H) / 2 }}>
-      {/* ── BACK, furthest layer: the roller (a rolled tube glued by its two ends only) ── */}
-      <div
-        className="preview3d-flat-roller"
-        style={{
-          left: px(geo.cx - geo.rollerLen / 2),
-          top: px(geo.yRoller - geo.rollerR),
-          width: px(geo.rollerLen),
-          height: px(geo.rollerR * 2),
-          transform: `translateZ(${-2 * Z_STEP}px)`,
-        }}
-      />
-      <Tag side="back" x={px(geo.cx)} y={px(geo.yRoller - geo.rollerR) - 10}>① 롤러(튜브)</Tag>
-
       {/* ── BACK: the retainer bridge glued just above the photo slot ── */}
       <div
         className="preview3d-flat-retainer"
@@ -315,39 +308,39 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag side="back" x={px(geo.cx)} y={px(topRetY) - 10}>② 멈춤/안내 띠</Tag>
 
-      {/* ── BACK: the reversing strip, threaded as two runs meeting at the roller ── */}
+      {/* ── The reversing strip as ONE visible rolled-paper tube. It sits just
+           in front of the card face (but behind the photo/PULL tab, which
+           are further forward still) so the connection between them always
+           reads clearly without needing to orbit around — unlike the other
+           purely-behind-the-card back parts, this IS the part the user needs
+           to see to understand the mechanism: a single tube-shaped strip the
+           photo glues to at its front-top end, and the handle at its
+           back-bottom end. ── */}
       <div
-        className="preview3d-flat-strip"
+        className="preview3d-flat-camtube"
         style={{
-          left: px(xTabRun - geo.stripW / 2),
-          top: px(geo.yRoller),
-          width: px(geo.stripW),
-          height: px(geo.tabRun),
-          transform: `translateZ(${-Z_STEP}px)`,
-        }}
-      />
-      <div
-        className="preview3d-flat-strip"
-        style={{
-          left: px(xPhotoRun - geo.stripW / 2),
-          top: px(geo.yRoller),
-          width: px(geo.stripW),
-          height: px(photoRunNow),
-          transform: `translateZ(${-Z_STEP}px)`,
+          left: px(geo.cx - tubeW / 2),
+          top: px(tubeTopY),
+          width: px(tubeW),
+          height: px(tubeH),
+          transform: `translateZ(${0.3 * Z_STEP}px)`,
         }}
       >
+        <span className="preview3d-flat-cammount" style={{ top: px(4), height: px(5) }} />
+        <span className="preview3d-flat-cammount" style={{ bottom: px(4), height: px(5) }} />
         <div
           className="preview3d-flat-flange"
           style={{
-            left: px(-(geo.flangeW - geo.stripW) / 2),
-            top: px(flangeTopY - geo.yRoller),
+            left: px(-(geo.flangeW - tubeW) / 2),
+            top: px(flangeTopY - tubeTopY),
             width: px(geo.flangeW),
             height: px(L.FLANGE_H),
           }}
         />
       </div>
-      <Tag side="back" x={px(xTabRun)} y={px(geo.yRoller + geo.tabRun / 2)}>되돌림 띠 (손잡이 쪽)</Tag>
-      <Tag side="back" x={px(xPhotoRun)} y={px(geo.yRoller + photoRunNow / 2)}>되돌림 띠 (사진 쪽)</Tag>
+      <Tag x={px(geo.cx - tubeW / 2) - 6} y={px(tubeTopY + tubeH / 2)}>① 롤러+되돌림 띠 = 튜브형 종이 한 장</Tag>
+      <Tag x={px(geo.cx + tubeW / 2 + 6)} y={px(tubeTopY + 10)}>사진 붙는 곳 (앞쪽 위)</Tag>
+      <Tag x={px(geo.cx + tubeW / 2 + 6)} y={px(tubeBotY - 10)}>손잡이 붙는 곳 (뒤쪽 아래)</Tag>
 
       {/* ── Card face: photo slot (top) + tab slot (below it) ── */}
       <div className="preview3d-flat-card" style={{ width: px(W), height: px(H) }}>
@@ -372,12 +365,15 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag x={px(geo.cx + botSlotLen / 2 + 6)} y={px(geo.botSlotY)}>손잡이 슬롯 (앞면)</Tag>
 
-      {/* ── FRONT: the photo, riding the mount up the slot ── */}
+      {/* ── FRONT: the photo, riding the mount up the slot. Its BOTTOM edge
+           (not centre) sits at the mount line, a hair below it, so the photo
+           reads as glued there and ejecting UPWARD out of the slot — instead
+           of straddling the mount and burying the tube behind it. ── */}
       <div
         style={{
           position: 'absolute',
           left: px(geo.cx) - px(geo.photoW) / 2,
-          top: px(mountY - L.NECK_H / 2) - px(geo.photoH) / 2,
+          top: px(mountY + L.NECK_H) - px(geo.photoH),
           width: px(geo.photoW),
           height: px(geo.photoH),
           background: 'linear-gradient(180deg, #ffffff 0%, #ffffff 78%, #cbd5e1 78%, #cbd5e1 100%)',
@@ -387,7 +383,7 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
           transform: `translateZ(${Z_STEP}px)`,
         }}
       />
-      <Tag x={px(geo.cx)} y={px(mountY - L.NECK_H / 2) - px(geo.photoH) / 2 - 10}>사진 (앞면)</Tag>
+      <Tag x={px(geo.cx)} y={px(mountY + L.NECK_H) - px(geo.photoH) - 10}>사진 (앞면)</Tag>
 
       {/* ── FRONT: the PULL tab — exposed length grows as it's pulled ── */}
       <div

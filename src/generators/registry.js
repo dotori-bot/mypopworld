@@ -146,7 +146,7 @@ export const MECHANISM_REGISTRY = {
   'camera-print-pull': {
     labelKo: '카메라 인화 손잡이 (아래로 당기면 사진이 위로 올라오는 장치)',
     render: (params) => renderCameraPrintPull(params),
-    defaultParams: { riseFraction: 0.5, clearance: 0.9, stripWidth: 14, grip: 24, photoWidth: 46 },
+    defaultParams: { riseFraction: 0.5, clearance: 0.9, stripWidth: 14, grip: 24, photoWidth: 64 },
     instructionStyle: 'camera-print-pull',
     // One decoration slot (the photo), sized off the SAME geometry the
     // mechanism itself renders with (resolveCameraPull), so the decoration
