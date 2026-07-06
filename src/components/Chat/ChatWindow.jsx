@@ -23,8 +23,16 @@ export default function ChatWindow() {
         body: JSON.stringify({ messages: [...messages, userMsg] })
       });
       
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      // The serverless platform can answer with a plain-text error page
+      // ("A server error has occurred...") instead of JSON, so parse defensively.
+      const raw = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        throw new Error(`Non-JSON response from /api/chat (HTTP ${res.status}): ${raw.slice(0, 120)}`);
+      }
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
 
       let content = data.text;
       let options = null;
@@ -47,7 +55,7 @@ export default function ChatWindow() {
       addMessage({ role: 'ai', content, options });
     } catch (error) {
       console.error(error);
-      addMessage({ role: 'ai', content: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.' });
+      addMessage({ role: 'ai', content: '죄송합니다. 서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' });
     } finally {
       setTyping(false);
     }
