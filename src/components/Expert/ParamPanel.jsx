@@ -10,38 +10,43 @@ const fmt = (v, field) =>
   typeof v === 'number' ? (field.step < 1 ? v.toFixed(2) : Math.round(v)) : '—';
 
 /**
- * Expert-mode parameter editor. Renders one slider + number-input pair per
- * paramSchema field of the selected mechanism. Values shown are the merged
- * `{...defaultParams, ...cardParams.params}` plus any not-yet-committed edits;
- * edits are committed to the store (→ 2D/3D regeneration) after a short
- * debounce so slider drags stay smooth.
+ * Expert-mode parameter editor for ONE element.
  *
- * limits(params, paperSize) is re-evaluated on every render, so a change to
- * one parameter immediately tightens/loosens its dependents' slider ranges
+ * @param {object} props.element   normalized element ({ mechanism, params })
+ * @param {(params: object) => void} props.onCommit  called (debounced) with
+ *   the element's next full params-override object
+ *
+ * Values shown are `{...defaultParams, ...element.params}` plus any
+ * not-yet-committed edits; edits commit after a short debounce so slider
+ * drags stay smooth. limits(params, paperSize) re-evaluates every render, so
+ * changing one parameter immediately tightens/loosens its dependents' ranges
  * (e.g. flap-clap: offset↑ → flapLength max↓).
  */
-export default function ParamPanel() {
-  const { cardParams, setCardParams, paperSize } = useCardStore();
-  // Pending (uncommitted) full override object in cardParams.params shape.
+export default function ParamPanel({ element, onCommit }) {
+  const { paperSize } = useCardStore();
+  // Pending (uncommitted) full override object in element.params shape.
   const [pending, setPending] = useState(null);
   const commitTimer = useRef(null);
-  const mechanism = cardParams?.mechanism;
+  const onCommitRef = useRef(onCommit);
+  onCommitRef.current = onCommit;
+  const mechanism = element?.mechanism;
+  const elementId = element?.id;
 
-  // Switching mechanisms discards any in-flight edit of the previous one.
+  // Switching elements/mechanisms discards any in-flight edit of the old one.
   useEffect(() => {
     setPending(null);
     clearTimeout(commitTimer.current);
-  }, [mechanism]);
+  }, [elementId, mechanism]);
   useEffect(() => () => clearTimeout(commitTimer.current), []);
 
   const mech = getMechanism(mechanism);
-  if (!cardParams || !mech) return null;
+  if (!element || !mech) return null;
   const schema = mech.paramSchema || [];
   if (schema.length === 0) {
     return <div className="param-panel-empty">이 메커니즘은 조절할 수치 파라미터가 없습니다.</div>;
   }
 
-  const overrides = { ...(cardParams.params || {}), ...(pending || {}) };
+  const overrides = { ...(element.params || {}), ...(pending || {}) };
   const shown = { ...mech.defaultParams, ...overrides };
 
   const update = (patch) => {
@@ -49,12 +54,12 @@ export default function ParamPanel() {
     setPending(next);
     clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
-      setCardParams({ ...cardParams, params: next });
+      onCommitRef.current(next);
       setPending(null);
     }, COMMIT_DELAY_MS);
   };
 
-  const warnings = validatePrintability({ ...cardParams, params: overrides }, paperSize);
+  const warnings = validatePrintability({ mechanism, params: overrides }, paperSize);
 
   const renderNumberField = (field, value, onChange) => {
     let lim;

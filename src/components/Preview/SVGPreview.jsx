@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import useCardStore from '../../store/useCardStore';
-import { getMechanism, buildMechanismParams, getDecorationSlots, INSTRUCTION_TEXT } from '../../generators/registry';
+import { getMechanism, buildElementParams, getDecorationSlots, INSTRUCTION_TEXT } from '../../generators/registry';
+import { getElements } from '../../store/cardModel';
+import { renderAssemblyMap, CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { PAPER_SIZES, PRINT } from '../../generators/constants';
 import { createSVG, svgToString, getLineStyle, addPath, addRect, addText } from '../../generators/svgBuilder';
 import { getContourPath, getBlobPath } from '../../utils/imageProcessor';
@@ -15,7 +17,7 @@ export default function SVGPreview() {
   // involve a Pollinations image fetch + contour trace and must NOT re-run on
   // every slider tick — only when their inputs (slot sizes, prompt, mode)
   // actually change.
-  const [mechPage, setMechPage] = useState(null); // { el: SVGSVGElement, str: string }
+  const [mechPages, setMechPages] = useState([]); // [{ el: SVGSVGElement, str: string }]
   const [decoPages, setDecoPages] = useState([]); // [{ el, str }]
   const [currentPage, setCurrentPage] = useState(0);
   const containerRef = useRef(null);
@@ -29,35 +31,48 @@ export default function SVGPreview() {
   const decoRunIdRef = useRef(0);
 
   const pages = useMemo(
-    () => (mechPage ? [mechPage.str, ...decoPages.map((p) => p.str)] : []),
-    [mechPage, decoPages],
+    () => (mechPages.length > 0 ? [...mechPages.map((p) => p.str), ...decoPages.map((p) => p.str)] : []),
+    [mechPages, decoPages],
   );
-  pageElementsRef.current = mechPage ? [mechPage.el, ...decoPages.map((p) => p.el)] : [];
+  pageElementsRef.current =
+    mechPages.length > 0 ? [...mechPages.map((p) => p.el), ...decoPages.map((p) => p.el)] : [];
 
   const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
   const isColor = colorMode !== 'bw';
 
-  // --- Page 1: Mechanism Template (synchronous, tracks every param change) ---
+  // --- Pages 1..K: Mechanism Templates (synchronous, track every param change) ---
+  // One template page per element (single-mechanism cards have exactly one),
+  // plus an assembly-map page whenever there is more than one element.
   useEffect(() => {
-    if (!cardParams) {
-      setMechPage(null);
+    const els = getElements(cardParams);
+    if (els.length === 0) {
+      setMechPages([]);
       setDecoPages([]);
       decoKeyRef.current = null;
       decoRunIdRef.current += 1; // invalidate any in-flight decoration run
       return;
     }
 
-    const mech = getMechanism(cardParams.mechanism);
-    let svg1;
-    if (mech) {
-      const params = buildMechanismParams(cardParams, paperSize, colorMode);
-      const rendered = mech.render(params);
-      svg1 = rendered.svg;
-    } else {
-      svg1 = createSVG(paper.width, paper.height);
-      addText(svg1, paper.width / 2, paper.height / 2, '아직 지원되지 않는 메커니즘입니다.', 5, 'middle');
+    const pageEls = els.map((element, i) => {
+      const mech = getMechanism(element.mechanism);
+      let svg1;
+      if (mech) {
+        const params = buildElementParams(element, paperSize, colorMode, cardParams.theme);
+        svg1 = mech.render(params).svg;
+      } else {
+        svg1 = createSVG(paper.width, paper.height);
+        addText(svg1, paper.width / 2, paper.height / 2, '아직 지원되지 않는 메커니즘입니다.', 5, 'middle');
+      }
+      if (els.length > 1) {
+        // Part number matching the assembly-map footprint labels.
+        addText(svg1, PRINT.MARGIN + 3, PRINT.MARGIN + 8, `${CIRCLED_NUMBERS[i] || i + 1} 부품`, 5, 'start');
+      }
+      return svg1;
+    });
+    if (els.length > 1) {
+      pageEls.push(renderAssemblyMap(els, paperSize, colorMode, cardParams.theme));
     }
-    setMechPage({ el: svg1, str: svgToString(svg1) });
+    setMechPages(pageEls.map((el) => ({ el, str: svgToString(el) })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardParams, paperSize, colorMode]);
 
@@ -266,14 +281,30 @@ export default function SVGPreview() {
         }
       }
 
-      const mech = getMechanism(cardParams.mechanism);
-      const instructionText = mech ? INSTRUCTION_TEXT[mech.instructionStyle] : null;
-      const instructions = instructionText ? {
-        title: `${cardParams.theme ? cardParams.theme + ' - ' : ''}${instructionText.title}`,
-        steps: instructionText.steps,
-        materials: instructionText.materials,
-        tips: instructionText.tips,
-      } : undefined;
+      const els = getElements(cardParams);
+      const parts = els
+        .map((el, i) => ({ i, mech: getMechanism(el.mechanism) }))
+        .filter((p) => p.mech && INSTRUCTION_TEXT[p.mech.instructionStyle])
+        .map((p) => ({ ...p, txt: INSTRUCTION_TEXT[p.mech.instructionStyle] }));
+      let instructions;
+      if (parts.length === 1) {
+        instructions = {
+          title: `${cardParams.theme ? cardParams.theme + ' - ' : ''}${parts[0].txt.title}`,
+          steps: parts[0].txt.steps,
+          materials: parts[0].txt.materials,
+          tips: parts[0].txt.tips,
+        };
+      } else if (parts.length > 1) {
+        instructions = {
+          title: `${cardParams.theme ? cardParams.theme + ' - ' : ''}조립 설명서 (부품 ${parts.length}개)`,
+          materials: parts[0].txt.materials,
+          steps: parts.flatMap((p) => [
+            `[${CIRCLED_NUMBERS[p.i] || p.i + 1} ${p.mech.labelKo}]`,
+            ...p.txt.steps,
+          ]),
+          tips: parts.map((p) => p.txt.tips).filter(Boolean).join(' · '),
+        };
+      }
 
       await exportAndDownload(
         svgEls,

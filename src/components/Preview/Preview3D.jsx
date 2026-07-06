@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useCardStore from '../../store/useCardStore';
-import { getMechanism, buildMechanismParams } from '../../generators/registry';
+import { getMechanism, buildElementParams } from '../../generators/registry';
+import { getElements } from '../../store/cardModel';
+import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { CARD_SIZES } from '../../generators/constants';
 import { FLAT_3D, buildFlatScene } from './flatScenes';
 import { BOOK_3D, buildBookScene } from './bookScenes';
@@ -54,16 +56,47 @@ export default function Preview3D() {
   const dragStart = useRef(null); // { pointerX, pointerY, rx, ry }
   const stageRef = useRef(null);
 
-  const mechanism = cardParams?.mechanism;
-  const mode = BOOK_3D.has(mechanism) ? 'book' : FLAT_3D.has(mechanism) ? 'flat' : 'none';
+  // Which element to view when the card combines several. null = auto:
+  // the combined book scene if any book element exists, else the first flat.
+  // Flat elements are always viewed individually — CSS 3D can't depth-sort
+  // a flat layer stack against cross-page popup subtrees (see the ry-clamp
+  // comment above), so a physical book+flat merge is deliberately not built.
+  const [viewId, setViewId] = useState(null);
+
+  const elements = getElements(cardParams);
+  const multi = elements.length > 1;
+  const bookEls = elements.filter((el) => BOOK_3D.has(el.mechanism));
+  const flatEls = elements.filter((el) => FLAT_3D.has(el.mechanism));
+
+  const flatSel = flatEls.find((el) => el.id === viewId);
+  let view; // { kind: 'book' | 'flat' | 'none', flatEl? }
+  if (elements.length === 0) {
+    view = { kind: 'none' };
+  } else if (flatSel) {
+    view = { kind: 'flat', flatEl: flatSel };
+  } else if (multi) {
+    view = bookEls.length > 0 ? { kind: 'book' } : flatEls.length > 0 ? { kind: 'flat', flatEl: flatEls[0] } : { kind: 'none' };
+  } else {
+    const m = elements[0].mechanism;
+    view = BOOK_3D.has(m)
+      ? { kind: 'book' }
+      : FLAT_3D.has(m)
+        ? { kind: 'flat', flatEl: elements[0] }
+        : { kind: 'none' };
+  }
+  const mode = view.kind;
+  const viewKey =
+    mode === 'flat'
+      ? `flat:${view.flatEl?.mechanism}`
+      : `book:${(multi ? bookEls : elements).map((el) => el.mechanism).join('+')}`;
   const rxRange = mode === 'flat' ? FLAT_RX_RANGE : ORBIT_RX_RANGE;
   const ryRange = mode === 'flat' ? FLAT_RY_RANGE : ORBIT_RY_RANGE;
 
-  // New mechanism → its natural rest pose and the right default framing.
+  // New mechanism/view → its natural rest pose and the right default framing.
   useEffect(() => {
     setDrive(null);
     setOrbit(mode === 'flat' ? FLAT_ORBIT : DEFAULT_ORBIT);
-  }, [mechanism, mode]);
+  }, [viewKey, mode]);
 
   const handlePointerDown = useCallback(
     (e) => {
@@ -126,14 +159,43 @@ export default function Preview3D() {
     );
   }
 
-  const params = buildMechanismParams(cardParams, paperSize, colorMode) || {};
-  const defaults = getMechanism(mechanism).defaultParams;
+  // Element-view toggle row, shown only for multi-mechanism cards.
+  const viewToggle = multi ? (
+    <div className="preview3d-view-toggle" role="group" aria-label="3D 보기 대상">
+      {bookEls.length > 0 && (
+        <button
+          type="button"
+          className={`toggle-btn ${!flatSel ? 'active' : ''}`}
+          onClick={() => setViewId(null)}
+        >
+          팝업 조합 보기
+        </button>
+      )}
+      {flatEls.map((el) => {
+        const i = elements.indexOf(el);
+        return (
+          <button
+            key={el.id}
+            type="button"
+            className={`toggle-btn ${flatSel?.id === el.id ? 'active' : ''}`}
+            onClick={() => setViewId(el.id)}
+          >
+            {CIRCLED_NUMBERS[i] || i + 1} {getMechanism(el.mechanism)?.labelKo || el.mechanism}
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
 
   // Flat mechanisms (sliders/spinners/…): structure-faithful scene + its own
   // drive slider, from flatScenes.jsx. Book mechanisms continue below with α.
-  const flatScene = mode === 'flat'
-    ? buildFlatScene(mechanism, params, defaults, paperSize, drive)
-    : null;
+  let flatScene = null;
+  if (mode === 'flat') {
+    const el = view.flatEl;
+    const params = buildElementParams(el, paperSize, colorMode, cardParams.theme) || {};
+    const defaults = getMechanism(el.mechanism).defaultParams;
+    flatScene = buildFlatScene(el.mechanism, params, defaults, paperSize, drive);
+  }
 
   if (flatScene) {
     return (
@@ -157,6 +219,8 @@ export default function Preview3D() {
             시점 초기화
           </button>
         </div>
+
+        {viewToggle}
 
         <div className="fold-slider-container">
           <div className="fold-slider-labels">
@@ -186,10 +250,53 @@ export default function Preview3D() {
   const pageH = card.height * PX;
   const thetaPage = (180 - alpha) / 2; // deg, shared by every mechanism
 
-  // Book-mechanism pose (attachments, readout, optional v-fold slider state)
+  // Book-mechanism poses (attachments, readout, optional v-fold slider state)
   // built by bookScenes.jsx from the same authoritative resolvers/formulas.
-  const scene = buildBookScene(mechanism, params, { alpha, PX, pageW, pageH, card, paperSize, defaults });
-  const { attachmentLeft, attachmentRight, attachmentBook, readout, vFoldControls } = scene;
+  // Multi-mechanism cards build one scene per book element and shift each by
+  // its spine placement; the single α slider drives them all — physically
+  // correct, since one card-opening motion folds every glued popup at once.
+  const sceneEls = multi ? bookEls : elements;
+  const scenes = sceneEls.map((el) => {
+    const params = buildElementParams(el, paperSize, colorMode, cardParams.theme) || {};
+    const defaults = getMechanism(el.mechanism).defaultParams;
+    return {
+      el,
+      topOff: (el.placement?.spineOffset || 0) * PX,
+      scene: buildBookScene(el.mechanism, params, { alpha, PX, pageW, pageH, card, paperSize, defaults }),
+    };
+  });
+
+  // Wrapper keeps the page as the transform parent (preserve-3d) while
+  // sliding the whole attachment along the spine (page-vertical) axis.
+  const shifted = (node, topOff, key) =>
+    node == null || topOff === 0 ? (
+      <React.Fragment key={key}>{node}</React.Fragment>
+    ) : (
+      <div
+        key={key}
+        style={{
+          position: 'absolute',
+          top: `${topOff}px`,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          transformStyle: 'preserve-3d',
+          pointerEvents: 'none',
+        }}
+      >
+        {node}
+      </div>
+    );
+
+  const attachmentLeft = scenes.map((s, i) => shifted(s.scene.attachmentLeft, s.topOff, `L${s.el.id || i}`));
+  const attachmentRight = scenes.map((s, i) => shifted(s.scene.attachmentRight, s.topOff, `R${s.el.id || i}`));
+  const attachmentBook = scenes.map((s, i) => shifted(s.scene.attachmentBook, s.topOff, `B${s.el.id || i}`));
+  const readout = scenes
+    .map((s) => s.scene.readout)
+    .filter(Boolean)
+    .join('  |  ');
+  // The inline v-fold sliders only apply to single-mechanism (v1) cards.
+  const vFoldControls = !multi && scenes.length === 1 ? scenes[0].scene.vFoldControls : null;
 
   return (
     <div className="preview3d-root">
@@ -234,6 +341,8 @@ export default function Preview3D() {
           시점 초기화
         </button>
       </div>
+
+      {viewToggle}
 
       <div className="fold-slider-container">
         <div className="fold-slider-labels">

@@ -1,5 +1,4 @@
 import React from 'react';
-import useCardStore from '../../store/useCardStore';
 import { MECHANISM_REGISTRY } from '../../generators/registry';
 
 const SCENE_BADGE = {
@@ -8,38 +7,32 @@ const SCENE_BADGE = {
 };
 
 /**
- * Expert-mode mechanism grid — direct selection of any registered mechanism,
- * no AI in the loop. Selecting one resets params to the mechanism's defaults
- * (the ParamPanel then edits overrides on top of them).
+ * Mechanism grid used by expert mode both to pick the first mechanism and to
+ * add more to a combination.
+ *
+ * @param {(id: string) => void} props.onPick
+ * @param {string} [props.selected]  highlight this mechanism id
+ * @param {Record<string, string>} [props.disabledReasons]  id → why it can't
+ *   be added to the current combination (renders the card disabled)
  */
-export default function MechanismPicker({ theme }) {
-  const { cardParams, setCardParams } = useCardStore();
-  const selected = cardParams?.mechanism;
-
-  const pick = (id) => {
-    setCardParams({
-      mechanism: id,
-      theme: (theme || '').trim() || '나만의 디자인',
-      params: {},
-    });
-  };
-
+export default function MechanismPicker({ onPick, selected, disabledReasons = {} }) {
   return (
     <div className="mechanism-grid" role="listbox" aria-label="메커니즘 선택">
       {Object.entries(MECHANISM_REGISTRY).map(([id, mech]) => {
         const badge = SCENE_BADGE[mech.sceneType] || SCENE_BADGE.book;
+        const reason = disabledReasons[id];
         return (
           <button
             key={id}
             type="button"
             role="option"
             aria-selected={selected === id}
+            disabled={!!reason}
+            title={reason || badge.title}
             className={`mechanism-card ${selected === id ? 'active' : ''}`}
-            onClick={() => pick(id)}
+            onClick={() => onPick(id)}
           >
-            <span className={`mechanism-badge mechanism-badge-${mech.sceneType}`} title={badge.title}>
-              {badge.label}
-            </span>
+            <span className={`mechanism-badge mechanism-badge-${mech.sceneType}`}>{badge.label}</span>
             <span className="mechanism-name">{mech.labelKo}</span>
           </button>
         );

@@ -23,6 +23,7 @@ import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
 import { PARAM_SCHEMAS } from './paramSchemas.js';
+import { getElements } from '../store/cardModel.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -368,9 +369,25 @@ export function getMechanism(id) {
  * @returns {object | null}
  */
 export function buildMechanismParams(cardParams, paperSize, colorMode) {
-  const mech = getMechanism(cardParams?.mechanism);
+  const els = getElements(cardParams);
+  if (els.length === 0) return null;
+  return buildElementParams(els[0], paperSize, colorMode, cardParams.theme);
+}
+
+/**
+ * Element-level variant of buildMechanismParams for multi-mechanism (v2)
+ * cards: one call per element. buildMechanismParams delegates here with the
+ * first element, so v1 single-mechanism behavior is unchanged.
+ * @param {{ mechanism?: string, params?: object }} element
+ * @param {'A4'|'LETTER'} paperSize
+ * @param {'color'|'bw'} colorMode
+ * @param {string} [theme]
+ * @returns {object | null}
+ */
+export function buildElementParams(element, paperSize, colorMode, theme) {
+  const mech = getMechanism(element?.mechanism);
   if (!mech) return null;
-  return { ...mech.defaultParams, ...cardParams.params, paperSize, colorMode, theme: cardParams.theme };
+  return { ...mech.defaultParams, ...element.params, paperSize, colorMode, theme };
 }
 
 /**
@@ -390,11 +407,21 @@ export function buildMechanismParams(cardParams, paperSize, colorMode) {
  * @returns {Array<{ label: string, width: number, height: number }>}
  */
 export function getDecorationSlots(cardParams, paperSize, colorMode) {
-  const mech = getMechanism(cardParams?.mechanism);
+  return getElements(cardParams).flatMap((el) =>
+    getElementDecorationSlots(el, paperSize, colorMode, cardParams?.theme),
+  );
+}
+
+/**
+ * Decoration slots for ONE element (multi-mechanism cards concatenate these
+ * per element via getDecorationSlots).
+ */
+export function getElementDecorationSlots(element, paperSize, colorMode, theme) {
+  const mech = getMechanism(element?.mechanism);
   if (mech && typeof mech.decorationSlots === 'function') {
-    const params = buildMechanismParams(cardParams, paperSize, colorMode);
+    const params = buildElementParams(element, paperSize, colorMode, theme);
     const slots = mech.decorationSlots(params);
     if (Array.isArray(slots) && slots.length > 0) return slots;
   }
-  return [{ label: cardParams?.theme, width: 100, height: 100 }];
+  return [{ label: theme, width: 100, height: 100 }];
 }
