@@ -216,9 +216,11 @@ function buildRisingSlide(params, defaults, paperSize, driveRaw) {
  *
  * Physical stack, front → back (see generators/cameraPrintPull.js header):
  *   photo (front, top of card) → card face with a photo slot (top) and a tab
- *   slot (below it) → the reversing strip, threaded behind the card as TWO
- *   vertical runs that meet at a roller near the top → the PULL tab (front
- *   again, hanging out below the tab slot). Pulling the tab DOWN feeds strip
+ *   slot (below it) → ONE reversing strip, folded 180° over a roller near the
+ *   top so it lies behind the card as two overlapping plies on the same centre
+ *   column → the PULL tab (front again, hanging out below the tab slot).
+ *   The photo's bottom edge glues to the mount at the strip's photo end; the
+ *   grip is the strip's other end on the front. Pulling the tab DOWN feeds strip
  *   from the photo-run over the roller into the tab-run, so the photo rises
  *   UP — a genuine direction reversal (unlike rising-slide's single straight
  *   slider). The drive still maps 0→100% to "how far pulled" (rise 0→travel)
@@ -274,12 +276,10 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
   const px = (mm) => mm * PX;
 
   const retW = geo.channelGap + 2 * L.GLUE_END;
-  // The two back runs meet at the roller but are offset a touch left/right so
-  // both threaded strands read as separate parts instead of one overlapping
-  // line — a schematic simplification (the real strip is one straight piece).
-  const stripOffset = geo.stripW * 0.6 + 2;
-  const xTabRun = geo.cx - stripOffset;
-  const xPhotoRun = geo.cx + stripOffset;
+  // ONE strip, folded 180° over the roller into two overlapping plies on the
+  // card's centre column (the pattern's "flat two-ply U"): the photo ply lies
+  // against the card back (−1·Z), the tab ply returns outside it (−3·Z), and
+  // the roller sits between them (−2·Z) — separated only in z, never in x.
   const flangeTopY = mountY - L.NECK_H - L.FLANGE_H;
   const botSlotLen = geo.stripW + geo.slotWidth * 2;
   const slotWpx = Math.max(3, px(geo.slotWidth));
@@ -307,7 +307,7 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
           top: px(topRetY),
           width: px(retW),
           height: px(L.RET_W),
-          transform: `translateZ(${-2 * Z_STEP}px)`,
+          transform: `translateZ(${-4 * Z_STEP}px)`,
         }}
       >
         <span className="preview3d-flat-glue" style={{ left: 0, width: px(L.GLUE_END) }} />
@@ -315,21 +315,12 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag side="back" x={px(geo.cx)} y={px(topRetY) - 10}>② 멈춤/안내 띠</Tag>
 
-      {/* ── BACK: the reversing strip, threaded as two runs meeting at the roller ── */}
+      {/* ── BACK: ONE reversing strip, folded 180° over the roller into two plies ── */}
+      {/* inner ply (against the card): roller → photo mount; shortens as it's pulled */}
       <div
         className="preview3d-flat-strip"
         style={{
-          left: px(xTabRun - geo.stripW / 2),
-          top: px(geo.yRoller),
-          width: px(geo.stripW),
-          height: px(geo.tabRun),
-          transform: `translateZ(${-Z_STEP}px)`,
-        }}
-      />
-      <div
-        className="preview3d-flat-strip"
-        style={{
-          left: px(xPhotoRun - geo.stripW / 2),
+          left: px(geo.cx - geo.stripW / 2),
           top: px(geo.yRoller),
           width: px(geo.stripW),
           height: px(photoRunNow),
@@ -346,8 +337,30 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
           }}
         />
       </div>
-      <Tag side="back" x={px(xTabRun)} y={px(geo.yRoller + geo.tabRun / 2)}>되돌림 띠 (손잡이 쪽)</Tag>
-      <Tag side="back" x={px(xPhotoRun)} y={px(geo.yRoller + photoRunNow / 2)}>되돌림 띠 (사진 쪽)</Tag>
+      {/* the 180° fold arcing over the roller top */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(geo.cx - geo.stripW / 2),
+          top: px(geo.yRoller - geo.rollerR),
+          width: px(geo.stripW),
+          height: px(geo.rollerR),
+          borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
+          transform: `translateZ(${-2 * Z_STEP - 2}px)`,
+        }}
+      />
+      {/* outer ply: roller → bottom slot (fixed span — the strip slides through it) */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(geo.cx - geo.stripW / 2),
+          top: px(geo.yRoller),
+          width: px(geo.stripW),
+          height: px(geo.tabRun),
+          transform: `translateZ(${-3 * Z_STEP}px)`,
+        }}
+      />
+      <Tag side="back" x={px(geo.cx)} y={px(geo.yRoller + geo.tabRun * 0.72)}>되돌림 띠 (한 장 — 롤러 위로 접혀 두 겹)</Tag>
 
       {/* ── Card face: photo slot (top) + tab slot (below it) ── */}
       <div className="preview3d-flat-card" style={{ width: px(W), height: px(H) }}>
@@ -372,12 +385,12 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag x={px(geo.cx + botSlotLen / 2 + 6)} y={px(geo.botSlotY)}>손잡이 슬롯 (앞면)</Tag>
 
-      {/* ── FRONT: the photo, riding the mount up the slot ── */}
+      {/* ── FRONT: the photo, its BOTTOM glued to the mount, riding up the slot ── */}
       <div
         style={{
           position: 'absolute',
           left: px(geo.cx) - px(geo.photoW) / 2,
-          top: px(mountY - L.NECK_H / 2) - px(geo.photoH) / 2,
+          top: px(mountY - L.NECK_H) - px(geo.photoH),
           width: px(geo.photoW),
           height: px(geo.photoH),
           background: 'linear-gradient(180deg, #ffffff 0%, #ffffff 78%, #cbd5e1 78%, #cbd5e1 100%)',
@@ -387,7 +400,7 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
           transform: `translateZ(${Z_STEP}px)`,
         }}
       />
-      <Tag x={px(geo.cx)} y={px(mountY - L.NECK_H / 2) - px(geo.photoH) / 2 - 10}>사진 (앞면)</Tag>
+      <Tag x={px(geo.cx)} y={px(mountY - L.NECK_H) - px(geo.photoH) - 10}>사진 (앞면 · 위로 올라감)</Tag>
 
       {/* ── FRONT: the PULL tab — exposed length grows as it's pulled ── */}
       <div
