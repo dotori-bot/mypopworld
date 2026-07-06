@@ -21,6 +21,7 @@ import { renderLayeredStage, resolveLayeredStageGeometry } from './layeredStage.
 import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
+import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
@@ -140,6 +141,19 @@ export const MECHANISM_REGISTRY = {
         { label: '위쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
         { label: '아래쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
       ];
+    },
+  },
+  'camera-print-pull': {
+    labelKo: '카메라 인화 손잡이 (아래로 당기면 사진이 위로 올라오는 장치)',
+    render: (params) => renderCameraPrintPull(params),
+    defaultParams: { riseFraction: 0.5, clearance: 0.9, stripWidth: 14, grip: 24, photoWidth: 46 },
+    instructionStyle: 'camera-print-pull',
+    // One decoration slot (the photo), sized off the SAME geometry the
+    // mechanism itself renders with (resolveCameraPull), so the decoration
+    // image's suggested size always matches the actual printed photo cutout.
+    decorationSlots: (params) => {
+      const geo = resolveCameraPull(params);
+      return [{ label: '인화 사진 (인물 사진, 세로로 길게)', width: geo.photoW, height: geo.photoH }];
     },
   },
 };
@@ -287,6 +301,17 @@ export const INSTRUCTION_TEXT = {
       '카드를 천천히 여닫아 보세요. 도안에 표시된 "탁! 각도" 근처에서 위아래 플랩(지느러미)이 서로 맞닿습니다. 완전히 닫았을 때는 플랩이 아주 살짝 눌리는 정도이니 억지로 세게 누르지 말고 살살 접어주세요.',
     ],
     tips: '이 메커니즘은 다른 팝업과 달리 플랩이 카드가 열리는 각도에 맞춰 저절로 접히는 구조가 아니라, 프롭으로 고정한 각도 그대로 페이지에 실려 움직입니다. 그래서 완전히 딱 닫히기보다 살짝 도톰하게 눌리는 정도가 정상입니다 — 프롭 길이를 정확히 지켜 붙이는 것이 핵심입니다.',
+  },
+  'camera-print-pull': {
+    title: '카메라 인화 손잡이 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 카메라 모양 앞면 카드, 사진이 나오는 세로 슬롯, 손잡이가 나오는 아래쪽 슬롯, 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 모두 오려주세요. 카메라·렌즈 그림은 앞면에 이미 인쇄된 안내선이라 오리지 않습니다.',
+      "가장 긴 네모(① 롤러)를 둥글게 말아서 풀칠 자리에 붙여 튜브로 만들어주세요. 이 롤러를 앞면 카드 맨 위 뒷면에 다리처럼 얹고, 양 끝 초록색 부분만 붙이세요. 가운데는 절대 붙이지 마세요 — 그래야 가운데가 붕 뜬 채로 남아서, 되돌림 띠가 그 위로 180도 넘어갈 수 있어요.",
+      '되돌림 띠를 롤러 위에 걸쳐 걸어주세요. 한쪽 끝은 사진을 붙이는 자리(마운트)이고, 반대쪽 끝은 손잡이(PULL)입니다. 마운트 끝에 사진을 붙이고, 손잡이 끝은 아래쪽 슬롯을 통해 앞면으로 빼내주세요. 사진 슬롯 바로 위 뒷면에는 ② 멈춤/안내 띠를 다리처럼 얹어 양 끝 초록색만 붙이세요(가운데는 붙이지 마세요 — 띠가 그 아래로 지나가야 해요). 중요: 되돌림 띠는 마운트 끝과 손잡이 끝, 두 곳 말고는 어디에도 붙이지 마세요! 중간을 붙이면 롤러를 넘어가지 못해요.',
+      '카드 아래로 나온 "PULL ↓" 손잡이를 잡고 아래로 당기면, 띠가 롤러를 넘어가면서 사진이 위쪽 슬롯 밖으로 쑤욱 올라옵니다. 끝까지 당기면 사진 뒤의 멈춤 날개가 ② 멈춤 띠에 걸려 더 이상 빠지지 않아요. 사진을 다시 손으로 살살 눌러 내리면 손잡이가 도로 올라가며 처음 모습으로 돌아갑니다.',
+    ],
+    tips: '핵심은 롤러(①)와 멈춤/안내 띠(②) 모두 "양 끝만" 붙이고 가운데는 절대 붙이지 않는 것입니다 — 가운데가 붙으면 롤러가 헛돌지 못하고 띠도 못 지나갑니다. 너무 뻑뻑하면 롤러를 조금 더 느슨하게(가운데를 더 띄워) 붙이고, 사진이 쑥 빠질 것 같으면 ② 멈춤 띠가 사진 슬롯에 정확히 붙어 있는지 확인하세요.',
   },
 };
 
