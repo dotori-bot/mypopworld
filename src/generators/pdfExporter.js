@@ -245,7 +245,7 @@ export async function exportAndDownload(svgPages, options, instructions, languag
 // ─── Internal: resolve jsPDF dependency ─────────────────────────────
 
 /**
- * Attempt to get the jsPDF constructor.
+ * Attempt to get the jsPDF constructor with the `.svg()` method attached.
  * Supports: window.jspdf (CDN), ES module import.
  * @returns {Promise<{ jsPDF: typeof import('jspdf').jsPDF }>}
  */
@@ -260,6 +260,9 @@ async function getJsPDF() {
   // Try dynamic ES import
   try {
     const mod = await import('jspdf');
+    // svg2pdf.js is a side-effecting module: importing it patches
+    // `.svg()` onto the jsPDF prototype. It must load after 'jspdf'.
+    await import('svg2pdf.js');
     return mod;
   } catch {
     throw new Error(
