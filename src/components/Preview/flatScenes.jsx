@@ -5,6 +5,7 @@ import { resolveSlideToSwing, SLIDE_SWING_LIMITS } from '../../generators/slideT
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
 import { resolveCameraPull, CAMERA_PULL_LIMITS } from '../../generators/cameraPrintPull';
+import { resolveGateCurtain, sGate, curtainOffset, GATE_CURTAIN_LIMITS } from '../../generators/gateCurtain';
 import { clamp, degToRad, radToDeg } from '../../utils/math';
 
 /**
@@ -48,6 +49,7 @@ export const FLAT_3D = new Set([
   'flip-disc',
   'straw-rocket',
   'camera-print-pull',
+  'gate-curtain',
 ]);
 
 /** Z separation per physical paper layer, in px (exaggerated for legibility). */
@@ -1140,6 +1142,240 @@ function buildStrawRocket(params, defaults, paperSize, driveRaw) {
   };
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * Gate curtain (커튼 문 카드)
+ *
+ * A gate-fold card driven by its own doors (see generators/gateCurtain.js
+ * header): two doors on VERTICAL hinges at the panel's left/right edges; a
+ * strap (in-line slider-crank, s(α) = d·cosα + √(L² − d²·sin²α)) links each
+ * door to a bowtie curtain that slides HORIZONTALLY on the panel, tucked under
+ * the decorative frame's top/bottom rails. Opening the doors drags the
+ * curtains apart, revealing the character through the frame's diamond window.
+ *
+ * The drive here is the door-opening angle α (0 = closed, 180 = flat open),
+ * exactly the value the printed pattern's kinematics use. Doors rotate about
+ * their hinges toward the viewer like flip-disc leaves; their translateZ is
+ * interpolated with the fold angle (flip-disc's zRight→zLeft trick) so the
+ * closed doors depth-sort ABOVE the curtain+frame stack while the open doors
+ * lie next to the panel plane.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildGateCurtain(params, defaults, paperSize, driveRaw) {
+  const K = GATE_CURTAIN_LIMITS;
+  const slider = {
+    label: '문 열기 (여닫기)',
+    min: 0, max: 180, step: 1, defaultValue: K.ALPHA_REVEAL,
+    format: (v) => `${Math.round(v)}°`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const alpha = clamp(drive, 0, 180);
+
+  const geo = resolveGateCurtain({
+    paperSize,
+    panelWidth: params.panelWidth ?? defaults.panelWidth,
+    revealWidth: params.revealWidth ?? defaults.revealWidth,
+    hingeOffset: params.hingeOffset ?? defaults.hingeOffset,
+  });
+  const { panelW, panelH, doorW, d, L, travel, Wc, Hc, wMin, notchDepth, frameW, frameH, revealW, revealH } = geo;
+
+  const phi = 180 - alpha;                     // door fold angle (0 = flat open)
+  const s = sGate(alpha, d, L);                // strap-attach distance from hinge
+  const off = curtainOffset(alpha, d, L);      // curtain displacement from closed
+  // Strap chord lift off the panel plane: the door-end pivot rides at height
+  // d·sinα, the curtain end stays at 0 → tilt β about the vertical crease.
+  const beta = radToDeg(Math.asin(clamp((d * Math.sin(degToRad(alpha))) / L, -1, 1)));
+
+  const cX = panelW / 2;
+  const pcY = panelH / 2;
+  const PX = 290 / geo.cardW;                  // flat-open total width fills the stage
+  const px = (mm) => mm * PX;
+
+  // Doors closed must sort above panel(0) < curtains(Z_STEP) < frame(2·Z_STEP);
+  // open they sit just off the panel plane. Interpolate with the fold like
+  // flip-disc does (CSS depth-sorts whole planes, not intersections).
+  const zDoor = 1 + (phi / 180) * (3 * Z_STEP - 1);
+
+  const notchFrac = (notchDepth / Wc) * 100;   // chevron pinch, % of curtain width
+  const curtainBg = 'linear-gradient(180deg, rgba(253, 224, 71, 0.95), rgba(245, 158, 11, 0.9))';
+  const doorFace = (side) => (
+    // Stone decoration on the door's OUTER face (visible when the card is
+    // closed or when orbiting behind an open door).
+    <div
+      style={{
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        width: px(K.STONE_W),
+        height: px(K.STONE_H),
+        marginLeft: -px(K.STONE_W) / 2,
+        marginTop: -px(K.STONE_H) / 2,
+        borderRadius: px(10),
+        background: 'linear-gradient(135deg, rgba(148, 163, 184, 0.9), rgba(100, 116, 139, 0.9))',
+        border: '1px solid rgba(71, 85, 105, 0.7)',
+        transform: 'rotateY(180deg) translateZ(1px)',
+        backfaceVisibility: 'visible',
+      }}
+      aria-hidden
+      data-side={side}
+    />
+  );
+
+  // Frame with a real diamond hole (SVG evenodd — CSS clip-path can't cut holes).
+  const fw = px(frameW);
+  const fh = px(frameH);
+  const framePath =
+    `M6 0 H${fw - 6} Q${fw} 0 ${fw} 6 V${fh - 6} Q${fw} ${fh} ${fw - 6} ${fh} H6 Q0 ${fh} 0 ${fh - 6} V6 Q0 0 6 0 Z ` +
+    `M${fw / 2} ${fh / 2 - px(revealH / 2)} L${fw / 2 + px(revealW / 2)} ${fh / 2} L${fw / 2} ${fh / 2 + px(revealH / 2)} L${fw / 2 - px(revealW / 2)} ${fh / 2} Z`;
+
+  const figSize = px(Math.min(revealW, revealH) * 0.72);
+
+  const strap = (side) => {
+    const isR = side === 'R';
+    // Curtain-end attach point (global x), riding with the curtain.
+    const attachX = isR ? cX + K.GAP + off : cX - K.GAP - off;
+    return (
+      <div
+        key={`strap-${side}`}
+        className="preview3d-flat-strip"
+        style={{
+          left: px(isR ? attachX : attachX - L),
+          top: px(pcY - K.STRAP_W / 2),
+          width: px(L),
+          height: px(K.STRAP_W),
+          transformOrigin: isR ? 'left center' : 'right center',
+          transform: `translateZ(${Z_STEP + 4}px) rotateY(${isR ? -beta : beta}deg)`,
+        }}
+      >
+        <span className="preview3d-flat-glue" style={{ left: 0, width: px(K.GLUE_END * 0.8) }} />
+        <span className="preview3d-flat-glue" style={{ right: 0, width: px(K.GLUE_END * 0.8) }} />
+      </div>
+    );
+  };
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(panelW), height: px(panelH), left: -px(panelW) / 2, top: -px(panelH) / 2 }}>
+      {/* ── Fixed BACK PANEL ── */}
+      <div className="preview3d-flat-card" style={{ width: px(panelW), height: px(panelH) }} />
+
+      {/* Character glued flat at panel centre (under the curtains). */}
+      <div
+        className="preview3d-flat-figure"
+        style={{
+          left: px(cX) - figSize / 2,
+          top: px(pcY) - figSize / 2,
+          width: figSize,
+          height: figSize,
+          transform: 'translateZ(2px)',
+        }}
+      />
+      <Tag x={px(cX)} y={px(pcY - revealH / 2) - 10}>① 주인공 그림 (뒷판 가운데)</Tag>
+
+      {/* ── CURTAINS — translate horizontally by curtainOffset(α) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX - K.GAP),
+          top: px(pcY - Hc / 2),
+          width: px(Wc),
+          height: px(Hc),
+          background: curtainBg,
+          border: '1px solid rgba(202, 138, 4, 0.6)',
+          clipPath: `polygon(0% 0%, 100% 0%, ${100 - notchFrac}% 50%, 100% 100%, 0% 100%)`,
+          transform: `translateX(${-px(off)}px) translateZ(${Z_STEP}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX + K.GAP - Wc),
+          top: px(pcY - Hc / 2),
+          width: px(Wc),
+          height: px(Hc),
+          background: curtainBg,
+          border: '1px solid rgba(202, 138, 4, 0.6)',
+          clipPath: `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, ${notchFrac}% 50%)`,
+          transform: `translateX(${px(off)}px) translateZ(${Z_STEP + 2}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      />
+      <Tag x={px(cX)} y={px(pcY + Hc / 2) + 10}>④ 노란 커튼 ×2 — 좌우로 미끄러짐 (뒷판에 붙이지 않음)</Tag>
+
+      {/* ── STRAPS — door pivot ↔ curtain outer edge (tilt β = asin(d·sinα/L)) ── */}
+      {strap('R')}
+      {strap('L')}
+      <Tag x={px(cX + K.GAP + off + L / 2)} y={px(pcY - K.STRAP_W / 2) - 10}>② 지지대 (문↔커튼)</Tag>
+
+      {/* ── FRAME (retainer) — glued top/bottom rails only ── */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX - frameW / 2),
+          top: px(pcY - frameH / 2),
+          width: fw,
+          height: fh,
+          transform: `translateZ(${2 * Z_STEP + 2}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      >
+        <svg width={fw} height={fh} viewBox={`0 0 ${fw} ${fh}`} style={{ display: 'block' }}>
+          <path d={framePath} fillRule="evenodd" fill="rgba(203, 213, 225, 0.92)" stroke="rgba(100, 116, 139, 0.6)" strokeWidth="1" />
+        </svg>
+        <span className="preview3d-flat-glue" style={{ left: 2, right: 2, top: 0, width: 'auto', height: px(K.FRAME_BORDER) * 0.8 }} />
+        <span className="preview3d-flat-glue" style={{ left: 2, right: 2, top: 'auto', bottom: 0, width: 'auto', height: px(K.FRAME_BORDER) * 0.8 }} />
+      </div>
+      <Tag x={px(cX)} y={px(pcY - frameH / 2) - 10}>③ 장식 액자 — 위·아래만 풀칠 (좌·우 열어두기)</Tag>
+
+      {/* ── DOORS — vertical hinges at the panel's side edges ── */}
+      <div
+        className="preview3d-flat-card"
+        style={{
+          left: px(panelW),
+          top: 0,
+          width: px(doorW),
+          height: px(panelH),
+          transformOrigin: 'left center',
+          transform: `translateZ(${zDoor}px) rotateY(${-phi}deg)`,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {doorFace('R')}
+      </div>
+      <div
+        className="preview3d-flat-card"
+        style={{
+          left: -px(doorW),
+          top: 0,
+          width: px(doorW),
+          height: px(panelH),
+          transformOrigin: 'right center',
+          transform: `translateZ(${zDoor}px) rotateY(${phi}deg)`,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {doorFace('L')}
+      </div>
+      <Tag x={px(panelW + doorW / 2)} y={px(panelH) + 10}>오른쪽 문</Tag>
+      <Tag x={-px(doorW / 2)} y={px(panelH) + 10}>왼쪽 문</Tag>
+      <Tag side="back" x={px(panelW + doorW / 2)} y={px(pcY)}>돌 장식 (문 바깥면)</Tag>
+    </div>
+  );
+
+  // Distance from centre to the right curtain's inner-mid edge (the reveal).
+  const revealHalf = doorW - s - wMin;
+  const state =
+    revealHalf < 0
+      ? '주인공 가려짐 (커튼 겹침)'
+      : revealHalf < revealW / 2 - 0.5
+        ? '커튼 걷히는 중'
+        : '다이아몬드 완전 개방';
+  return {
+    node,
+    readout: `문 열림 ${Math.round(alpha)}° · 커튼 이동 ${off.toFixed(1)} / ${travel}mm · ${state}`,
+    slider,
+    value: drive,
+  };
+}
+
 const BUILDERS = {
   'rising-slide': buildRisingSlide,
   'pull-tab': buildPullTab,
@@ -1148,6 +1384,7 @@ const BUILDERS = {
   'flip-disc': buildFlipDisc,
   'straw-rocket': buildStrawRocket,
   'camera-print-pull': buildCameraPrintPull,
+  'gate-curtain': buildGateCurtain,
 };
 
 /**

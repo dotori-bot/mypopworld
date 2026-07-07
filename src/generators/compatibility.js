@@ -7,7 +7,8 @@
  *  1. At most MAX_ELEMENTS mechanisms per card.
  *  2. SOLO_ONLY mechanisms can't combine with anything (straw-rocket isn't
  *     even a card; auto-slide-window consumes the whole front face as its
- *     frame + drive strip).
+ *     frame + drive strip; gate-curtain IS the card — a gate-fold body with
+ *     both doors driving the curtain linkage).
  *  3. Two flat mechanisms never combine (each one owns the card face and its
  *     behind-the-face layer stack).
  *  4. book + book combines freely PROVIDED their spine-direction occupation
@@ -29,7 +30,7 @@ import { resolveLayeredStageGeometry } from './layeredStage.js';
 import { resolveSpiralGeometry } from './spiralSpring.js';
 
 export const MAX_ELEMENTS = 3;
-export const SOLO_ONLY = new Set(['straw-rocket', 'auto-slide-window']);
+export const SOLO_ONLY = new Set(['straw-rocket', 'auto-slide-window', 'gate-curtain']);
 export const FLAT_COMBINABLE = new Set(['pull-tab', 'rising-slide']);
 
 const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);

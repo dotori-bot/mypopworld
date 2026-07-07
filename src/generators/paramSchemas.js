@@ -39,6 +39,7 @@ import { AUTO_SLIDE_LIMITS, resolveAutoSlideWindow } from './autoSlideWindow.js'
 import { SLIDE_SWING_LIMITS, resolveSlideToSwing } from './slideToSwing.js';
 import { FLAP_CLAP_LIMITS, resolveFlapClapGeometry } from './flapClap.js';
 import { CAMERA_PULL_LIMITS, resolveCameraPull } from './cameraPrintPull.js';
+import { GATE_CURTAIN_LIMITS, resolveGateCurtain } from './gateCurtain.js';
 
 const card = (paperSize) => CARD_SIZES[paperSize] || CARD_SIZES.A4;
 const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -311,6 +312,39 @@ export const PARAM_SCHEMAS = {
           grip: p.grip,
           photoWidth: 9999,
         }).photoW,
+      }),
+    },
+  ],
+
+  'gate-curtain': [
+    {
+      key: 'panelWidth', labelKo: '카드(뒷판) 폭 (panelWidth)', unit: 'mm', step: 1,
+      limits: (p, paperSize) => ({
+        min: GATE_CURTAIN_LIMITS.PANEL_W_MIN,
+        max: resolveGateCurtain({ paperSize, panelWidth: 9999 }).panelW,
+      }),
+    },
+    {
+      key: 'revealWidth', labelKo: '가운데 창(다이아몬드) 폭 (revealWidth)', unit: 'mm', step: 1,
+      // Upper bound depends on panelWidth·hingeOffset (curtain pinch ≥ floor);
+      // keep the current values and probe revealWidth only.
+      limits: (p, paperSize) => ({
+        min: GATE_CURTAIN_LIMITS.REVEAL_W_MIN,
+        max: resolveGateCurtain({
+          paperSize,
+          panelWidth: p.panelWidth,
+          hingeOffset: p.hingeOffset,
+          revealWidth: 9999,
+        }).revealW,
+      }),
+    },
+    {
+      key: 'hingeOffset', labelKo: '경첩-지지대 거리 = 커튼 이동 절반 (hingeOffset)', unit: 'mm', step: 1,
+      // Upper bound depends on panelWidth (door width + monotonicity L > d);
+      // keep panelWidth and probe hingeOffset only.
+      limits: (p, paperSize) => ({
+        min: GATE_CURTAIN_LIMITS.D_MIN,
+        max: resolveGateCurtain({ paperSize, panelWidth: p.panelWidth, hingeOffset: 9999 }).d,
       }),
     },
   ],

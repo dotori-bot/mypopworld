@@ -22,6 +22,7 @@ import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
+import { renderGateCurtain, resolveGateCurtain } from './gateCurtain.js';
 import { PARAM_SCHEMAS } from './paramSchemas.js';
 import { getElements } from '../store/cardModel.js';
 
@@ -171,6 +172,24 @@ export const MECHANISM_REGISTRY = {
     decorationSlots: (params) => {
       const geo = resolveCameraPull(params);
       return [{ label: '인화 사진 (인물 사진, 세로로 길게)', width: geo.photoW, height: geo.photoH }];
+    },
+  },
+  'gate-curtain': {
+    sceneType: 'flat',
+    labelKo: '커튼 문 카드 (문을 열면 커튼이 걷히는 카드)',
+    render: (params) => renderGateCurtain(params),
+    defaultParams: { panelWidth: 90, revealWidth: 44, hingeOffset: 16 },
+    instructionStyle: 'gate-curtain',
+    // Slot sizes come from the SAME resolver the printed pattern uses, so the
+    // character image always matches the diamond reveal window and the stone
+    // decorations match the loose stone pieces.
+    decorationSlots: (params) => {
+      const geo = resolveGateCurtain(params);
+      return [
+        { label: '가운데 주인공 그림 (다이아몬드 창에 꽉 차게)', width: geo.revealW, height: geo.revealH },
+        { label: '왼쪽 문 바깥 장식 (돌 등)', width: 30, height: 40 },
+        { label: '오른쪽 문 바깥 장식 (돌 등)', width: 30, height: 40 },
+      ];
     },
   },
 };
@@ -346,6 +365,20 @@ export const INSTRUCTION_TEXT = {
       '카드 아래로 나온 "PULL ↓" 손잡이를 잡고 아래로 당기면, 띠가 롤러를 넘어가면서 사진이 위쪽 슬롯 밖으로 쑤욱 올라옵니다. 끝까지 당기면 사진 뒤의 멈춤 날개가 ② 멈춤 띠에 걸려 더 이상 빠지지 않아요. 사진을 다시 손으로 살살 눌러 내리면 손잡이가 도로 올라가며 처음 모습으로 돌아갑니다.',
     ],
     tips: '핵심은 롤러(①)와 멈춤/안내 띠(②) 모두 "양 끝만" 붙이고 가운데는 절대 붙이지 않는 것입니다 — 가운데가 붙으면 롤러가 헛돌지 못하고 띠도 못 지나갑니다. 너무 뻑뻑하면 롤러를 조금 더 느슨하게(가운데를 더 띄워) 붙이고, 사진이 쑥 빠질 것 같으면 ② 멈춤 띠가 사진 슬롯에 정확히 붙어 있는지 확인하세요.',
+  },
+  'gate-curtain': {
+    title: '커튼 문 카드 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은 실선을 따라 오려주세요: 게이트 카드 1장(가운데 뒷판 + 좌·우 문, 파란 세로 점선 2개가 문 접는 선), 노란 커튼 2장, 장식 액자 1장(가운데 다이아몬드 창도 오려냄), 지지대(스트랩) 2개, 문 돌 장식 2개.',
+      '좌·우 문을 파란 세로 점선(골접기)으로 안쪽으로 접었다 펴서 경첩을 만들어 주세요. 두 문을 닫으면 자유단이 가운데서 딱 맞닿습니다.',
+      '① 주인공 그림을 뒷판 가운데(표시된 자리)에 얇게 붙입니다. 그 위로 커튼이 미끄러지니 두껍지 않게 붙여주세요.',
+      '④ 커튼 2장을 주인공 위에 좌·우에서 겹쳐 놓습니다(닫힘 상태에서 가운데서 살짝 겹쳐 주인공을 가림). 커튼 바깥 끝의 초록 풀칠 자리에는 나중에 지지대만 붙일 것이고, 커튼을 뒷판에는 절대 붙이지 마세요 — 커튼은 미끄러져야 합니다.',
+      '③ 장식 액자를 커튼 위에 덮고 위·아래 변(초록)만 뒷판에 붙입니다. 좌·우는 절대 붙이지 마세요 — 그래야 커튼이 액자 밑 좌우로 빠져나갑니다. 액자가 커튼을 눌러 뒷판에 납작하게 잡아 줍니다.',
+      "② 가장 중요 — 지지대 붙이기: 스트랩 한끝을 문 안쪽 'Ⓡ/Ⓛ 지지대 자리'(경첩에서 조금 안쪽)에, 다른 끝을 같은 쪽 커튼 바깥 끝에 붙입니다. 두 접힘선이 반드시 문 경첩(세로선)과 나란해야 합니다. 비뚤면 열 때 뻑뻑하거나 걸립니다. 오른쪽·왼쪽 모두 대칭으로 붙여주세요.",
+      '문 바깥면에 돌 장식을 붙이면 완성. 두 문을 함께 열면 커튼이 좌우로 걷히며 주인공 둘레에 노란 다이아몬드가 열리고, 닫으면 커튼이 저절로 다시 모여 주인공을 덮습니다.',
+    ],
+    tips: '핵심은 두 가지입니다. (1) 장식 액자는 위·아래만 풀칠 — 좌·우를 붙이면 커튼이 못 움직입니다. (2) 지지대 두 접힘선을 문 경첩과 나란히, 좌우 대칭으로 붙이기. 너무 뻑뻑하면 액자 위·아래 풀칠을 아주 살짝만 하고, 열어도 주인공이 반쯤 가리면 지지대를 커튼 바깥 끝에 더 정확히 다시 붙여 주세요. 닫을 때는 종이가 살짝 도톰하니 억지로 세게 누르지 말고 살살 접으세요.',
   },
 };
 

@@ -1118,6 +1118,122 @@ export default function Instructions() {
           </>
         );
 
+      case 'gate-curtain':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>오리기</h4>
+                <p>검은 실선을 따라 오려주세요: 게이트 카드 1장(가운데 뒷판 + 좌·우 문), 노란 커튼 2장, 장식 액자 1장(가운데 다이아몬드 창도 오려냄), 지지대(스트랩) 2개, 문 돌 장식 2개.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* Unfolded gate card: panel + two doors, two vertical valley hinges */}
+                    <rect x="8" y="8" width="60" height="34" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M23 8 L23 42 M53 8 L53 42" stroke="blue" strokeWidth="1.5" strokeDasharray="4 1 1 1" />
+                    <text x="38" y="50" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">게이트 카드 (세로 골접기 2개)</text>
+                    {/* Bowtie curtain */}
+                    <path d="M78 10 L96 10 L96 28 L78 28 L86 19 Z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="87" y="35" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">커튼 ×2</text>
+                    {/* Frame with diamond */}
+                    <rect x="76" y="40" width="22" height="16" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M87 43 L93 48 L87 53 L81 48 Z" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="87" y="59" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">액자</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>문 접기</h4>
+                <p>좌·우 문을 파란 세로 점선(골접기)으로 안쪽으로 접었다 펴서 경첩을 만들어 주세요. 두 문을 닫으면 자유단이 가운데서 딱 맞닿습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <text x="50" y="7" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">위에서 내려다본 모습</text>
+                    <path d="M25 40 L75 40" stroke="var(--text-primary)" strokeWidth="2" /> {/* panel */}
+                    <path d="M25 40 L38 18" stroke="var(--primary-main)" strokeWidth="2" /> {/* left door */}
+                    <path d="M75 40 L62 18" stroke="var(--primary-main)" strokeWidth="2" /> {/* right door */}
+                    <path d="M38 18 Q50 10 62 18" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="50" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">뒷판은 고정, 두 문이 안쪽으로 접혀 닫힘</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>주인공 붙이고 커튼 올리기</h4>
+                <p>① 주인공 그림을 뒷판 가운데(표시된 자리)에 얇게 붙입니다. ④ 커튼 2장을 그 위에 좌·우에서 겹쳐 놓으세요(가운데서 살짝 겹쳐 주인공을 가림). 커튼은 뒷판에 절대 붙이지 마세요 — 미끄러져야 합니다!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="20" y="8" width="60" height="40" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <circle cx="50" cy="28" r="8" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <path d="M24 12 L52 12 L52 44 L24 44 L36 28 Z" fill="gold" fillOpacity="0.55" stroke="orange" strokeWidth="1" />
+                    <path d="M76 12 L48 12 L48 44 L76 44 L64 28 Z" fill="gold" fillOpacity="0.55" stroke="orange" strokeWidth="1" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">커튼 두 장이 가운데서 겹쳐 주인공을 가림</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>액자 덮기 — 위·아래만 풀칠!</h4>
+                <p>③ 장식 액자를 커튼 위에 덮고 위·아래 변(초록)만 뒷판에 붙입니다. 좌·우는 절대 붙이지 마세요 — 그래야 커튼이 액자 밑 좌우로 빠져나갑니다. 액자가 커튼을 눌러 납작하게 잡아 줍니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="28" y="8" width="44" height="40" rx="3" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M50 16 L62 28 L50 40 L38 28 Z" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="30" y="9" width="40" height="5" fill="rgba(0,170,0,0.3)" stroke="green" strokeWidth="0.7" strokeDasharray="1 2" />
+                    <rect x="30" y="42" width="40" height="5" fill="rgba(0,170,0,0.3)" stroke="green" strokeWidth="0.7" strokeDasharray="1 2" />
+                    <path d="M24 28 L14 28 M76 28 L86 28" stroke="orange" strokeWidth="2" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">위·아래만 풀칠 — 좌·우는 커튼 길</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>가장 중요 — 지지대 붙이기</h4>
+                <p>② 스트랩 한끝을 문 안쪽 Ⓡ/Ⓛ 자리(경첩에서 조금 안쪽)에, 다른 끝을 같은 쪽 커튼 바깥 끝에 붙입니다. 두 접힘선이 반드시 문 경첩(세로선)과 나란해야 합니다. 오른쪽·왼쪽 모두 대칭으로!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <text x="50" y="7" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">위에서 내려다본 모습 (오른쪽 문)</text>
+                    <path d="M15 40 L70 40" stroke="var(--text-primary)" strokeWidth="2" /> {/* panel */}
+                    <path d="M70 40 L58 20" stroke="var(--primary-main)" strokeWidth="2" /> {/* door ajar */}
+                    <circle cx="62" cy="27" r="1.6" fill="var(--primary-main)" />
+                    <path d="M62 27 L40 40" stroke="green" strokeWidth="2" /> {/* strap */}
+                    <circle cx="40" cy="40" r="1.6" fill="green" />
+                    <text x="66" y="24" fontSize="4.5" fill="var(--text-primary)">문 피벗</text>
+                    <text x="38" y="47" fontSize="4.5" fill="green">커튼 끝</text>
+                    <path d="M40 36 L28 36" stroke="orange" strokeWidth="1.5" markerEnd="none" />
+                    <text x="33" y="33" fontSize="4.5" textAnchor="middle" fill="orange">커튼이 끌려감</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">6</div>
+              <div className="step-content">
+                <h4>돌 장식 붙이고 열어보기!</h4>
+                <p>문 바깥면에 돌 장식을 붙이면 완성. 두 문을 함께 열면 커튼이 좌우로 걷히며 주인공 둘레에 노란 다이아몬드가 열리고, 닫으면 커튼이 저절로 다시 모여 주인공을 덮습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    <rect x="5" y="12" width="24" height="36" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* left door open */}
+                    <rect x="81" y="12" width="24" height="36" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* right door open */}
+                    <rect x="29" y="12" width="52" height="36" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* panel */}
+                    <path d="M55 16 L72 30 L55 44 L38 30 Z" fill="gold" fillOpacity="0.6" stroke="orange" strokeWidth="1" /> {/* yellow diamond */}
+                    <circle cx="55" cy="30" r="7" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" /> {/* character */}
+                    <text x="55" y="56" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">문을 열면 커튼이 걷히고 주인공 등장!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>
