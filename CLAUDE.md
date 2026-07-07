@@ -20,8 +20,8 @@
 - `src/components/Chat/ChatWindow.jsx` + `api/chat.js` — Gemini 기반 대화형 아이디어 제안 챗봇(어린이 모드). v1 cardParams만 발행한다.
 - `src/components/Expert/*` — 전문가 모드(헤더 토글): 메커니즘 직접 선택(`MechanismPicker`), 전 파라미터 실시간 편집(`ParamPanel`, 150ms 디바운스 커밋), 요소 추가/삭제/배치(`ExpertPanel`).
 - `src/components/Preview/SVGPreview.jsx` — 메커니즘별 도안을 조립해 미리보기/PDF로 만드는 곳. 도안 페이지(동기)와 장식 페이지(비동기, 입력 핑거프린트가 바뀔 때만 Pollinations 재요청)를 분리한 2개 이펙트 구조.
-- `src/components/Preview/Preview3D.jsx` — CSS 3D 기반 조립 자세 시뮬레이터. 카드를 여닫는 "책형" 메커니즘은 열림 각도 α 슬라이더로(장면 빌더는 `bookScenes.jsx`), 평면형(슬라이더·돌림판 등) 메커니즘은 `flatScenes.jsx`의 전용 드라이브 슬라이더(당기기/밀기/돌리기/넘기기/불기)로 구동한다. 다중 조합 카드는 책형 요소들을 spineOffset만큼 이동시켜 α 하나로 동시 구동하고, 평면형 요소는 개별 보기로 전환한다.
-- `src/components/Preview/flatScenes.jsx` — 평면형 메커니즘 6종(pull-tab, rising-slide, slide-to-swing, volvelle, flip-disc, straw-rocket)의 구조 충실 3D 장면 빌더. 부품 배치는 생성기의 resolver 지오메트리를 그대로 쓰고, 종이 한 장당 translateZ 한 층씩 쌓아 카메라를 돌리면 뒷면 구조(손잡이·멈춤 띠·안내 띠·고정 캡)가 실제 조립 순서대로 보인다.
+- `src/components/Preview/Preview3D.jsx` — CSS 3D 기반 조립 자세 시뮬레이터. 카드를 여닫는 "책형" 메커니즘은 열림 각도 α 슬라이더로(장면 빌더는 `bookScenes.jsx`), 평면형(슬라이더·돌림판 등) 메커니즘은 `flatScenes.jsx`의 전용 드라이브 슬라이더(당기기/밀기/돌리기/넘기기/불기/여닫기)로 구동한다. 다중 조합 카드는 책형 요소들을 spineOffset만큼 이동시켜 α 하나로 동시 구동하고, 평면형 요소는 개별 보기로 전환한다.
+- `src/components/Preview/flatScenes.jsx` — 평면형 메커니즘(pull-tab, rising-slide, slide-to-swing, volvelle, flip-disc, straw-rocket, camera-print-pull, gate-curtain)의 구조 충실 3D 장면 빌더. 부품 배치는 생성기의 resolver 지오메트리를 그대로 쓰고, 종이 한 장당 translateZ 한 층씩 쌓아 카메라를 돌리면 뒷면 구조(손잡이·멈춤 띠·안내 띠·고정 캡)가 실제 조립 순서대로 보인다.
 - `src/components/Preview/Instructions.jsx` — 메커니즘별 조립 가이드(정적).
 
 ## 종이공예 메커니즘 목록
@@ -43,3 +43,4 @@
 | `layered-stage` | `layeredStage.js` | 카드를 열면 여러 겹의 벽(성·마을 등)이 서로 다른 깊이에서 층층이 솟는 팝업. |
 | `auto-slide-window` | `autoSlideWindow.js` | 카드를 여닫는 동작만으로 지지대(팔)가 슬라이더를 밀어 창문 속 그림이 저절로 바뀌는 액자 카드. |
 | `slide-to-swing` | `slideToSwing.js` | 손잡이를 좌우로 밀면 핀-슬롯 연결을 통해 회전하는 기둥 위 장식이 시계추처럼 흔들리는 장치. |
+| `gate-curtain` | `gateCurtain.js` | 양쪽 문(게이트폴드)을 열면 문에 스트랩으로 연결된 노란 커튼 두 장이 좌우로 걷히며 가운데 주인공이 드러나는 카드. |
