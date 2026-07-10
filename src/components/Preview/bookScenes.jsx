@@ -355,22 +355,30 @@ export function buildBookScene(mechanism, params, ctx) {
     readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rho.toFixed(0)}°`;
   } else if (mechanism === 'layered-stage') {
     // Layered stage (층층이 무대) — see generators/layeredStage.js. Each layer i
-    // is its OWN independent box-popup-style flap: h_i = d_i·sin(α/2), the
-    // SAME gamma = α/2 and rotate3d formula as the box-popup branch above.
-    // The only difference from box-popup is the hinge sits inset by the
-    // layer's accumulated depth `near_i` from the spine instead of flush
-    // against it — the same off-spine inset technique flap-clap uses inline
-    // (transform-origin stays the flap's own edge; only its screen position
-    // moves). Layers never overlap in depth (near_i are disjoint bands), so
-    // there's no z-order ambiguity between them.
+    // is its own wall flap with h_i = d_i·sin(α/2) and the same local flex
+    // gamma = α/2 as box-popup, hinged inset by the layer's accumulated depth
+    // `near_i` from the spine (the same off-spine inset technique flap-clap
+    // uses inline: transform-origin stays the flap's own edge; only its
+    // screen position moves). Layers never overlap in depth (near_i are
+    // disjoint bands), so there's no z-order ambiguity between them.
+    //
+    // Rotation: a plain rotateY about the flap's own spine-side edge — NOT
+    // the v-fold rotate3d composition box-popup borrows. That compound axis
+    // is derived for a wedge whose ridge runs ALONG the spine and lands its
+    // tip on the symmetry plane; applying it to this wall twists the panel
+    // so its long (along-spine, w_i) edge swings toward the viewer, showing
+    // every wall rotated 90° from the printed pattern (walls read as flat
+    // platforms instead of spine-parallel standing fences). The wall's hinge
+    // (its NEAR mountain crease) is already parallel to the spine — i.e.
+    // parallel to the page's own rotateY axis — so erecting it is exactly
+    // the "plain second rotateY about that edge" the box-popup comment block
+    // above describes: the wall stands perpendicular to its page, w_i along
+    // the spine, rising d_i·sin(γ) toward the viewer.
     const geo = resolveLayeredStageGeometry({ layers: params.layers ?? defaults.layers, paperSize });
 
     const gamma = alpha / 2; // deg, identical to box-popup
-    const aRad = degToRad(gamma);
-    const sinA = Math.sin(aRad);
-    const cosA = Math.cos(aRad);
-    const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
-    const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+    const flapLiftLeft = `rotateY(${gamma}deg)`;
+    const flapLiftRight = `rotateY(${-gamma}deg)`;
 
     attachmentLeft = geo.layers.map((layer) => {
       const depthPx = layer.depth * PX;

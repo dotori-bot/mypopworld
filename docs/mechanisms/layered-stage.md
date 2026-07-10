@@ -58,7 +58,7 @@ S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
   - `width = layer.width * 0.75`, `height = layer.height * 1.5`(장식이 벽 footprint 깊이가 아니라 기립 **높이**를 넉넉히 덮게 1.5배).
   - 렌더러와 같은 `resolveLayeredStageGeometry`를 공유하므로 장식 이미지 제안 크기가 실제 인쇄된 벽과 항상 일치한다. (커밋 `a93a7a0`의 직접 결과.)
 - **SVGPreview.jsx**: `getDecorationSlots`(`registry.js:279`)가 위 슬롯 배열을 반환 → 도안 1페이지 + **벽 개수만큼 장식 페이지**(각 슬롯당 1장, ai-image·freehand 모드 모두). `cardParams.decorationVariants?.[i]`가 있으면 벽별로 다른 테마(예: 노아의 방주 카드의 서로 다른 동물)를 프롬프트에 쓰고, 없으면 슬롯 `label`을 붙여 페이지가 최소한 구별되게 한다(`SVGPreview.jsx:94-96`). 슬롯이 없는 다른 메커니즘은 단일 100×100mm 슬롯으로 폴백해 무회귀.
-- **Preview3D.jsx**: 미지원(`SUPPORTED_3D`에 없음). 다만 `Instructions.jsx`의 `case 'layered-stage'` 첫 패널이 "완성 모습"을 위에서 본 아이소메트릭 정적 일러스트로 대체 제공한다. 실제 인터랙티브 3D 포즈는 미래 과제.
+- **Preview3D.jsx / bookScenes.jsx**: 지원됨(`BOOK_3D`에 포함, `bookScenes.jsx`의 `mechanism === 'layered-stage'` 분기). 층마다 좌/우 페이지에 벽 플랩 하나씩: 힌지는 자기 near 접기선(척추와 평행, `right/left: near·PX` + `transform-origin`이 척추 쪽 모서리), 회전은 **단순 `rotateY(±γ)`, γ = α/2** — box-popup 주석 블록이 "척추와 평행한 부착 모서리를 가진 직사각형의 이상적 운동"으로 서술한 바로 그 회전이다. v-fold의 복합 `rotate3d` 조합을 여기 쓰면 안 된다(아래 교훈 참고). `Instructions.jsx`의 `case 'layered-stage'` 첫 패널의 아이소메트릭 정적 일러스트도 병행 제공.
 - 조립 안내는 `INSTRUCTION_TEXT['layered-stage']`(PDF)와 `Instructions.jsx`의 `case 'layered-stage'`(화면, 7단계 일러스트)에 손으로 동기화.
 
 ## 이전 작업에서 배운 교훈
@@ -67,6 +67,7 @@ S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
 - **커밋 `a93a7a0`** ("multi-slot decoration architecture; overhaul instructions"): 실제 배포에서 나온 피드백 3가지 — (1) 조립 안내가 너무 추상적이었고, (2) 벽이 여러 장인데 장식 이미지는 **딱 1장만** 생성됐으며, (3) 평면 도안에서 완성 3D를 상상할 수 없었다. 해결로 `decorationSlots(params)`를 도입해 벽당 슬롯을 만들고(`getDecorationSlots`는 무회귀 폴백), SVGPreview가 슬롯당 페이지를 생성하며, chat이 `decorationVariants`로 벽별 테마를 공급하고, Instructions에 아이소메트릭 완성도 + 뒤→앞 조립 순서 다이어그램을 추가했다.
 - **조립 순서(뒤→앞)가 물리적으로 필수**: 앞 벽을 먼저 붙이면 그 뒤에 가려 손이 뒤 벽에 닿지 않는다. 순서를 뒤집으면 닫을 때 뒤 벽이 접힌 자리를 벗어나 카드 밖으로 나온다. `INSTRUCTION_TEXT`의 4단계(가장 중요)와 `Instructions.jsx`의 순서 다이어그램이 이 실패를 막는다.
 - **탭은 x로만, 깊이로 안 뻗음**: 뒤 층 탭이 앞 층 벽과 밴드가 겹치지 않게 한 설계 결정. 탭이 깊이 방향으로 번지면 이 불변식이 깨진다.
+- **3D 프리뷰 90° 뒤틀림 버그**: 최초 3D 장면은 box-popup처럼 v-fold의 `rotate3d(−sin γ, 0, ∓cos γ, γ)` 조합을 재사용했는데, 이 축은 "능선이 척추를 따라 세로로 뻗고 능선 끝이 대칭면에 착지하는" v-fold 팔을 위해 유도된 것이다. 척추와 평행한 near 접기선에 힌지된 이 벽에 적용하면 γ=90°(α=180°)에서 벽의 긴 변(w, 척추 방향이어야 함)이 시청자 축으로 넘어가 벽이 "누운 플랫폼"처럼, 도안과 90° 뒤틀려 보였다. 수정: 힌지 모서리(척추 쪽)에 대한 단순 `rotateY(±γ)`. 척추와 평행한 접기선을 가진 플랩은 페이지의 rotateY 축과 힌지가 평행하므로 복합 축이 필요 없다 — box-popup 3D의 rotate3d는 "잘 보이게 하기 위한" 의도적 양식화이므로 그대로 베끼면 안 된다.
 
 ## 앞으로 작업 시 주의사항
 
@@ -75,4 +76,4 @@ S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
 - 클램프는 개별 깊이가 아니라 **누적합 `acc`**에 대해 걸린다(`avail = budget − acc`). 새 로직을 넣을 때 이 누적 예산 감산을 유지해야 `a_N ≤ S_max` 포획 경계가 보장된다.
 - `S_max`·`maxWidth`는 **Letter가 A4보다 빡빡**하다(카드 높이 139.7 vs 148.5). 기본값은 Letter 기준으로 통과하도록 잡혀 있으니 기본 깊이/폭 표를 바꾸면 Letter budget 59.66mm와 폭 상한을 다시 확인하라 — "A4만 맞는" 값은 미완성이다.
 - 조립 안내가 `registry.js`(PDF 텍스트)와 `Instructions.jsx`(화면 7단계 일러스트) 두 곳에 손으로 동기화되어 있다. 특히 후자는 아이소메트릭 완성도·순서 다이어그램 등 SVG가 많아 드리프트 위험이 크다. 한쪽만 고치지 말 것.
-- Preview3D 미지원 상태다. 3D를 추가한다면 이미 존재하는 parallelFold의 중첩 계단(preserve-3d + DOM 자식) 구성이 층층이 무대의 누적 깊이 구조와 위상이 같아 참고점이 된다.
+- 3D 장면(`bookScenes.jsx`)을 손댈 때 벽 플랩의 회전은 반드시 힌지 모서리에 대한 단순 `rotateY(±γ)`를 유지할 것. v-fold/box-popup 분기의 `rotate3d` 조합을 "검증된 방식"이라며 가져오면 벽이 도안과 90° 뒤틀려 보이는 회귀가 된다(위 교훈 참고).
