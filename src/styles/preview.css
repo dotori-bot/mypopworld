@@ -905,3 +905,142 @@
 .preview3d-tag-back {
   transform: translate(-50%, -50%) translateZ(-30px) rotateY(180deg);
 }
+
+/* ------------------------------------------------------------------ */
+/* 사용자 업로드 그림 (UserArtUpload.jsx)                                */
+/* The uploaded drawing's data URL rides the --user-art custom          */
+/* property that Preview3D.jsx sets on the scene root (.preview3d-book, */
+/* which also gains .has-user-art). The rules below paint it onto each  */
+/* mechanism's artwork faces so the simulation shows how the drawing    */
+/* looks on the assembled card.                                         */
+/* ------------------------------------------------------------------ */
+
+.user-art-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-art-thumb-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.user-art-thumb {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--border-glass, #ddd);
+  background: #fff;
+}
+
+.user-art-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(30, 30, 55, 0.85);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.user-art-error {
+  font-size: 0.72rem;
+  color: #e11d48;
+}
+
+/* Upload chip overlaying the 3D stage (top-left; reset button owns top-right). */
+.preview3d-art-upload {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 5;
+}
+
+/* Generic artwork tile placed by flat scenes (volvelle sector pictures,
+   pull-tab handle art, camera-print photo). Transparent (invisible) until
+   --user-art is set. */
+.preview3d-flat-art {
+  position: absolute;
+  background-image: var(--user-art, none);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  backface-visibility: visible;
+}
+
+/* Book-mechanism popup faces (v-fold arms + extensions, box-popup flaps,
+   parallel-fold/accordion steps, layered-stage walls, flap-clap flaps): the
+   drawing is glued over the panel; a paper-white backdrop rides underneath
+   so transparent-PNG drawings stay legible. clip-path shapes still apply. */
+.has-user-art .preview3d-arm-left,
+.has-user-art .preview3d-arm-right,
+.has-user-art .preview3d-boxflap-left,
+.has-user-art .preview3d-boxflap-right,
+.has-user-art .preview3d-step-left,
+.has-user-art .preview3d-step-right,
+.has-user-art .preview3d-flap-left,
+.has-user-art .preview3d-flap-right {
+  background-image: var(--user-art), linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 242, 247, 0.94));
+  background-size: cover, auto;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* V-fold arms (and extensions): the visible wedge is clipped to the TOP half
+   of the arm's box (O–T–P triangle, see .preview3d-arm-left/right), so pin
+   the drawing into that half — centered cover would hide half of it in the
+   clipped-away bottom. The mild stretch is fine: at the default 45° wedge
+   the top half is exactly square. */
+.has-user-art .preview3d-arm-left,
+.has-user-art .preview3d-arm-right {
+  background-size: 100% 50%, auto;
+  background-position: top center, center;
+}
+
+/* Auto-slide-window's two window pictures + spiral-spring's hanging discs. */
+.has-user-art .preview3d-slide-msg,
+.has-user-art .preview3d-spring-deco {
+  background-color: rgba(255, 255, 255, 0.92);
+  background-image: var(--user-art);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Slide-to-swing's pendulum decoration: the drawing replaces the ♥ glyph. */
+.has-user-art .preview3d-flat-deco {
+  background-image: var(--user-art);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+  text-shadow: none;
+}
+
+/* Cut-out figures (rising-slide's rising picture, gate-curtain's 주인공):
+   the uploaded drawing IS the cut-out, so drop the sample star silhouette. */
+.has-user-art .preview3d-flat-figure {
+  clip-path: none;
+  background: transparent var(--user-art) center / contain no-repeat;
+}
+
+/* Flip-disc's fixed background half-disc (the turning leaves take the art
+   inline in flatScenes.jsx) and straw-rocket's front/back silhouettes. */
+.has-user-art .preview3d-flat-halfdisc,
+.has-user-art .preview3d-flat-rocket {
+  background-color: #ffffff;
+  background-image: var(--user-art);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

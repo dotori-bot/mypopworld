@@ -6,6 +6,7 @@ import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { CARD_SIZES } from '../../generators/constants';
 import { FLAT_3D, buildFlatScene } from './flatScenes';
 import { BOOK_3D, buildBookScene } from './bookScenes';
+import UserArtUpload from './UserArtUpload';
 import { clamp } from '../../utils/math';
 import '../../styles/preview.css';
 
@@ -45,7 +46,7 @@ const ORBIT_ZOOM_RANGE = [0.6, 1.8];
  * bring their own drive slider — see flatScenes.jsx (buildFlatScene).
  */
 export default function Preview3D() {
-  const { cardParams, paperSize, colorMode, setCardParams, appMode } = useCardStore();
+  const { cardParams, paperSize, colorMode, setCardParams, appMode, userArt } = useCardStore();
   const [alpha, setAlpha] = useState(90);
   // Flat-mechanism drive value; null = "use the scene's own default". Kept as
   // null (not a number) across mechanism switches so each mechanism opens at
@@ -85,6 +86,13 @@ export default function Preview3D() {
         : { kind: 'none' };
   }
   const mode = view.kind;
+
+  // Uploaded user drawing, applied to every scene's decoration faces purely
+  // via CSS: the data URL rides a custom property on the scene root and
+  // preview.css maps it onto each mechanism's artwork surfaces (arms, flaps,
+  // steps, figures, rotor tiles, …) under the .has-user-art scope.
+  const bookClass = `preview3d-book${userArt ? ' has-user-art' : ''}`;
+  const artVar = userArt ? { '--user-art': `url("${userArt}")` } : null;
   const viewKey =
     mode === 'flat'
       ? `flat:${view.flatEl?.mechanism}`
@@ -209,8 +217,8 @@ export default function Preview3D() {
           onPointerCancel={handlePointerUp}
         >
           <div
-            className="preview3d-book"
-            style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})` }}
+            className={bookClass}
+            style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...artVar }}
           >
             {flatScene.node}
           </div>
@@ -218,6 +226,9 @@ export default function Preview3D() {
           <button type="button" className="preview3d-orbit-reset" onClick={resetOrbit}>
             시점 초기화
           </button>
+          <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
+            <UserArtUpload />
+          </div>
         </div>
 
         {viewToggle}
@@ -309,8 +320,8 @@ export default function Preview3D() {
         onPointerCancel={handlePointerUp}
       >
         <div
-          className="preview3d-book"
-          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})` }}
+          className={bookClass}
+          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...artVar }}
         >
           {/* Left page — hinged on the spine (its right edge) */}
           <div
@@ -340,6 +351,9 @@ export default function Preview3D() {
         <button type="button" className="preview3d-orbit-reset" onClick={resetOrbit}>
           시점 초기화
         </button>
+        <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
+          <UserArtUpload />
+        </div>
       </div>
 
       {viewToggle}

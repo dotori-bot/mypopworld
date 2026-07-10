@@ -401,7 +401,14 @@ function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
           transform: `translateZ(${Z_STEP}px)`,
         }}
-      />
+      >
+        {/* Uploaded user drawing as the developing photo (white footer strip
+            below stays visible, like an instant-camera print). */}
+        <span
+          className="preview3d-flat-art"
+          style={{ left: '4%', top: '3%', width: '92%', height: '72%' }}
+        />
+      </div>
       <Tag x={px(geo.cx)} y={px(mountY - L.NECK_H) - px(geo.photoH) - 10}>사진 (앞면 · 위로 올라감)</Tag>
 
       {/* ── FRONT: the PULL tab — exposed length grows as it's pulled ── */}
@@ -544,6 +551,19 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
         }}
       />
       <Tag x={px(xSlider + sliderW + handleW / 2)} y={px(trackCY + sliderH / 2) + 12}>손잡이 (앞면)</Tag>
+
+      {/* ── FRONT-most: uploaded user drawing glued on the handle tab, riding
+             the slider along the track (invisible until a drawing is set). ── */}
+      <div
+        className="preview3d-flat-art"
+        style={{
+          left: px(xSlider + sliderW + handleW / 2) - px(22) / 2,
+          top: px(trackCY - sliderH / 2) - px(24),
+          width: px(22),
+          height: px(22),
+          transform: `translateZ(${2 * Z_STEP}px)`,
+        }}
+      />
     </div>
   );
 
@@ -792,19 +812,36 @@ function buildVolvelle(params, defaults, paperSize, driveRaw) {
     return `${c} ${k * sigma}deg ${(k + 1) * sigma}deg`;
   }).join(', ');
 
+  // Per-sector artwork tile: when the user uploads a drawing (--user-art) it
+  // shows in every sector at the same radius the cover window exposes, so
+  // spinning the rotor moves the drawing through the window like the real toy.
+  // Sized to the sector chord so neighbouring tiles don't overlap; invisible
+  // (empty transparent div) while no drawing is uploaded.
+  const artR = R * 0.62;
+  const artSize = px(Math.min(R * 0.5, 2 * artR * Math.sin(degToRad(sigma / 2)) * 0.85));
   const numbers = Array.from({ length: sectors }, (_, k) => {
     const a = degToRad(k * sigma + sigma / 2);
+    const cxSector = px(R + artR * Math.sin(a));
+    const cySector = px(R - artR * Math.cos(a));
     return (
-      <span
-        key={`n-${k}`}
-        className="preview3d-flat-volnum"
-        style={{
-          left: px(R + R * 0.62 * Math.sin(a)),
-          top: px(R - R * 0.62 * Math.cos(a)),
-        }}
-      >
-        {k + 1}
-      </span>
+      <React.Fragment key={`n-${k}`}>
+        <span
+          className="preview3d-flat-art"
+          style={{
+            left: cxSector - artSize / 2,
+            top: cySector - artSize / 2,
+            width: artSize,
+            height: artSize,
+            transform: `rotate(${k * sigma + sigma / 2}deg)`,
+          }}
+        />
+        <span
+          className="preview3d-flat-volnum"
+          style={{ left: cxSector, top: cySector }}
+        >
+          {k + 1}
+        </span>
+      </React.Fragment>
     );
   });
 
@@ -962,7 +999,9 @@ function buildFlipDisc(params, defaults, paperSize, driveRaw) {
           style={{
             width: px(R),
             height: px(R * 2),
-            background: `linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)`,
+            // Uploaded user drawing (if any) becomes the leaf's plate artwork;
+            // otherwise the per-leaf tint gradient as before.
+            background: `var(--user-art, linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)) center / cover no-repeat`,
           }}
         >
           <span className="preview3d-flat-pagenum">{k}</span>
