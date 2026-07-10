@@ -999,9 +999,13 @@ function buildFlipDisc(params, defaults, paperSize, driveRaw) {
           style={{
             width: px(R),
             height: px(R * 2),
-            // Uploaded user drawing (if any) becomes the leaf's plate artwork;
-            // otherwise the per-leaf tint gradient as before.
-            background: `var(--user-art, linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)) center / cover no-repeat`,
+            // Uploaded user drawing (if any) becomes the leaf's plate artwork,
+            // layered over the per-leaf tint gradient (--user-art is 'none'
+            // when nothing is uploaded, letting the gradient show through).
+            backgroundImage: `var(--user-art, none), linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)`,
+            backgroundSize: 'cover, auto',
+            backgroundPosition: 'center, center',
+            backgroundRepeat: 'no-repeat, no-repeat',
           }}
         >
           <span className="preview3d-flat-pagenum">{k}</span>
@@ -1237,7 +1241,10 @@ function buildGateCurtain(params, defaults, paperSize, driveRaw) {
   const curtainBg = 'linear-gradient(180deg, rgba(253, 224, 71, 0.95), rgba(245, 158, 11, 0.9))';
   const doorFace = (side) => (
     // Stone decoration on the door's OUTER face (visible when the card is
-    // closed or when orbiting behind an open door).
+    // closed or when orbiting behind an open door). Decoration slots 1 (left
+    // door) / 2 (right door) carry an uploaded user drawing when present —
+    // the var falls back to the stone gradient otherwise (element-local
+    // --slot-art-* vars are set by Preview3D).
     <div
       style={{
         position: 'absolute',
@@ -1248,7 +1255,7 @@ function buildGateCurtain(params, defaults, paperSize, driveRaw) {
         marginLeft: -px(K.STONE_W) / 2,
         marginTop: -px(K.STONE_H) / 2,
         borderRadius: px(10),
-        background: 'linear-gradient(135deg, rgba(148, 163, 184, 0.9), rgba(100, 116, 139, 0.9))',
+        background: `var(--slot-art-${side === 'L' ? 1 : 2}, linear-gradient(135deg, rgba(148, 163, 184, 0.9), rgba(100, 116, 139, 0.9))) center / cover no-repeat`,
         border: '1px solid rgba(71, 85, 105, 0.7)',
         transform: 'rotateY(180deg) translateZ(1px)',
         backfaceVisibility: 'visible',

@@ -907,38 +907,104 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* 사용자 업로드 그림 (UserArtUpload.jsx)                                */
-/* The uploaded drawing's data URL rides the --user-art custom          */
-/* property that Preview3D.jsx sets on the scene root (.preview3d-book, */
-/* which also gains .has-user-art). The rules below paint it onto each  */
-/* mechanism's artwork faces so the simulation shows how the drawing    */
-/* looks on the assembled card.                                         */
+/* 사용자 업로드 그림 — 슬롯별 업로드 맵 (UserArtSlots.jsx)               */
+/* Each decoration slot's uploaded drawing rides an element-local        */
+/* --slot-art-k custom property (plus --user-art as the slot-0 alias)    */
+/* that Preview3D.jsx sets on the scene root / element wrapper, which    */
+/* also gains has-user-art + has-slot-art-k marker classes. The rules    */
+/* below paint the drawings onto each mechanism's artwork faces so the   */
+/* simulation shows them applied on the assembled card.                  */
 /* ------------------------------------------------------------------ */
 
-.user-art-upload {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* The slot map: one card per decoration slot, each announcing its
+   recommended drawing size (mm) up front, with its own upload target. */
+.user-art-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-xs, 8px);
+  padding: var(--space-xs, 8px) var(--space-lg, 24px) 0;
 }
 
-.user-art-thumb-wrap {
+.user-art-slot {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 96px;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.user-art-slot-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.user-art-slot-no {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent-gradient, #7c5cff);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.user-art-slot-size {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The upload target: dashed drop-style box before upload, thumbnail after. */
+.user-art-slot-drop {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 6px);
+  border: 1.5px dashed var(--border-glass, #bbb);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.user-art-slot-drop:hover {
+  border-color: var(--accent-primary, #7c5cff);
+  color: var(--accent-primary, #7c5cff);
+}
+
+.user-art-slot-drop.has-art {
+  border-style: solid;
 }
 
 .user-art-thumb {
-  width: 34px;
-  height: 34px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-md, 6px);
-  border: 1px solid var(--border-glass, #ddd);
   background: #fff;
+  display: block;
 }
 
 .user-art-clear {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: 18px;
+  right: 20px;
   width: 16px;
   height: 16px;
   display: flex;
@@ -950,19 +1016,53 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  z-index: 1;
+}
+
+.user-art-slot-label {
+  width: 100%;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  color: var(--text-muted);
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.user-art-slot-el {
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .user-art-error {
   font-size: 0.72rem;
   color: #e11d48;
+  width: 100%;
+  text-align: center;
 }
 
-/* Upload chip overlaying the 3D stage (top-left; reset button owns top-right). */
+/* Upload map overlaying the 3D stage (top-left; reset button owns top-right):
+   a chip that expands into the slot map on a floating panel. */
 .preview3d-art-upload {
   position: absolute;
   top: var(--space-md);
   left: var(--space-md);
   z-index: 5;
+  max-width: min(460px, 60%);
+}
+
+.user-art-map-overlay .user-art-slots {
+  margin-top: 6px;
+  padding: var(--space-xs, 8px);
+  justify-content: flex-start;
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
 }
 
 /* Generic artwork tile placed by flat scenes (volvelle sector pictures,
@@ -1028,10 +1128,13 @@
 }
 
 /* Cut-out figures (rising-slide's rising picture, gate-curtain's 주인공):
-   the uploaded drawing IS the cut-out, so drop the sample star silhouette. */
-.has-user-art .preview3d-flat-figure {
+   the uploaded drawing IS the cut-out, so drop the sample star silhouette.
+   Both figures are their element's decoration slot 0, so this is gated on
+   has-slot-art-0 (NOT has-user-art): e.g. a gate-curtain with art uploaded
+   only for the door-stone slots must keep its sample 주인공 star visible. */
+.has-slot-art-0 .preview3d-flat-figure {
   clip-path: none;
-  background: transparent var(--user-art) center / contain no-repeat;
+  background: transparent var(--slot-art-0) center / contain no-repeat;
 }
 
 /* Flip-disc's fixed background half-disc (the turning leaves take the art

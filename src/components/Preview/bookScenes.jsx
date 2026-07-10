@@ -372,6 +372,17 @@ export function buildBookScene(mechanism, params, ctx) {
     const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
     const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
 
+    // Per-wall user drawing: layered-stage exposes one decoration slot per
+    // wall (registry decorationSlots), so wall i shows the drawing uploaded
+    // for slot i-1 (element-local --slot-art-* vars set by Preview3D).
+    // Inline background (image layer over the class's own gradient) so each
+    // wall can reference ITS OWN slot var — a shared CSS rule couldn't.
+    const wallBg = (layer, deg) => ({
+      backgroundImage: `var(--slot-art-${layer.index - 1}, none), linear-gradient(${deg}deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6))`,
+      backgroundSize: 'cover, auto',
+      backgroundPosition: 'center, center',
+      backgroundRepeat: 'no-repeat, no-repeat',
+    });
     attachmentLeft = geo.layers.map((layer) => {
       const depthPx = layer.depth * PX;
       const widthPx = layer.width * PX;
@@ -386,6 +397,7 @@ export function buildBookScene(mechanism, params, ctx) {
             top: `${top}px`,
             right: `${layer.near * PX}px`,
             transform: flapLiftLeft,
+            ...wallBg(layer, 135),
           }}
         />
       );
@@ -404,6 +416,7 @@ export function buildBookScene(mechanism, params, ctx) {
             top: `${top}px`,
             left: `${layer.near * PX}px`,
             transform: flapLiftRight,
+            ...wallBg(layer, 225),
           }}
         />
       );
@@ -445,16 +458,26 @@ export function buildBookScene(mechanism, params, ctx) {
     const bPx = b * PX;
     const flapTop = pageH / 2 - bPx;
 
+    // Per-flap user drawing: flap-clap exposes two decoration slots (upper /
+    // lower flap, registry decorationSlots) — map slot 0 to the left-page
+    // flap and slot 1 to the right-page flap via the element-local
+    // --slot-art-* vars (see layered-stage above for the inline-var pattern).
+    const flapBg = (slot, deg) => ({
+      backgroundImage: `var(--slot-art-${slot}, none), linear-gradient(${deg}deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6))`,
+      backgroundSize: 'cover, auto',
+      backgroundPosition: 'center, center',
+      backgroundRepeat: 'no-repeat, no-repeat',
+    });
     attachmentLeft = (
       <div
         className="preview3d-flap preview3d-flap-left"
-        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, right: `${aPx}px`, transform: flapLiftLeft }}
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, right: `${aPx}px`, transform: flapLiftLeft, ...flapBg(0, 135) }}
       />
     );
     attachmentRight = (
       <div
         className="preview3d-flap preview3d-flap-right"
-        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, left: `${aPx}px`, transform: flapLiftRight }}
+        style={{ width: `${hPx}px`, height: `${bPx * 2}px`, top: `${flapTop}px`, left: `${aPx}px`, transform: flapLiftRight, ...flapBg(1, 225) }}
       />
     );
 

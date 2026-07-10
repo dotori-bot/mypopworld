@@ -1,12 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useCardStore from '../../store/useCardStore';
-import { getMechanism, buildElementParams } from '../../generators/registry';
+import { getMechanism, buildElementParams, getElementDecorationSlots } from '../../generators/registry';
 import { getElements } from '../../store/cardModel';
 import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { CARD_SIZES } from '../../generators/constants';
 import { FLAT_3D, buildFlatScene } from './flatScenes';
 import { BOOK_3D, buildBookScene } from './bookScenes';
-import UserArtUpload from './UserArtUpload';
+import UserArtSlots from './UserArtSlots';
 import { clamp } from '../../utils/math';
 import '../../styles/preview.css';
 
@@ -46,7 +46,7 @@ const ORBIT_ZOOM_RANGE = [0.6, 1.8];
  * bring their own drive slider — see flatScenes.jsx (buildFlatScene).
  */
 export default function Preview3D() {
-  const { cardParams, paperSize, colorMode, setCardParams, appMode, userArt } = useCardStore();
+  const { cardParams, paperSize, colorMode, setCardParams, appMode, userArts } = useCardStore();
   const [alpha, setAlpha] = useState(90);
   // Flat-mechanism drive value; null = "use the scene's own default". Kept as
   // null (not a number) across mechanism switches so each mechanism opens at
@@ -87,12 +87,44 @@ export default function Preview3D() {
   }
   const mode = view.kind;
 
-  // Uploaded user drawing, applied to every scene's decoration faces purely
-  // via CSS: the data URL rides a custom property on the scene root and
-  // preview.css maps it onto each mechanism's artwork surfaces (arms, flaps,
-  // steps, figures, rotor tiles, …) under the .has-user-art scope.
-  const bookClass = `preview3d-book${userArt ? ' has-user-art' : ''}`;
-  const artVar = userArt ? { '--user-art': `url("${userArt}")` } : null;
+  // Per-slot uploaded drawings, applied to the scenes' decoration faces
+  // purely via CSS custom properties. userArts is keyed by the FLATTENED
+  // decoration-slot index (elements in order, then each element's own slots —
+  // the same order getDecorationSlots()/UserArtSlots use). Each element's
+  // scene receives its element-LOCAL vars:
+  //   --slot-art-k   slot k of THIS element (multi-slot faces reference these
+  //                  inline: layered-stage walls, flap-clap flaps,
+  //                  gate-curtain figure/door stones)
+  //   --user-art     alias of slot 0, used by every single-slot face rule
+  // plus marker classes has-slot-art-k / has-user-art that gate the CSS in
+  // preview.css. Vars/classes ride the scene root for single-element views
+  // and each element's spine-shift wrapper in combined book views.
+  const slotsByEl = elements.map((el) =>
+    getElementDecorationSlots(el, paperSize, colorMode, cardParams?.theme),
+  );
+  const slotBases = [];
+  for (let i = 0, acc = 0; i < slotsByEl.length; i++) {
+    slotBases.push(acc);
+    acc += slotsByEl[i].length;
+  }
+  const artPropsFor = (elIdx) => {
+    const base = slotBases[elIdx] || 0;
+    const n = slotsByEl[elIdx]?.length || 0;
+    const style = {};
+    const classes = [];
+    for (let k = 0; k < n; k++) {
+      const art = userArts[base + k];
+      if (art) {
+        style[`--slot-art-${k}`] = `url("${art}")`;
+        classes.push(`has-slot-art-${k}`);
+      }
+    }
+    // Always set the alias (even to 'none') so multi-image fallbacks like
+    // `background-image: var(--user-art), <gradient>` never turn invalid.
+    style['--user-art'] = userArts[base] ? `url("${userArts[base]}")` : 'none';
+    if (classes.length > 0) classes.push('has-user-art');
+    return { style, className: classes.join(' ') };
+  };
   const viewKey =
     mode === 'flat'
       ? `flat:${view.flatEl?.mechanism}`
@@ -198,11 +230,13 @@ export default function Preview3D() {
   // Flat mechanisms (sliders/spinners/…): structure-faithful scene + its own
   // drive slider, from flatScenes.jsx. Book mechanisms continue below with α.
   let flatScene = null;
+  let flatArt = null;
   if (mode === 'flat') {
     const el = view.flatEl;
     const params = buildElementParams(el, paperSize, colorMode, cardParams.theme) || {};
     const defaults = getMechanism(el.mechanism).defaultParams;
     flatScene = buildFlatScene(el.mechanism, params, defaults, paperSize, drive);
+    flatArt = artPropsFor(elements.indexOf(el));
   }
 
   if (flatScene) {
@@ -217,8 +251,8 @@ export default function Preview3D() {
           onPointerCancel={handlePointerUp}
         >
           <div
-            className={bookClass}
-            style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...artVar }}
+            className={`preview3d-book ${flatArt.className}`}
+            style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...flatArt.style }}
           >
             {flatScene.node}
           </div>
@@ -227,7 +261,7 @@ export default function Preview3D() {
             시점 초기화
           </button>
           <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
-            <UserArtUpload />
+            <UserArtSlots collapsible />
           </div>
         </div>
 
@@ -273,18 +307,24 @@ export default function Preview3D() {
     return {
       el,
       topOff: (el.placement?.spineOffset || 0) * PX,
+      // In combined views each element's art vars ride its own wrapper below;
+      // single-element cards put them on the scene root instead (bookArt).
+      art: multi ? artPropsFor(elements.indexOf(el)) : null,
       scene: buildBookScene(el.mechanism, params, { alpha, PX, pageW, pageH, card, paperSize, defaults }),
     };
   });
+  const bookArt = multi ? { style: null, className: '' } : artPropsFor(0);
 
   // Wrapper keeps the page as the transform parent (preserve-3d) while
-  // sliding the whole attachment along the spine (page-vertical) axis.
-  const shifted = (node, topOff, key) =>
-    node == null || topOff === 0 ? (
+  // sliding the whole attachment along the spine (page-vertical) axis — and,
+  // for combined cards, carrying the element's own --slot-art/--user-art vars.
+  const shifted = (node, topOff, key, art) =>
+    node == null || (topOff === 0 && !art?.className) ? (
       <React.Fragment key={key}>{node}</React.Fragment>
     ) : (
       <div
         key={key}
+        className={art?.className || undefined}
         style={{
           position: 'absolute',
           top: `${topOff}px`,
@@ -293,15 +333,16 @@ export default function Preview3D() {
           height: '100%',
           transformStyle: 'preserve-3d',
           pointerEvents: 'none',
+          ...art?.style,
         }}
       >
         {node}
       </div>
     );
 
-  const attachmentLeft = scenes.map((s, i) => shifted(s.scene.attachmentLeft, s.topOff, `L${s.el.id || i}`));
-  const attachmentRight = scenes.map((s, i) => shifted(s.scene.attachmentRight, s.topOff, `R${s.el.id || i}`));
-  const attachmentBook = scenes.map((s, i) => shifted(s.scene.attachmentBook, s.topOff, `B${s.el.id || i}`));
+  const attachmentLeft = scenes.map((s, i) => shifted(s.scene.attachmentLeft, s.topOff, `L${s.el.id || i}`, s.art));
+  const attachmentRight = scenes.map((s, i) => shifted(s.scene.attachmentRight, s.topOff, `R${s.el.id || i}`, s.art));
+  const attachmentBook = scenes.map((s, i) => shifted(s.scene.attachmentBook, s.topOff, `B${s.el.id || i}`, s.art));
   const readout = scenes
     .map((s) => s.scene.readout)
     .filter(Boolean)
@@ -320,8 +361,8 @@ export default function Preview3D() {
         onPointerCancel={handlePointerUp}
       >
         <div
-          className={bookClass}
-          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...artVar }}
+          className={`preview3d-book ${bookArt.className}`}
+          style={{ transform: `rotateX(${orbit.rx}deg) rotateY(${orbit.ry}deg) scale(${orbit.zoom})`, ...bookArt.style }}
         >
           {/* Left page — hinged on the spine (its right edge) */}
           <div
@@ -352,7 +393,7 @@ export default function Preview3D() {
           시점 초기화
         </button>
         <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
-          <UserArtUpload />
+          <UserArtSlots collapsible />
         </div>
       </div>
 
