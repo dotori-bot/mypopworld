@@ -17,6 +17,10 @@ const useCardStore = create((set) => ({
   // + full parameter editing without the AI in the loop.
   appMode: 'kids',
 
+  // 사용자가 업로드한 자기 그림 (data URL). 2D 도안의 '내 그림' 장식 페이지와
+  // 3D 시뮬레이션의 장식 면(--user-art CSS 변수)에 함께 적용된다.
+  userArt: null,
+
   // Chat
   messages: [],
   isTyping: false,
@@ -35,6 +39,13 @@ const useCardStore = create((set) => ({
   setLanguage: (lang) => set({ language: lang }),
   setDecorationMode: (mode) => set({ decorationMode: mode }),
   setAppMode: (mode) => set({ appMode: mode }),
+  // Clearing the art while the 2D decoration page is in 'user-image' mode
+  // drops that page's source, so fall back to the freehand guide.
+  setUserArt: (art) =>
+    set((s) => ({
+      userArt: art,
+      decorationMode: !art && s.decorationMode === 'user-image' ? 'freehand' : s.decorationMode,
+    })),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),
