@@ -271,21 +271,83 @@ export function buildBookScene(mechanism, params, ctx) {
       );
     };
 
-    attachmentLeft = (
+    // Glued decoration piece (the user's uploaded drawing, slot 0): a real
+    // v-fold card doesn't print the artwork ON the wedge — the child cuts the
+    // drawing out and glues it onto the wedge's front, its centre crease
+    // aligned with the wedge's ridge crease, most of it standing free ABOVE
+    // the wedge so it "pops" when the card opens. Model that faithfully: each
+    // arm carries its half of the drawing as a DOM child (inheriting the
+    // arm's page rotation + fold lift, exactly like armExtension), showing
+    // the image's left/right half via background-position so the two halves
+    // reunite along the crease and fold with the same dihedral as the wedge.
+    // The panel is invisible until a drawing is uploaded (CSS gates it on
+    // .has-slot-art-0 — see .preview3d-vfold-deco in preview.css).
+    //
+    // Sizing: the unfolded piece is rendered square at v-fold's decoration
+    // slot size (the default 100×100mm guide the 2D page prints), capped so
+    // it can't tower past half the page — the drawing is normally much
+    // BIGGER than the wedge, which is exactly why it pops. It overlaps the
+    // wedge by ~a glue-zone's worth at the crease and rises above the ridge
+    // tip T (arm-local y=0).
+    const DECO_SLOT_MM = 100; // v-fold's default decoration slot (see registry)
+    const decoHPx = Math.min(DECO_SLOT_MM * PX, pageH * 0.5);
+    const decoHalfWPx = decoHPx / 2;
+    const decoOverlapPx = Math.min(armDepthPx * 0.9, decoHPx * 0.35);
+    const decoTopPx = -(decoHPx - decoOverlapPx);
+
+    // The half-panel can't be a child of the arm div itself: the arm's
+    // triangle clip-path would clip away everything standing above the wedge.
+    // Instead it rides a CARRIER — a sibling replicating the arm's exact box,
+    // pivot and fold transform (so it composes identically in 3D) but with no
+    // clip-path/background of its own.
+    const buildDecoNode = (side, lift) => (
       <div
-        className="preview3d-arm preview3d-arm-left"
-        style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftLeft }}
+        className={`preview3d-vfold-deco-carrier preview3d-vfold-deco-carrier-${side}`}
+        style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: lift }}
       >
-        {buildExtensionNode('left', armLiftLeft)}
+        <div
+          className={`preview3d-vfold-deco preview3d-vfold-deco-${side}`}
+          style={{
+            width: `${decoHalfWPx}px`,
+            height: `${decoHPx}px`,
+            top: `${decoTopPx}px`,
+            // Crease-side edge flush with the arm's crease edge.
+            ...(side === 'left' ? { right: 0 } : { left: 0 }),
+            // Glued ON the arm face: nudged off the arm plane so it never
+            // z-fights with the wedge (the extension uses 0.5px on the same
+            // plane, so sit slightly proud of that). The in-plane 180° turn
+            // orients the artwork so it reads upright once the wedge has
+            // folded out toward the viewer — the panel's beyond-the-ridge end
+            // swings toward the camera, so page-local "up" lands pointing at
+            // the floor of the screen without it (the half-swap that pairs
+            // with this rotation lives in the -left/-right CSS classes).
+            transform: 'translateZ(0.7px) rotate(180deg)',
+          }}
+        />
       </div>
     );
+
+    attachmentLeft = (
+      <>
+        <div
+          className="preview3d-arm preview3d-arm-left"
+          style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftLeft }}
+        >
+          {buildExtensionNode('left', armLiftLeft)}
+        </div>
+        {buildDecoNode('left', armLiftLeft)}
+      </>
+    );
     attachmentRight = (
-      <div
-        className="preview3d-arm preview3d-arm-right"
-        style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftRight }}
-      >
-        {buildExtensionNode('right', armLiftRight)}
-      </div>
+      <>
+        <div
+          className="preview3d-arm preview3d-arm-right"
+          style={{ width: `${armWidthPx}px`, height: `${armH}px`, top: `${armTop}px`, transform: armLiftRight }}
+        >
+          {buildExtensionNode('right', armLiftRight)}
+        </div>
+        {buildDecoNode('right', armLiftRight)}
+      </>
     );
     readout = `팝업 높이 h = ${h.toFixed(1)}mm · 팔 길이 L = ${armLength}mm · 각도 θ = ${vAngle.toFixed(0)}° · 팔 각도 γ = ${gamma.toFixed(0)}°`;
 

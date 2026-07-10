@@ -1078,12 +1078,12 @@
   backface-visibility: visible;
 }
 
-/* Book-mechanism popup faces (v-fold arms + extensions, box-popup flaps,
-   parallel-fold/accordion steps, layered-stage walls, flap-clap flaps): the
-   drawing is glued over the panel; a paper-white backdrop rides underneath
-   so transparent-PNG drawings stay legible. clip-path shapes still apply. */
-.has-user-art .preview3d-arm-left,
-.has-user-art .preview3d-arm-right,
+/* Book-mechanism popup faces where the drawing IS glued flat over the panel
+   (box-popup flaps, parallel-fold/accordion steps, layered-stage walls,
+   flap-clap flaps): a paper-white backdrop rides underneath so
+   transparent-PNG drawings stay legible. clip-path shapes still apply.
+   (V-fold arms are NOT here: their drawing is a separate glued cut-out that
+   stands above the wedge — see .preview3d-vfold-deco below.) */
 .has-user-art .preview3d-boxflap-left,
 .has-user-art .preview3d-boxflap-right,
 .has-user-art .preview3d-step-left,
@@ -1096,15 +1096,56 @@
   background-repeat: no-repeat, no-repeat;
 }
 
-/* V-fold arms (and extensions): the visible wedge is clipped to the TOP half
-   of the arm's box (O–T–P triangle, see .preview3d-arm-left/right), so pin
-   the drawing into that half — centered cover would hide half of it in the
-   clipped-away bottom. The mild stretch is fine: at the default 45° wedge
-   the top half is exactly square. */
-.has-user-art .preview3d-arm-left,
-.has-user-art .preview3d-arm-right {
-  background-size: 100% 50%, auto;
-  background-position: top center, center;
+/* V-fold's glued drawing piece: two half-panels, one riding each arm's
+   CARRIER (a sibling of the arm replicating its box/pivot/fold transform —
+   the arm's own triangle clip-path would clip a child standing above the
+   wedge), showing the image's left/right half so the halves reunite along
+   the ridge crease and fold with the wedge — like the real cut-out glued
+   onto the wedge's front. Hidden until slot 0 has an uploaded drawing. */
+.preview3d-vfold-deco-carrier {
+  position: absolute;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  backface-visibility: visible;
+}
+
+.preview3d-vfold-deco-carrier-left {
+  right: 0;
+  transform-origin: right center; /* pivot O = spine centre, same as the arm */
+}
+
+.preview3d-vfold-deco-carrier-right {
+  left: 0;
+  transform-origin: left center;
+}
+
+.preview3d-vfold-deco {
+  position: absolute;
+  display: none;
+  background-repeat: no-repeat;
+  /* Full image spans BOTH halves: 200% of one half's width. */
+  background-size: 200% 100%;
+  pointer-events: none;
+  backface-visibility: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
+
+.has-slot-art-0 .preview3d-vfold-deco {
+  display: block;
+  background-image: var(--slot-art-0);
+}
+
+/* Each panel carries an in-plane 180° turn (see bookScenes.jsx) so the
+   artwork reads upright once the wedge folds out toward the viewer. Rotating
+   flips which half lands against the crease, so the position pairing is
+   swapped: the LEFT panel paints the image's RIGHT half (which the rotation
+   turns into the world-left half, seam on the crease), and vice versa. */
+.preview3d-vfold-deco-left {
+  background-position: right center;
+}
+
+.preview3d-vfold-deco-right {
+  background-position: left center;
 }
 
 /* Auto-slide-window's two window pictures + spiral-spring's hanging discs. */
