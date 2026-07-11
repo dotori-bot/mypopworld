@@ -72,7 +72,9 @@ export function spineFootprint(element, paperSize) {
     case 'layered-stage': {
       const geo = resolveLayeredStageGeometry({ ...p, paperSize });
       const widest = Math.max(...geo.layers.map((l) => l.width));
-      return { width: widest + 2 * geo.tabW, halfDepth: geo.cumulativeDepth };
+      // cumulativeDepth = worst closed reach max(h_i + t_i); +8 slack for the
+      // glue lines beside the stack.
+      return { width: widest + 8, halfDepth: geo.cumulativeDepth };
     }
     case 'spiral-spring': {
       const geo = resolveSpiralGeometry({ ...p, paperSize });

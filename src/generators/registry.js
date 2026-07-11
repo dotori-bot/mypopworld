@@ -111,21 +111,21 @@ export const MECHANISM_REGISTRY = {
   },
   'layered-stage': {
     sceneType: 'book',
-    labelKo: '층층이 무대 (성·마을이 겹겹이 솟는 팝업)',
+    labelKo: '층층이 무대 (케이크처럼 층층이 솟는 팝업)',
     render: (params) => renderLayeredStage(params),
     defaultParams: { layers: 3 },
     instructionStyle: 'layered-stage',
-    // One decoration slot per wall, sized off the SAME geometry the mechanism
+    // One decoration slot per tier, sized off the SAME geometry the mechanism
     // itself renders with (resolveLayeredStageGeometry), so the decoration
-    // image's suggested size always matches the actual printed wall.
+    // image's suggested size always matches the actual printed tier front.
     decorationSlots: (params) => {
       const geo = resolveLayeredStageGeometry(params);
       return geo.layers.map((layer) => ({
-        label: `${layer.index}번 벽 그림 (${layer.index === geo.count ? '제일 안쪽/제일 큰 벽' : layer.index === 1 ? '제일 바깥쪽/제일 작은 벽' : '중간 벽'})`,
-        width: layer.width * 0.75,
-        // *1.5 on height: the decoration needs to generously cover the wall's
-        // standing height, not just its footprint depth.
-        height: layer.height * 1.5,
+        label: `${layer.index}층 앞면 그림 (${layer.index === 1 ? '맨 아래·제일 큰 층' : layer.index === geo.count ? '맨 위·제일 작은 층' : '중간 층'})`,
+        // The art lands on the tier's FRONT panel (w_i × v_i): size it to
+        // cover that face with a little bleed.
+        width: layer.width * 0.85,
+        height: layer.frontHeight * 1.2,
       }));
     },
   },
@@ -308,15 +308,15 @@ export const INSTRUCTION_TEXT = {
     title: '층층이 무대 조립 설명서',
     materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
     steps: [
-      '완성 모습: 카드를 120도쯤 열면 벽이 여러 장(보통 3장, 많으면 4장) 서로 다른 깊이에서 층층이 솟아올라요. 번호가 작을수록 작고 낮은 벽(맨 앞/척추에서 가장 가까움), 번호가 클수록 크고 높은 벽(맨 안쪽/척추에서 가장 멂)입니다 — 성벽 뒤로 안쪽 탑이 솟은 모습을 떠올리면 됩니다.',
-      '검은색 실선을 따라 벽마다(1번부터 가장 큰 번호까지) 테두리를 모두 오려주세요. 벽의 세로 양옆에 붙은 초록색 네모(풀칠 자리/날개)는 자르지 말고 남겨둡니다. 벽 바깥쪽(먼 쪽) 가로선만 오리고, 척추(가운데 접는 선) 쪽 가로선은 자르지 마세요 — 그 선으로 벽이 카드에 붙어 섭니다.',
-      '빨간 점선(척추 쪽, 산접기)은 볼록하게, 파란 점선(바깥 쪽, 골접기)은 오목하게 접어 벽을 세워주세요. 각 벽은 높이와 깊이가 같아서(높이=깊이), 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접힙니다.',
-      '아주 중요 — 조립 순서는 반드시 뒤에서 앞으로입니다. 예를 들어 벽이 3장이면 3번 → 2번 → 1번 순서로 세워 붙이세요. 앞 벽을 먼저 붙이면 그 뒤에 가려서 손이 뒤쪽 벽까지 닿지 않기 때문입니다. 순서를 거꾸로 하면 카드를 닫을 때 뒤 벽이 접힌 자리를 벗어나 카드 밖으로 삐져나옵니다.',
-      '벽을 세울 때마다 좌우의 초록색 날개(풀칠 탭)를 벽 몸통에서 멀어지는 바깥쪽으로 접어, 카드 바닥면에 풀칠하거나 양면테이프로 붙여 고정하세요.',
-      '장식 그림 붙이기 — 이 도안은 2번째 페이지부터 벽 개수만큼 장식 그림이 따로따로 나옵니다. 각 장식 페이지에 적힌 번호(예: "1번 벽 그림", "2번 벽 그림"…)를 확인해서, 가위로 오린 뒤 같은 번호의 벽 앞면에 붙여주세요.',
-      '카드를 닫아 확인하세요. 모든 층이 카드 바깥 자르는 선 안쪽으로 납작하게 접혀 들어가야 정상입니다. 열면 성벽·탑이 층층이 서로 다른 깊이로 솟아오릅니다.',
+      '완성 모습: 케이크처럼 생긴 층(보통 3층, 많으면 4층)이 카드 양면 사이에 다리처럼 걸쳐 붙어 있어서, 카드를 열고 닫는 동작만으로 층층이 솟아오르고 다시 납작해집니다. 90도쯤 열었을 때 가장 반듯한 상자 모양이 됩니다. 1층이 맨 아래(제일 크고), 층수가 올라갈수록 작아집니다.',
+      '검은색 실선을 따라 층 조각(긴 띠)을 모두 오려주세요. 띠 하나는 위에서부터 [뒤 날개(초록) → 윗면 → 앞면 → 아래 날개(초록)] 순서로 되어 있습니다. 초록색 날개는 자르지 말고 띠에 붙여 둡니다. (카드에 구멍이 나는 게 싫으면, 띠를 색지에 대고 그려서 오려도 좋아요.)',
+      '각 띠를 접어주세요: 초록 날개 두 곳의 파란 점선은 골접기(뒤로, 오목하게), 가운데 빨간 점선(윗면과 앞면 사이)은 산접기(앞으로, 볼록하게). 접고 나면 ㄱ자 상자 모양이 됩니다.',
+      '아주 중요 — 조립 순서는 반드시 아래층(1층)부터 위로입니다. 1층의 아래 날개를 바닥 면의 ㉠ 선에(날개는 척추 쪽으로 향하게), 뒤 날개를 뒷벽 면의 ① 선에(날개는 위쪽으로 향하게) 붙이세요. 이때 카드를 90도쯤 세워 두고 붙이면 자리 잡기가 쉽습니다.',
+      '2층부터는 아래 날개를 바로 아래층 윗면에 인쇄된 ㉡ 선에(날개는 뒷벽 쪽으로 향하게), 뒤 날개를 뒷벽 면의 같은 번호(②, ③…) 선에 붙입니다. 층마다 같은 방법을 반복하면 케이크가 쌓입니다.',
+      '장식 그림 붙이기 — 이 도안은 2번째 페이지부터 층 개수만큼 장식 그림이 따로따로 나옵니다. 각 장식 페이지에 적힌 번호(예: "1층 앞면 그림", "2층 앞면 그림"…)를 확인해서, 가위로 오린 뒤 같은 번호 층의 앞면에 붙여주세요.',
+      '카드를 천천히 닫아 확인하세요. 모든 층이 카드 안쪽으로 납작하게 접혀 들어가야 정상입니다(활짝 180도로 펼쳐도 납작해져요). 다시 90도쯤 열면 케이크·성이 층층이 우뚝 섭니다.',
     ],
-    tips: '뒤에서 앞 순서로 붙이는 것이 핵심입니다. 뒤 층일수록 더 높고(성의 안쪽 탑처럼) 더 깊은 곳에 섭니다. 닫았을 때 어느 한 벽이라도 카드 밖으로 나오면, 그 층 벽이 너무 깊은 것이니 조금 낮은(=얕은) 벽으로 다시 만들어 주세요.',
+    tips: '아래층부터 위로 붙이는 것과, 날개의 접는 선을 인쇄된 풀칠선에 정확히 맞추는 것이 핵심입니다. 카드를 닫을 때 걸리는 층이 있으면 그 층의 날개가 선에서 비뚤게 붙은 것이니 떼어 다시 붙여 주세요. 층이 비스듬히 기울면 좌우 폭 가운데가 척추 가운데와 맞는지 확인하세요.',
   },
   'auto-slide-window': {
     title: '열면 바뀌는 액자 카드 조립 설명서',
