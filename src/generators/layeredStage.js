@@ -1,89 +1,72 @@
 /**
- * @fileoverview Layered stage pop-up ("층층이 무대 / 성벽 무대") mechanism generator.
+ * @fileoverview Layered stage pop-up ("층층이 무대 / 케이크 무대") mechanism generator.
  *
- * A multi-tier generalization of the single box-riser (`boxPopup.js`). Instead of
- * ONE standing wall, N wall "flats" (building/tower silhouettes) stand at
- * increasing depth from the spine, so opening the card raises a layered
- * theatrical scene with front-to-back depth (a castle keep rising behind its
- * lower outer wall, etc.).
+ * A multi-tier BOX-STACK popup (think: tiered birthday cake, castle keep):
+ * N separate paper strips bridge the card's two faces, so the card-opening
+ * motion itself erects the stack and closing the card lays everything flat.
+ * This is the classic commercial "cake card" construction.
  *
- * ── Per-layer unit (box-riser, straight from boxPopup.js) ─────────────────────
- *   Layer i is a standing wall of height h_i attached to the card along its NEAR
- *   crease and cut free on its far edge + two side edges. Box-popup's flat-fold
- *   rule is applied PER LAYER:
+ * ── Naming ─────────────────────────────────────────────────────────────────
+ *   The two card faces are the FLOOR (holds the stack's base) and the
+ *   BACKDROP (the stack leans against it). Card opening angle α: 0 = closed,
+ *   180 = fully flat. The stack is fully 3D at α = 90° and flattens at BOTH
+ *   extremes (a parallel-fold-family mechanism).
  *
- *       d_i = h_i                                   (flat-foldability, per layer)
+ * ── Per-tier strip (tier i = 1..N, bottom → top) ───────────────────────────
+ *   Each tier is one rectangular strip of width w_i (along the spine):
  *
- *   where d_i is the layer's depth footprint (its band on the card face) and h_i
- *   its standing wall height. With d_i = h_i, when the card shuts the wall folds
- *   flat exactly back over its own depth band [a_{i-1}, a_i] — its far edge lands
- *   on its near crease, never overshooting into the neighbour band. NEAR crease is
- *   a MOUNTAIN (wall pops toward the viewer, exactly like box-popup's spine
- *   mountain); FAR crease is a VALLEY (the wall's top nosing folds down). Every
- *   mountain is thus paired with a valley in the same layer → each layer
- *   collapses flat independently.
+ *       [rear glue flap g] –valley– [TOP panel, depth t_i]
+ *                          –mountain(crest)– [FRONT panel, height v_i]
+ *                          –valley– [bottom glue flap g]
  *
- * ── Nesting / accumulated depth (from parallelFold.js's staircase) ────────────
- *   Layers stack outward from the spine, each starting where the previous ended
- *   (parallelFold's `accumulatedDepth` bookkeeping, generalized to full-height
- *   walls):
+ *   Attachment:
+ *   - rear flap  → BACKDROP face, valley crease at height h_i = Σ_{j≤i} v_j
+ *     from the spine (flap points up/outward, hidden behind the stack).
+ *   - bottom flap of tier 1 → FLOOR face, valley crease at distance t_1 from
+ *     the spine (flap points inward toward the spine, hidden inside the box).
+ *   - bottom flap of tier i ≥ 2 → the TOP panel of tier i−1, at distance t_i
+ *     from that panel's rear (backdrop-side) crease (flap points toward the
+ *     backdrop, hidden inside the box). So assembly is BOTTOM-UP: tier 1
+ *     first, each next tier stands on the one below.
  *
- *       a_0 = 0,   a_i = a_{i-1} + d_i = Σ_{j≤i} d_j          (accumulated depth)
+ * ── The parallelogram property (why it works at every α) ───────────────────
+ *   With unit vectors u_f (floor) and u_b (backdrop) at angle α, tier 1's
+ *   linkage spine→(floor attach t_1)→crest→(backdrop attach h_1)→spine is a
+ *   parallelogram (opposite sides t_1 and v_1 = h_1). Hence its TOP panel
+ *   stays parallel to the floor and its FRONT panel parallel to the backdrop
+ *   at EVERY opening angle. Tier i ≥ 2 repeats the same parallelogram between
+ *   the backdrop and tier i−1's (floor-parallel) top panel, so by induction:
  *
- *   near crease of layer i at depth a_{i-1}, far crease at a_i. Layer 1's near
- *   crease is the spine itself. Depths are non-decreasing outward
- *   (d_1 ≤ d_2 ≤ … ≤ d_N) so deeper = taller = further back (castle keep).
- *   Widths are non-increasing outward (w_1 ≥ w_2 ≥ … ≥ w_N) so a near wall never
- *   hides the silhouette read of a further one.
+ *       crest_i = t_i·u_f + h_i·u_b        (tier i's mountain ridge, all α)
  *
- * ── THE hard constraint: nothing protrudes past the card edge when CLOSED ─────
- *   When the card folds shut, each layer's wall folds flat into its own band
- *   [a_{i-1}, a_i] on the card face. These bands are disjoint consecutive
- *   intervals that TILE outward from the spine, so the whole collapsed stack
- *   occupies exactly [0, a_N]. Layer i's folded footprint sits inside the region
- *   bounded by layer i-1's far crease (a_{i-1}) and the card edge — trivially,
- *   since the bands abut. The deepest (background) layer N reaches furthest out,
- *   so IT is the one at risk of poking past the card's own outer cut edge. The
- *   containment inequality every layer must satisfy is therefore:
+ *   All top panels ∥ floor, all front panels ∥ backdrop. At α = 0 and α = 180
+ *   every parallelogram degenerates → the whole stack lies flat; at α = 90°
+ *   the boxes are perfectly square (fronts vertical, tops horizontal).
  *
- *       a_i = Σ_{j≤i} d_j ≤ S_max                     (per layer; binds at i = N)
- *       S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
+ * ── Containment (nothing pokes past the card edge when closed) ─────────────
+ *   Closed (α=0), tier i's material spans from its rear-flap tip down to its
+ *   crest fold: the crest lands at h_i + t_i from the spine — the tier's
+ *   furthest reach (the rear flap reaches only h_i + FLAP and FLAP < TOP_MIN
+ *   ≤ t_i). h_i increases and t_i decreases with i, so the maximum over ALL
+ *   tiers is checked (it is not monotonic in general). Every tier must obey
  *
- *   Because d_j > 0 the a_i are strictly increasing, so a_N ≤ S_max implies all.
- *   We clamp against it exactly like parallelFold's buildLevels clamps each depth
- *   against maxDepth — but on the ACCUMULATED sum: each layer's depth is clamped
- *   to the remaining budget (S_max·SAFETY − a_{i-1}), and once the remaining
- *   budget drops below DEPTH_MIN we stop adding layers. An over-large or garbage
- *   request can therefore never push a wall off the sheet; it just yields fewer /
- *   shorter layers. We spend only DEPTH_SAFETY (0.92) of S_max so the deepest far
- *   crease lands strictly inside the edge with a visible slack strip.
+ *       reach_i = h_i + t_i ≤ budget = DEPTH_SAFETY · (card.height/2 − MARGIN)
  *
- * ── Glue tabs (from boxPopup.js's side trapezoids) ────────────────────────────
- *   Each wall gets its own trapezoid glue tab on each vertical side edge (TAB_W =
- *   6 mm > the 5 mm child-grip floor), folding OUTWARD in x to glue flat beside
- *   the wall. Tab i lives in x ∈ [cx ± (w_i/2 .. w_i/2 + TAB_W)] and depth band
- *   [a_{i-1}, a_i]. A nearer (larger) layer's wall folds into [a_{i-2}, a_{i-1}],
- *   a further (smaller) layer's tab into [a_{i-1}, a_i] — DISJOINT depth bands, so
- *   a further layer's tab can never collide with a nearer layer's wall. Tabs
- *   extend only in x (never deeper in s), and w_i/2 + TAB_W is clamped so the tab
- *   stays inside the printable card width on both A4 and Letter.
+ *   The resolver clamps t_i and v_i against the REMAINING budget while
+ *   accumulating h, and drops tiers that no longer fit — garbage input yields
+ *   fewer/shorter tiers, never an over-edge wall. Letter is the tight paper
+ *   (card.height 139.7 → budget 59.66 mm); all default stacks clear it.
  *
- * ── Default sizes (fit A4 AND Letter; Letter governs) ─────────────────────────
- *   S_max: A4 = 148.5/2 − 5 = 69.25 mm; Letter = 139.7/2 − 5 = 64.85 mm (tighter).
- *   Budget = 0.92·S_max ⇒ Letter 59.66 mm. Ascending default depths (= heights):
- *       N=2: [22, 30]  Σ 52    N=3: [14, 19, 24]  Σ 57    N=4: [10, 13, 16, 19]  Σ 58
- *   all < 59.66, so every default stack clears the Letter edge with ≥ 1.6 mm slack
- *   (A4 slack ≥ 5.7 mm). Descending default widths 100/84/68/52 mm keep every
- *   wall + both 6 mm tabs (≤ 112 mm) well inside the ~188 mm printable width.
- *   N is clamped to 2–4, per-layer depth ≥ 8 mm, width ∈ [30, card.width−2·MARGIN
- *   −2·TAB_W].
- *
- * ── Flat-foldability summary ──────────────────────────────────────────────────
- *   (1) Each layer independently satisfies d_i = h_i → its wall folds flat into
- *   its own band with a matched near-mountain / far-valley crease pair.
- *   (2) The bands tile [0, a_N] disjointly and outward, so layers collapse in
- *   depth order without interfering, and the whole scene lies flat inside the
- *   card silhouette iff a_N ≤ S_max — which the clamp guarantees.
+ * ── No inter-tier collision ────────────────────────────────────────────────
+ *   In (u_f, u_b) coordinates every panel's footprint is α-independent and
+ *   the mapping to space is injective for α ∈ (0°, 180°), so tiers can only
+ *   ever touch where their footprints touch: the single designed glue point
+ *   (t_{i+1}, h_i) where tier i+1's front foot lands on tier i's top panel.
+ *   t_i strictly decreasing (gap T_GAP) keeps that point strictly inside the
+ *   lower top panel. Bottom flaps point INWARD (toward the backdrop) and
+ *   FLAP < TOP_MIN ≤ t_i keeps them inside their own box footprint; rear
+ *   flaps stack on the backdrop without overlap because FLAP < FRONT_MIN ≤
+ *   v_{i+1} (tier i's flap [h_i, h_i+FLAP] ends below tier i+1's crease).
  *
  * @module generators/layeredStage
  */
@@ -93,7 +76,6 @@ import { clamp, round } from '../utils/math.js';
 import {
   addPath,
   addRect,
-  addPolygon,
   addText,
   addGroup,
   getLineStyle,
@@ -104,67 +86,75 @@ import {
 export const LAYERED_STAGE_LIMITS = {
   LAYERS_MIN: 2,
   LAYERS_MAX: 4,
-  DEPTH_MIN: 8,        // min per-layer depth = height (mm)
-  WIDTH_MIN: 30,       // min wall width along the spine (mm)
-  WIDTH_FRONT: 100,    // default front (layer 1) width (mm)
-  WIDTH_STEP: 16,      // default width decrement per layer outward (mm)
-  TAB_W: 6,            // side glue-tab width (mm) — above the 5 mm grip floor
-  DEPTH_SAFETY: 0.92,  // usable fraction of S_max spent on cumulative depth
+  TOP_MIN: 9,          // min top-panel depth t_i (mm) — must stay > FLAP
+  FRONT_MIN: 8,        // min front-panel height v_i (mm) — must stay > FLAP
+                       // (keeps consecutive rear flaps from overlapping on
+                       // the backdrop: flap [h_i, h_i+FLAP] vs crease h_i+v)
+  WIDTH_MIN: 30,       // min strip width along the spine (mm)
+  WIDTH_FRONT: 100,    // default bottom-tier width (mm)
+  FLAP: 7,             // glue flap depth (mm) — above the 5 mm child-grip floor
+  T_GAP: 2,            // min strict decrease between consecutive t_i (mm)
+  DEPTH_SAFETY: 0.92,  // usable fraction of S_max spent on closed reach
 };
 
-/** Ascending default depths (= heights) per layer count. See header for fit. */
-const DEFAULT_DEPTHS = {
-  2: [22, 30],
-  3: [14, 19, 24],
-  4: [10, 13, 16, 19],
+/**
+ * Default (frontHeight v, topDepth t, width w) tables per tier count.
+ * Bottom → top: v and t descend, w descends. Letter budget check (59.66 mm):
+ *   N=2: reaches 50, 56   N=3: 44, 50, 55   N=4: 38, 43, 48, 53   — all clear.
+ */
+const DEFAULT_TIERS = {
+  2: [
+    { frontHeight: 24, topDepth: 26, width: 100 },
+    { frontHeight: 18, topDepth: 14, width: 72 },
+  ],
+  3: [
+    { frontHeight: 18, topDepth: 26, width: 100 },
+    { frontHeight: 14, topDepth: 18, width: 78 },
+    { frontHeight: 12, topDepth: 11, width: 56 },
+  ],
+  4: [
+    { frontHeight: 14, topDepth: 24, width: 100 },
+    { frontHeight: 11, topDepth: 18, width: 80 },
+    { frontHeight: 10, topDepth: 13, width: 60 },
+    { frontHeight: 9, topDepth: 9, width: 42 },
+  ],
 };
 
 /** NaN/garbage-safe numeric intake (?? only guards null/undefined). */
 const numOr = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
 /**
- * Build the default (depth, width) spec for N layers: ascending depths from the
- * per-N table, descending widths from WIDTH_FRONT.
- * @param {number} n
- * @returns {Array<{depth:number, width:number}>}
- */
-function defaultSpec(n) {
-  const L = LAYERED_STAGE_LIMITS;
-  const depths = (DEFAULT_DEPTHS[n] || DEFAULT_DEPTHS[3]).slice(0, n);
-  return depths.map((depth, i) => ({
-    depth,
-    width: L.WIDTH_FRONT - i * L.WIDTH_STEP,
-  }));
-}
-
-/**
- * @typedef {Object} StageLayer
- * @property {number} index  - 1-based layer number (1 = front, nearest spine)
- * @property {number} depth  - Depth footprint d_i (mm)
- * @property {number} height - Standing wall height h_i = d_i (mm)
- * @property {number} width  - Wall width w_i along the spine (mm)
- * @property {number} near   - Accumulated depth a_{i-1} at the near crease (mm)
- * @property {number} far    - Accumulated depth a_i at the far crease (mm)
+ * @typedef {Object} StageTier
+ * @property {number} index       - 1-based tier number (1 = bottom, biggest)
+ * @property {number} topDepth    - Top panel depth t_i (mm)
+ * @property {number} frontHeight - Front panel (visible band) height v_i (mm)
+ * @property {number} width       - Strip width w_i along the spine (mm)
+ * @property {number} attach      - Backdrop height of the tier BELOW, h_{i-1} (mm)
+ * @property {number} crest       - This tier's backdrop attach height h_i (mm)
+ * @property {number} reach       - Closed-state reach h_i + t_i from the spine (mm)
+ * @property {number} height      - Alias of frontHeight (decoration-slot sizing)
  */
 
 /**
  * @typedef {Object} StageGeometry
- * @property {StageLayer[]} layers
- * @property {number} count           - Number of layers actually placed
+ * @property {StageTier[]} layers
+ * @property {number} count           - Number of tiers actually placed
  * @property {number} sMax            - CARD.height/2 − MARGIN, the hard edge (mm)
- * @property {number} budget          - DEPTH_SAFETY·sMax, the depth budget (mm)
- * @property {number} cumulativeDepth - a_N of the deepest layer (mm)
- * @property {number} maxWidth        - Max printable wall width incl. tabs (mm)
- * @property {number} tabW            - Side glue-tab width (mm)
+ * @property {number} budget          - DEPTH_SAFETY·sMax, the reach budget (mm)
+ * @property {number} cumulativeDepth - max_i(reach_i): worst closed reach (mm)
+ * @property {number} maxWidth        - Max printable strip width (mm)
+ * @property {number} flap            - Glue flap depth (mm)
  */
 
 /**
  * Resolve + clamp layered-stage parameters against the printable card face.
- * Pure numbers — testable headlessly. Guarantees a_i ≤ sMax for every layer.
+ * Pure numbers — testable headlessly. Guarantees reach_i ≤ budget per tier.
  *
  * @param {Object} [opts]
- * @param {number} [opts.layers=3] - Layer count (clamped 2–4)
- * @param {Array<{depth:number,width:number}>} [opts.layerSpec] - Explicit per-layer sizes
+ * @param {number} [opts.layers=3] - Tier count (clamped 2–4)
+ * @param {Array<{frontHeight?:number, topDepth?:number, depth?:number, height?:number, width?:number}>} [opts.layerSpec]
+ *   Explicit per-tier sizes. Legacy keys are accepted: depth → topDepth,
+ *   height → frontHeight.
  * @param {'A4'|'LETTER'} [opts.paperSize='A4']
  * @returns {StageGeometry}
  */
@@ -172,42 +162,60 @@ export function resolveLayeredStageGeometry(opts = {}) {
   const L = LAYERED_STAGE_LIMITS;
   const card = CARD_SIZES[opts.paperSize] || CARD_SIZES.A4;
 
-  const sMax = card.height / 2 - PRINT.MARGIN;        // hard edge (task inequality)
-  const budget = L.DEPTH_SAFETY * sMax;               // usable cumulative depth
-  const maxWidth = card.width - 2 * PRINT.MARGIN - 2 * L.TAB_W;
+  const sMax = card.height / 2 - PRINT.MARGIN;        // hard edge
+  const budget = L.DEPTH_SAFETY * sMax;               // usable closed reach
+  const maxWidth = card.width - 2 * PRINT.MARGIN;
 
-  let n = clamp(Math.round(numOr(opts.layers, 3)), L.LAYERS_MIN, L.LAYERS_MAX);
+  const n = clamp(Math.round(numOr(opts.layers, 3)), L.LAYERS_MIN, L.LAYERS_MAX);
 
   let spec;
   if (Array.isArray(opts.layerSpec) && opts.layerSpec.length > 0) {
-    spec = opts.layerSpec
-      .slice(0, L.LAYERS_MAX)
-      .map((s) => ({
-        depth: numOr(s && s.depth, L.DEPTH_MIN),
-        width: numOr(s && s.width, L.WIDTH_FRONT),
-      }));
+    const defaults = DEFAULT_TIERS[Math.min(opts.layerSpec.length, L.LAYERS_MAX)] || DEFAULT_TIERS[3];
+    spec = opts.layerSpec.slice(0, L.LAYERS_MAX).map((s, i) => ({
+      topDepth: numOr(s && (s.topDepth ?? s.depth), (defaults[i] || defaults[defaults.length - 1]).topDepth),
+      frontHeight: numOr(s && (s.frontHeight ?? s.height), (defaults[i] || defaults[defaults.length - 1]).frontHeight),
+      width: numOr(s && s.width, L.WIDTH_FRONT),
+    }));
   } else {
-    spec = defaultSpec(n);
+    spec = DEFAULT_TIERS[n] || DEFAULT_TIERS[3];
   }
 
   const layers = [];
-  let acc = 0;
+  let h = 0;              // accumulated backdrop attach height h_{i-1}
+  let prevT = Infinity;   // previous tier's top depth (strict decrease)
+  let prevW = Infinity;
   for (let i = 0; i < spec.length; i++) {
-    const avail = budget - acc;
-    if (avail < L.DEPTH_MIN) break;                   // no room → drop rest (stays contained)
-    const depth = clamp(numOr(spec[i].depth, L.DEPTH_MIN), L.DEPTH_MIN, avail);
-    const width = clamp(numOr(spec[i].width, L.WIDTH_FRONT), L.WIDTH_MIN, maxWidth);
-    const near = acc;
-    const far = acc + depth;
+    // Top depth: strictly below the tier underneath AND leaving room for a
+    // minimal front band inside the remaining reach budget.
+    const tCap = Math.min(prevT - L.T_GAP, budget - h - L.FRONT_MIN);
+    if (tCap < L.TOP_MIN) break;                      // no room → drop the rest
+    const topDepth = clamp(numOr(spec[i].topDepth, L.TOP_MIN), L.TOP_MIN, tCap);
+
+    const vCap = budget - h - topDepth;               // reach_i = h + v + t ≤ budget
+    if (vCap < L.FRONT_MIN) break;
+    const frontHeight = clamp(numOr(spec[i].frontHeight, L.FRONT_MIN), L.FRONT_MIN, vCap);
+
+    const width = clamp(
+      Math.min(numOr(spec[i].width, L.WIDTH_FRONT), prevW - 4),
+      L.WIDTH_MIN,
+      maxWidth,
+    );
+
+    const attach = h;
+    const crest = h + frontHeight;
     layers.push({
       index: i + 1,
-      depth: round(depth),
-      height: round(depth),
+      topDepth: round(topDepth),
+      frontHeight: round(frontHeight),
+      height: round(frontHeight),
       width: round(width),
-      near: round(near),
-      far: round(far),
+      attach: round(attach),
+      crest: round(crest),
+      reach: round(crest + topDepth),
     });
-    acc = far;
+    h = crest;
+    prevT = topDepth;
+    prevW = width;
   }
 
   return {
@@ -215,9 +223,9 @@ export function resolveLayeredStageGeometry(opts = {}) {
     count: layers.length,
     sMax: round(sMax),
     budget: round(budget),
-    cumulativeDepth: round(acc),
+    cumulativeDepth: round(layers.reduce((m, l) => Math.max(m, l.reach), 0)),
     maxWidth: round(maxWidth),
-    tabW: L.TAB_W,
+    flap: L.FLAP,
   };
 }
 
@@ -266,17 +274,81 @@ function drawFacade(g, cx, baseY, roofY, w, style) {
 }
 
 /**
+ * Draw one tier strip (a self-contained cut-out piece) with its creases, glue
+ * flaps, facade and, when a tier sits on top of this one, the glue-position
+ * guide line on the top panel.
+ *
+ * Printed top → bottom: rear flap / top panel / front panel / bottom flap.
+ * As assembled (decorated side toward the viewer): rear-flap crease and
+ * bottom-flap crease are VALLEYS, the crest is a MOUNTAIN.
+ *
+ * @returns {number} the strip's total drawn height (mm)
+ */
+function drawTierStrip(g, x, yTop, layer, nextLayer, styles, flap) {
+  const { cutStyle, mountainStyle, valleyStyle, glueStyle, scoreStyle } = styles;
+  const w = layer.width;
+  const xL = round(x);
+  const xR = round(x + w);
+  const cxS = round(x + w / 2);
+
+  const y0 = round(yTop);                       // top of rear flap
+  const y1 = round(y0 + flap);                  // valley: rear flap | top panel
+  const y2 = round(y1 + layer.topDepth);        // mountain: crest
+  const y3 = round(y2 + layer.frontHeight);     // valley: front | bottom flap
+  const y4 = round(y3 + flap);                  // bottom of bottom flap
+
+  // Outer rectangle: cut on all 4 sides (a fully separate piece).
+  addPath(g, `M ${xL} ${y0} L ${xR} ${y0} L ${xR} ${y4} L ${xL} ${y4} Z`, cutStyle);
+
+  // Creases.
+  addPath(g, `M ${xL} ${y1} L ${xR} ${y1}`, valleyStyle);
+  addPath(g, `M ${xL} ${y2} L ${xR} ${y2}`, mountainStyle);
+  addPath(g, `M ${xL} ${y3} L ${xR} ${y3}`, valleyStyle);
+
+  // Glue flaps (highlighted like every other mechanism's 풀칠 자리).
+  addRect(g, xL, y0, w, flap, glueStyle);
+  addRect(g, xL, y3, w, flap, glueStyle);
+  addText(g, cxS, round(y0 + flap - 1.6), `뒤 날개 → 뒷면 ${'①②③④'[layer.index - 1]}`, 2.6, 'middle');
+  addText(
+    g,
+    cxS,
+    round(y3 + flap - 1.6),
+    layer.index === 1 ? '아래 날개 → 바닥 ㉠' : `아래 날개 → ${layer.index - 1}층 윗면 ㉡`,
+    2.6,
+    'middle',
+  );
+
+  // Next tier's glue-position guide, drawn ON this top panel: a score line at
+  // distance t_{i+1} from the rear (y1) crease, as wide as the next strip.
+  if (nextLayer) {
+    const gy = round(y1 + nextLayer.topDepth);
+    const ghw = round(nextLayer.width / 2);
+    addPath(g, `M ${round(cxS - ghw)} ${gy} L ${round(cxS + ghw)} ${gy}`, scoreStyle);
+    addText(g, cxS, round(gy - 1.4), `㉡ ${nextLayer.index}층 아래 날개 붙는 선`, 2.4, 'middle');
+  }
+
+  // Facade decoration on the front panel (crest at y2 = the printed top edge
+  // of the face, exactly the assembled orientation).
+  drawFacade(g, cxS, y3, y2, w, scoreStyle);
+  addText(g, cxS, round(y1 + 3.4), `무대 ${layer.index}층 (아래←${layer.index})`, 2.8, 'middle');
+
+  return y4 - y0;
+}
+
+/**
  * Draw the layered-stage flat pattern into a passed-in SVG/group.
  *
- * The pattern is mirrored above and below the spine (each layer draws an upper
- * and a lower half), exactly like parallelFold's upper/lower staircase.
+ * Page layout (spine at cy): the UPPER half is the BACKDROP face and carries
+ * the numbered rear-flap glue lines ①..Ⓝ plus tier 1's strip in its outer
+ * region; the LOWER half is the FLOOR face and carries tier 1's bottom-flap
+ * glue line ㉠ plus the remaining strips flowed side-by-side below it.
  *
  * @param {SVGElement} svg - Target element (a content group from createTemplate)
  * @param {Object} [options]
  * @param {number} [options.cx=105] - Spine centre X (mm)
  * @param {number} [options.cy=148.5] - Spine centre Y (mm)
- * @param {number} [options.layers=3] - Layer count (2–4)
- * @param {Array<{depth:number,width:number}>} [options.layerSpec]
+ * @param {number} [options.layers=3] - Tier count (2–4)
+ * @param {Array} [options.layerSpec]
  * @param {'A4'|'LETTER'} [options.paperSize='A4']
  * @param {boolean} [options.isColor=true]
  * @returns {SVGGElement}
@@ -297,66 +369,59 @@ export const generateLayeredStage = (svg, options = {}) => {
 
   const g = addGroup(svg, 'layered-stage-group');
 
-  const cutStyle = getLineStyle('CUT', isColor);
-  const mountainStyle = getLineStyle('MOUNTAIN_FOLD', isColor);
-  const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
-  const glueStyle = getLineStyle('GLUE_TAB', isColor);
-  const scoreStyle = getLineStyle('SCORE', isColor);
+  const styles = {
+    cutStyle: getLineStyle('CUT', isColor),
+    mountainStyle: getLineStyle('MOUNTAIN_FOLD', isColor),
+    valleyStyle: getLineStyle('VALLEY_FOLD', isColor),
+    glueStyle: getLineStyle('GLUE_TAB', isColor),
+    scoreStyle: getLineStyle('SCORE', isColor),
+  };
+  const flap = geo.flap;
+  const circled = '①②③④';
 
-  const tabW = geo.tabW;
+  // ── Backdrop face (upper half): rear-flap glue lines ①..Ⓝ ────────────────
+  // Tier i's rear flap glues with its crease ON this line, flap pointing up.
+  for (const layer of geo.layers) {
+    const gy = round(cy - layer.crest);
+    const hw = round(layer.width / 2);
+    addPath(g, `M ${round(cx - hw)} ${gy} L ${round(cx + hw)} ${gy}`, styles.scoreStyle);
+    addText(g, round(cx + hw + 2), round(gy + 1), `${circled[layer.index - 1]} ${layer.index}층 뒤 날개`, 2.4, 'start');
+  }
+  addText(g, cx, round(cy - geo.layers[geo.layers.length - 1].crest - flap - 3), '↑ 뒷벽 면 (풀칠선 위치)', 2.6, 'middle');
 
-  // Draw furthest (deepest) layer first so nearer/larger walls overlay it in the
-  // preview, matching the front-to-back read.
-  const ordered = [...geo.layers].sort((a, b) => b.index - a.index);
-
-  for (const layer of ordered) {
-    const { width, near, far, index } = layer;
-    const hw = round(width / 2);
-    const xL = round(cx - hw);
-    const xR = round(cx + hw);
-
-    // ── One card face at a time (sign = -1 upper, +1 lower) ─────────────────
-    for (const sign of [-1, 1]) {
-      const nearY = round(cy + sign * near);   // near crease (attached / mountain)
-      const farY = round(cy + sign * far);     // far crease (free edge / valley)
-
-      // Cuts: two side verticals + the far horizontal (near edge stays attached).
-      addPath(g, `M ${xL} ${nearY} L ${xL} ${farY}`, cutStyle);
-      addPath(g, `M ${xR} ${nearY} L ${xR} ${farY}`, cutStyle);
-      addPath(g, `M ${xL} ${farY} L ${xR} ${farY}`, cutStyle);
-
-      // Folds: near = mountain (pops toward viewer), far = valley (matched pair).
-      addPath(g, `M ${xL} ${nearY} L ${xR} ${nearY}`, mountainStyle);
-      addPath(g, `M ${xL} ${farY} L ${xR} ${farY}`, valleyStyle);
-
-      // Side glue tabs — trapezoids folding OUTWARD in x, spanning the depth band.
-      const yA = Math.min(nearY, farY);
-      const yB = Math.max(nearY, farY);
-      addPolygon(g, [
-        [xL, yA],
-        [round(xL - tabW), round(yA + tabW / 2)],
-        [round(xL - tabW), round(yB - tabW / 2)],
-        [xL, yB],
-      ], glueStyle);
-      addPolygon(g, [
-        [xR, yA],
-        [round(xR + tabW), round(yA + tabW / 2)],
-        [round(xR + tabW), round(yB - tabW / 2)],
-        [xR, yB],
-      ], glueStyle);
-
-      // Decorative facade (score guides only).
-      drawFacade(g, cx, nearY, farY, width, scoreStyle);
-    }
-
-    // Layer label on the upper face, inside the band.
-    const labelY = Math.max(round(cy - (near + far) / 2 + 1), PRINT.MARGIN + 4);
-    addText(g, cx, labelY, `무대 ${index} (뒤←${index})`, 2.4, 'middle');
+  // ── Floor face (lower half): tier 1's bottom-flap glue line ㉠ ────────────
+  const floorLine = geo.layers[0];
+  {
+    const gy = round(cy + floorLine.topDepth);
+    const hw = round(floorLine.width / 2);
+    addPath(g, `M ${round(cx - hw)} ${gy} L ${round(cx + hw)} ${gy}`, styles.scoreStyle);
+    addText(g, round(cx + hw + 2), round(gy + 1), '㉠ 1층 아래 날개', 2.4, 'start');
   }
 
-  // Title above the deepest upper far crease, clamped inside the page.
-  const titleY = Math.max(round(cy - geo.cumulativeDepth - 3), PRINT.MARGIN + 3);
-  addText(g, cx, titleY, '층층이 무대 (Layered Stage)', 3, 'middle');
+  // ── Tier strips (fully cut-out pieces) ────────────────────────────────────
+  // Tier 1 in the backdrop face's outer region, above the glue lines.
+  const strip1H = 2 * flap + geo.layers[0].topDepth + geo.layers[0].frontHeight;
+  const strip1Top = Math.max(PRINT.MARGIN + 8, cy - geo.layers[geo.layers.length - 1].crest - flap - strip1H - 12);
+  drawTierStrip(g, cx - geo.layers[0].width / 2, strip1Top, geo.layers[0], geo.layers[1] || null, styles, flap);
+
+  // Tiers 2..N flowed side-by-side (max 2 per row) on the floor face, below ㉠.
+  let rowY = cy + floorLine.topDepth + 10;
+  for (let i = 1; i < geo.layers.length; i += 2) {
+    const row = geo.layers.slice(i, i + 2);
+    const rowW = row.reduce((s, l) => s + l.width, 0) + (row.length - 1) * 8;
+    let x = cx - rowW / 2;
+    let rowH = 0;
+    for (const layer of row) {
+      const idx = geo.layers.indexOf(layer);
+      const hDrawn = drawTierStrip(g, x, rowY, layer, geo.layers[idx + 1] || null, styles, flap);
+      rowH = Math.max(rowH, hDrawn);
+      x += layer.width + 8;
+    }
+    rowY += rowH + 8;
+  }
+
+  // Title above everything, clamped inside the page.
+  addText(g, cx, Math.max(round(strip1Top - 3), PRINT.MARGIN + 3), '층층이 무대 (Layered Stage)', 3, 'middle');
 
   return g;
 };
@@ -367,7 +432,7 @@ export const generateLayeredStage = (svg, options = {}) => {
  * @param {'A4'|'LETTER'} [params.paperSize='A4']
  * @param {'color'|'bw'} [params.colorMode='color']
  * @param {number} [params.layers=3]
- * @param {Array<{depth:number,width:number}>} [params.layerSpec]
+ * @param {Array} [params.layerSpec]
  * @returns {{ svg: SVGSVGElement }}
  */
 export function renderLayeredStage(params = {}) {

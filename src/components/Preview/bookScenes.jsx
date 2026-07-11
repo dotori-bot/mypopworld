@@ -354,64 +354,68 @@ export function buildBookScene(mechanism, params, ctx) {
 
     readout = `병풍 ${geo.panels}단 · 앵커 간격 D = ${D.toFixed(1)}mm · 접힘각 ρ = ${rho.toFixed(0)}°`;
   } else if (mechanism === 'layered-stage') {
-    // Layered stage (층층이 무대) — see generators/layeredStage.js. Each layer i
-    // is its OWN independent box-popup-style flap: h_i = d_i·sin(α/2), the
-    // SAME gamma = α/2 and rotate3d formula as the box-popup branch above.
-    // The only difference from box-popup is the hinge sits inset by the
-    // layer's accumulated depth `near_i` from the spine instead of flush
-    // against it — the same off-spine inset technique flap-clap uses inline
-    // (transform-origin stays the flap's own edge; only its screen position
-    // moves). Layers never overlap in depth (near_i are disjoint bands), so
-    // there's no z-order ambiguity between them.
+    // Layered stage (층층이 무대) — a tiered BOX STACK (cake card), see
+    // generators/layeredStage.js. Each tier is a separate strip bridging the
+    // two card faces, and its linkage is a PARALLELOGRAM at every α (opposite
+    // sides t_i / v_i against the two pages), so:
+    //   - every TOP panel stays parallel to the FLOOR page,
+    //   - every FRONT panel stays parallel to the BACKDROP page,
+    //   - tier i's crest sits at  t_i·u_f + h_i·u_b  for all α,
+    // where u_f/u_b are the two page directions at opening angle α. The whole
+    // stack is rooted on the RIGHT page (the floor): in its local frame
+    // u_f = +x̂ and u_b = (cos α, 0, sin α), so panel poses are closed-form
+    // translate3d + rotateY(−α) — no chained nesting needed, and the rear
+    // edges land exactly on the left page (backdrop) automatically. All
+    // hinges are parallel to the spine, so plain rotateY is the correct
+    // rotation (NOT the v-fold rotate3d composition — see the 90°-twist
+    // regression this branch once had, docs/mechanisms/layered-stage.md).
+    // The stack flattens at BOTH α=0 and α=180 and is fully square at α=90.
     const geo = resolveLayeredStageGeometry({ layers: params.layers ?? defaults.layers, paperSize });
 
-    const gamma = alpha / 2; // deg, identical to box-popup
-    const aRad = degToRad(gamma);
-    const sinA = Math.sin(aRad);
+    const aRad = degToRad(alpha);
     const cosA = Math.cos(aRad);
-    const flapLiftLeft = `rotate3d(${(-sinA).toFixed(5)}, 0, ${(-cosA).toFixed(5)}, ${gamma}deg)`;
-    const flapLiftRight = `rotate3d(${(-sinA).toFixed(5)}, 0, ${cosA.toFixed(5)}, ${gamma}deg)`;
+    const sinA = Math.sin(aRad);
 
-    attachmentLeft = geo.layers.map((layer) => {
-      const depthPx = layer.depth * PX;
-      const widthPx = layer.width * PX;
-      const top = pageH / 2 - widthPx / 2;
-      return (
+    attachmentLeft = null;
+    attachmentRight = geo.layers.flatMap((layer) => {
+      const wPx = layer.width * PX;
+      const top = pageH / 2 - wPx / 2;
+      // FRONT panel: from t_i·u_f + h_{i-1}·u_b, body of length v_i along u_b.
+      const front = (
         <div
-          key={`stage-left-${layer.index}`}
-          className="preview3d-boxflap preview3d-boxflap-left"
-          style={{
-            width: `${depthPx}px`,
-            height: `${widthPx}px`,
-            top: `${top}px`,
-            right: `${layer.near * PX}px`,
-            transform: flapLiftLeft,
-          }}
-        />
-      );
-    });
-    attachmentRight = geo.layers.map((layer) => {
-      const depthPx = layer.depth * PX;
-      const widthPx = layer.width * PX;
-      const top = pageH / 2 - widthPx / 2;
-      return (
-        <div
-          key={`stage-right-${layer.index}`}
+          key={`stage-front-${layer.index}`}
           className="preview3d-boxflap preview3d-boxflap-right"
           style={{
-            width: `${depthPx}px`,
-            height: `${widthPx}px`,
+            left: 0,
             top: `${top}px`,
-            left: `${layer.near * PX}px`,
-            transform: flapLiftRight,
+            width: `${layer.frontHeight * PX}px`,
+            height: `${wPx}px`,
+            transformOrigin: 'left center',
+            transform: `translate3d(${(layer.topDepth + layer.attach * cosA) * PX}px, 0, ${layer.attach * sinA * PX}px) rotateY(${-alpha}deg)`,
           }}
         />
       );
+      // TOP panel: from h_i·u_b, body of length t_i along u_f (∥ floor page →
+      // pure translation, no rotation, at every α).
+      const topPanel = (
+        <div
+          key={`stage-top-${layer.index}`}
+          className="preview3d-step preview3d-step-right"
+          style={{
+            left: 0,
+            top: `${top}px`,
+            width: `${layer.topDepth * PX}px`,
+            height: `${wPx}px`,
+            transform: `translate3d(${layer.crest * cosA * PX}px, 0, ${layer.crest * sinA * PX}px)`,
+          }}
+        />
+      );
+      return [front, topPanel];
     });
 
-    const deepest = geo.layers[geo.layers.length - 1];
-    const deepestHeight = deepest ? calculateParallelFoldHeight(deepest.depth, alpha) : 0;
-    readout = `무대 ${geo.count}겹 · 가장 안쪽 벽 높이 ≈ ${deepestHeight.toFixed(1)}mm · 접힘각 γ = ${gamma.toFixed(0)}°`;
+    const topTier = geo.layers[geo.layers.length - 1];
+    const riseNow = topTier ? topTier.crest * sinA : 0;
+    readout = `무대 ${geo.count}층 · 지금 맨 위 높이 ≈ ${riseNow.toFixed(1)}mm (90°에서 최대 ${topTier ? topTier.crest.toFixed(0) : 0}mm)`;
   } else if (mechanism === 'flap-clap') {
     // Flap-clap — see generators/flapClap.js for the full derivation. Unlike
     // every other mechanism here, this flap's OWN fold angle does NOT track
