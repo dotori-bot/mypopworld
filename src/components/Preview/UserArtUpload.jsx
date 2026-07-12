@@ -11,8 +11,9 @@ const MAX_DIM = 768;
  * Decode an uploaded image file and re-encode it as a downscaled PNG data URL.
  * PNG keeps transparency for drawings exported from paint apps; photos of
  * paper drawings simply keep their white background.
+ * (Shared with CustomizePanel's card-skin image upload.)
  */
-async function fileToArtDataUrl(file) {
+export async function fileToArtDataUrl(file) {
   const objectUrl = URL.createObjectURL(file);
   try {
     const img = await new Promise((resolve, reject) => {

@@ -21,6 +21,11 @@ const useCardStore = create((set) => ({
   // 3D 시뮬레이션의 장식 면(--user-art CSS 변수)에 함께 적용된다.
   userArt: null,
 
+  // 도안 배경 꾸미기: 모든 도안 페이지(재단선 안쪽)와 3D 시뮬레이션의 카드
+  // 면에 함께 칠해지는 색/이미지. color·image 값은 type을 바꿔도 보존되어
+  // 팝오버에서 왔다갔다 해도 마지막 선택이 유지된다.
+  cardSkin: { type: 'none', color: '#f7e8d0', image: null },
+
   // Chat
   messages: [],
   isTyping: false,
@@ -46,6 +51,14 @@ const useCardStore = create((set) => ({
       userArt: art,
       decorationMode: !art && s.decorationMode === 'user-image' ? 'freehand' : s.decorationMode,
     })),
+  // Partial update ({ type }·{ color }·{ image } 아무 조합). 이미지를 지우면
+  // 'image' 타입은 표시할 것이 없으므로 'none'으로 되돌린다.
+  setCardSkin: (patch) =>
+    set((s) => {
+      const next = { ...s.cardSkin, ...patch };
+      if (next.type === 'image' && !next.image) next.type = 'none';
+      return { cardSkin: next };
+    }),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),

@@ -80,6 +80,58 @@ export const addGroup = (svg, id) => {
   return g;
 };
 
+/**
+ * Paint the user's card-skin (solid colour or uploaded image) UNDER a finished
+ * pattern page: a background covering the sheet's trim area (inside
+ * PRINT.MARGIN — the material that actually becomes the card), inserted as the
+ * page's first child so every cut/fold/glue mark stays printed on top of it.
+ *
+ * @param {SVGSVGElement} svg - A finished page (createTemplate-based or the
+ *   gate-curtain's own page — anything whose root children are page marks).
+ * @param {{width:number,height:number}} paper - Page size in mm.
+ * @param {{type:'none'|'color'|'image', color?:string, image?:string}} skin
+ */
+export const paintCardSkin = (svg, paper, skin) => {
+  if (!skin || skin.type === 'none') return;
+  const x = PRINT.MARGIN;
+  const y = PRINT.MARGIN;
+  const w = paper.width - 2 * PRINT.MARGIN;
+  const h = paper.height - 2 * PRINT.MARGIN;
+
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('id', 'card-skin');
+
+  if (skin.type === 'color' && skin.color) {
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('fill', skin.color);
+    g.appendChild(rect);
+  } else if (skin.type === 'image' && skin.image) {
+    const img = document.createElementNS(SVG_NS, 'image');
+    img.setAttribute('href', skin.image);
+    img.setAttribute('x', x);
+    img.setAttribute('y', y);
+    img.setAttribute('width', w);
+    img.setAttribute('height', h);
+    img.setAttribute('preserveAspectRatio', 'xMidYMid slice'); // cover-crop
+    g.appendChild(img);
+    // Thin white veil so black cut lines stay readable over busy photos.
+    const veil = document.createElementNS(SVG_NS, 'rect');
+    veil.setAttribute('x', x);
+    veil.setAttribute('y', y);
+    veil.setAttribute('width', w);
+    veil.setAttribute('height', h);
+    veil.setAttribute('fill', 'rgba(255,255,255,0.18)');
+    g.appendChild(veil);
+  } else {
+    return;
+  }
+  svg.insertBefore(g, svg.firstChild);
+};
+
 export const svgToString = (svg) => {
   const serializer = new XMLSerializer();
   return serializer.serializeToString(svg);

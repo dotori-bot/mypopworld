@@ -6,7 +6,7 @@ import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { CARD_SIZES } from '../../generators/constants';
 import { FLAT_3D, buildFlatScene } from './flatScenes';
 import { BOOK_3D, buildBookScene } from './bookScenes';
-import UserArtUpload from './UserArtUpload';
+import CustomizePanel from './CustomizePanel';
 import { clamp } from '../../utils/math';
 import '../../styles/preview.css';
 
@@ -46,7 +46,7 @@ const ORBIT_ZOOM_RANGE = [0.6, 1.8];
  * bring their own drive slider — see flatScenes.jsx (buildFlatScene).
  */
 export default function Preview3D() {
-  const { cardParams, paperSize, colorMode, setCardParams, appMode, userArt } = useCardStore();
+  const { cardParams, paperSize, colorMode, setCardParams, appMode, userArt, cardSkin } = useCardStore();
   const [alpha, setAlpha] = useState(90);
   // Flat-mechanism drive value; null = "use the scene's own default". Kept as
   // null (not a number) across mechanism switches so each mechanism opens at
@@ -91,8 +91,18 @@ export default function Preview3D() {
   // via CSS: the data URL rides a custom property on the scene root and
   // preview.css maps it onto each mechanism's artwork surfaces (arms, flaps,
   // steps, figures, rotor tiles, …) under the .has-user-art scope.
-  const bookClass = `preview3d-book${userArt ? ' has-user-art' : ''}`;
-  const artVar = userArt ? { '--user-art': `url("${userArt}")` } : null;
+  const bookClass =
+    `preview3d-book${userArt ? ' has-user-art' : ''}${cardSkin.type !== 'none' ? ' has-card-skin' : ''}`;
+  // 꾸미기 배경(cardSkin)은 CSS 변수로 실려 preview.css가 카드 면
+  // (.preview3d-page, .preview3d-flat-card)에 칠한다 — 2D 도안의
+  // paintCardSkin과 같은 소스, 같은 규칙.
+  const artVar = {
+    ...(userArt ? { '--user-art': `url("${userArt}")` } : null),
+    ...(cardSkin.type === 'color' ? { '--card-skin-color': cardSkin.color } : null),
+    ...(cardSkin.type === 'image' && cardSkin.image
+      ? { '--card-skin-img': `url("${cardSkin.image}")` }
+      : null),
+  };
   const viewKey =
     mode === 'flat'
       ? `flat:${view.flatEl?.mechanism}`
@@ -227,7 +237,7 @@ export default function Preview3D() {
             시점 초기화
           </button>
           <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
-            <UserArtUpload />
+            <CustomizePanel />
           </div>
         </div>
 
@@ -352,7 +362,7 @@ export default function Preview3D() {
           시점 초기화
         </button>
         <div className="preview3d-art-upload" onPointerDown={(e) => e.stopPropagation()}>
-          <UserArtUpload />
+          <CustomizePanel />
         </div>
       </div>
 

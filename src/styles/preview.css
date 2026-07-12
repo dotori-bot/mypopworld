@@ -1044,3 +1044,87 @@
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ------------------------------------------------------------------ */
+/* 꾸미기 통합 메뉴 (CustomizePanel.jsx)                                 */
+/* ------------------------------------------------------------------ */
+
+.customize-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.customize-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 300px;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-app, #fff);
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 28px rgba(20, 20, 50, 0.18);
+}
+
+.customize-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.customize-section + .customize-section {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-glass, #eee);
+}
+
+.customize-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary, #667);
+}
+
+.customize-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.customize-color-input {
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: var(--radius-md, 6px);
+  background: none;
+  cursor: pointer;
+}
+
+.customize-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #778);
+}
+
+.customize-summary {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #778);
+}
+
+/* 도안 배경(cardSkin)을 3D 카드 면에 칠하기. 2D 도안의 paintCardSkin과
+   같은 소스(--card-skin-color / --card-skin-img)를 쓴다. 이미지 위에는
+   2D와 동일한 옅은 흰 베일을 얹어 구조가 계속 읽히게 한다. */
+.preview3d-book.has-card-skin .preview3d-page,
+.preview3d-book.has-card-skin .preview3d-flat-card {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)),
+    var(--card-skin-img, linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)))
+      center / cover no-repeat,
+    var(--card-skin-color, linear-gradient(135deg, #ffffff 0%, #eef2f7 100%));
+}
