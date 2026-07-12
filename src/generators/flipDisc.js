@@ -215,7 +215,6 @@ export const generateFlipDisc = (svg, options = {}) => {
 
   const g = addGroup(svg, 'flipdisc-group');
   const cutStyle = getLineStyle('CUT', isColor);
-  const scoreStyle = getLineStyle('SCORE', isColor);
   const glueStyle = getLineStyle('GLUE_TAB', isColor);
   const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
 
@@ -248,8 +247,9 @@ export const generateFlipDisc = (svg, options = {}) => {
     addPath(g, fixedHalfOutline(dcx, dcy, R), cutStyle);
     // Hinge / glue strip along the straight (right) edge — where the flip-page
     // tab spine is bound. Drawn just INSIDE the diameter so it stays on paper.
+    // The glue strip's right boundary IS the piece's straight cut edge — no
+    // extra score line there (it would double-register on the cut line).
     addRect(g, round(dcx - tab), round(dcy - R), tab, round(2 * R), glueStyle);
-    addPath(g, `M ${dcx} ${round(dcy - R)} L ${dcx} ${round(dcy + R)}`, scoreStyle);
     addText(g, round(dcx - tab / 2), round(dcy + 1), '경첩', 2.5, 'middle');
     addText(g, round(dcx - R / 2), labelY, '고정 반쪽 (배경)', 3, 'middle');
   }

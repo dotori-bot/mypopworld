@@ -477,13 +477,9 @@ export const generateAutoSlideWindow = (svg, options = {}) => {
   addRect(g, round(cx - winW / 2), winY, winW, round(winH), SCORE);
   addText(g, round(cx), round(spineY + W + winH / 2 + 3), `창문 액자 위치 (척추에서 ${W}mm)`, 2.3, 'middle');
 
-  // Strip travel band guide (where the message strip sweeps, hero = full open).
-  const bandTop = round(spineY + geo.sFull + geo.uMin);
-  const bandBot = round(spineY + geo.sFull + geo.uMax);
-  addPath(g, `M ${round(cx - geo.sliderWx / 2)} ${bandTop} L ${round(cx - geo.sliderWx / 2)} ${bandBot}`, SCORE);
-  addPath(g, `M ${round(cx + geo.sliderWx / 2)} ${bandTop} L ${round(cx + geo.sliderWx / 2)} ${bandBot}`, SCORE);
-
   // Two guide-bridge glue targets, spaced along travel to resist racking.
+  // (No strip-travel band is printed — unlabeled dashed lines read as cuts;
+  // the strip's position is fully determined by these two bridges.)
   const gHalf = round(geo.channelGap / 2 + L_.GLUE_END);
   const gy1 = round(spineY + W - winH / 2 - L_.GUIDE_W - 2);
   const gy2 = round(spineY + W + winH / 2 + 2);

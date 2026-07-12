@@ -295,28 +295,6 @@ function drawRetainer(g, x, y, geo, label, isColor) {
 }
 
 /**
- * Draw a simple instant-camera silhouette guide (score lines only, so it prints
- * as a "trace-here" hint that the AI/hand decoration fills in).
- * @param {SVGElement} g @param {CameraPullGeometry} geo @param {string} style
- */
-function drawCameraBody(g, geo, style) {
-  const { cx, spineY } = geo;
-  const bodyW = Math.min(120, (geo.cx - PRINT.MARGIN) * 1.7);
-  const bodyTop = round(geo.slotTopY + 6);
-  const bodyBot = round(spineY - 6);
-  const bx = round(cx - bodyW / 2);
-  addPath(g, roundRectPath(bx, bodyTop, bodyW, bodyBot - bodyTop, 8), style);
-  // Lens (big circle) centred low-mid.
-  const lensR = Math.min(18, bodyW / 4);
-  const lensCy = round((bodyTop + bodyBot) / 2 + 6);
-  addPath(g, `M ${round(cx + lensR)} ${lensCy} A ${lensR} ${lensR} 0 1 1 ${round(cx - lensR)} ${lensCy} A ${lensR} ${lensR} 0 1 1 ${round(cx + lensR)} ${lensCy} Z`, style);
-  addPath(g, `M ${round(cx + lensR * 0.6)} ${lensCy} A ${round(lensR * 0.6)} ${round(lensR * 0.6)} 0 1 1 ${round(cx - lensR * 0.6)} ${lensCy} A ${round(lensR * 0.6)} ${round(lensR * 0.6)} 0 1 1 ${round(cx + lensR * 0.6)} ${lensCy} Z`, style);
-  // Flash (small rounded rect, upper-left) and viewfinder (upper-right).
-  addPath(g, roundRectPath(round(bx + 8), round(bodyTop + 6), 14, 9, 2), style);
-  addPath(g, roundRectPath(round(cx + bodyW / 2 - 20), round(bodyTop + 6), 12, 8, 2), style);
-}
-
-/**
  * Draw the camera-print-pull flat pattern into a passed-in SVG/group.
  *
  * @param {SVGElement} svg - Target element (a content group from createTemplate)
@@ -349,9 +327,10 @@ export const generateCameraPrintPull = (svg, options = {}) => {
 
   addText(g, cx, round(PRINT.MARGIN + 3), '카메라 인화 손잡이 (Camera-Print Pull)', 3, 'middle');
 
-  // ── FRONT FACE: camera art, photo slot, roller/retainer targets, tab slot ──
-  drawCameraBody(g, geo, SCORE);
-  addText(g, cx, round(slotTopY + 4), '앞면: 인스타 카메라 그림 영역', 2.4, 'middle');
+  // ── FRONT FACE: photo slot, roller/retainer targets, tab slot ─────────────
+  // The camera look itself is the child's own drawing/decoration — no printed
+  // silhouette, so nothing on this face can be mistaken for a cut/fold line.
+  addText(g, cx, round(slotTopY + 4), '앞면: 카메라 그림을 자유롭게 그려 꾸미기', 2.4, 'middle');
 
   // Vertical photo slit (closed rectangle = inherent reset stop at the bottom).
   const slotLeft = round(cx - slotWidth / 2);
@@ -378,9 +357,9 @@ export const generateCameraPrintPull = (svg, options = {}) => {
   const botSlotLen = round(stripW + slotWidth * 2);
   addRect(g, round(cx - botSlotLen / 2), round(botSlotY - slotWidth / 2), botSlotLen, slotWidth, CUT);
   addText(g, round(cx + botSlotLen / 2 + 2), botSlotY, `손잡이 나오는 슬롯 ${botSlotLen}×${slotWidth}mm`, 2.2, 'start');
-  // Printed "PULL ↓" hint on the tab that hangs below this slot.
+  // Printed "PULL ↓" hint where the tab hangs below this slot (text only — a
+  // dashed arrow here reads as a cut/fold line).
   const pullTop = round(botSlotY + 3);
-  addPath(g, `M ${cx} ${pullTop} L ${cx} ${round(pullTop + grip - 4)} M ${round(cx - 3)} ${round(pullTop + grip - 7)} L ${cx} ${round(pullTop + grip - 4)} L ${round(cx + 3)} ${round(pullTop + grip - 7)}`, SCORE);
   addText(g, cx, round(pullTop + grip / 2), 'PULL ↓ (아래로 당기기)', 2.4, 'middle');
 
   // ── WHITESPACE (lower half): reversing strip + roller tube + retainer + photo ──
@@ -445,8 +424,6 @@ export const generateCameraPrintPull = (svg, options = {}) => {
   const photoY = round(flBot + 12);
   if (photoY + photoH < paper.height - PRINT.MARGIN) {
     addPath(g, roundRectPath(photoX, photoY, photoW, photoH, 3), CUT);
-    // instax-style bottom border band.
-    addPath(g, `M ${photoX} ${round(photoY + photoH - photoH * 0.22)} L ${round(photoX + photoW)} ${round(photoY + photoH - photoH * 0.22)}`, SCORE);
     // Mount glue mark at the photo bottom (where it grips the strip mount).
     const gmW = Math.min(mountW, photoW - 8);
     addRect(g, round(photoX + (photoW - gmW) / 2), round(photoY + photoH - 8), gmW, 6, GLUE);

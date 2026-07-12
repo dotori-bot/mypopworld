@@ -458,8 +458,8 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">1</div>
               <div className="step-content">
-                <h4>카메라 카드·슬롯·띠·롤러 오리기</h4>
-                <p>카메라 모양 앞면 카드, 사진이 나오는 세로 슬롯, 손잡이가 나오는 아래쪽 슬롯, 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 실선대로 오려주세요. 카메라·렌즈 그림은 인쇄된 안내선이라 오리지 않습니다.</p>
+                <h4>슬롯·띠·롤러 오리기</h4>
+                <p>앞면 카드의 세로 슬롯(사진 나오는 곳)과 아래쪽 슬롯(손잡이 나오는 곳), 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 실선대로 오려주세요. 앞면 카드에는 카메라 그림을 자유롭게 그리거나 색칠해 꾸며 주세요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="130" viewBox="0 0 120 65" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
                     {/* camera card with vertical photo slot + horizontal tab slot */}

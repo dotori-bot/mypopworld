@@ -283,8 +283,8 @@ export const generateRisingSlide = (svg, options = {}) => {
   addRect(g, slotLeft, slotTopY, slotWidth, round(slotBotY - slotTopY), CUT);
   addText(g, round(cx + slotWidth + 3), round((slotTopY + slotBotY) / 2), `슬롯 ${round(slotBotY - slotTopY)}×${slotWidth}mm`, 2.2, 'start');
 
-  // Handle-exit indicator at the top of the scene.
-  addPath(g, `M ${round(cx - 8)} ${sceneTopY} L ${round(cx + 8)} ${sceneTopY}`, SCORE);
+  // Handle-exit indicator at the top of the scene (text only — a tick here
+  // would lie exactly on the scene frame's top edge and double the line).
   addText(g, cx, round(sceneTopY + 3), '↑ 손잡이 나오는 곳', 2.2, 'middle');
 
   // Figure start position (hidden low in the beam) at slot bottom.
