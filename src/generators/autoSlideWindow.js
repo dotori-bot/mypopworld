@@ -473,11 +473,12 @@ export const generateAutoSlideWindow = (svg, options = {}) => {
   const { spineY, cx, x1, W, winW, winH } = geo;
 
   // ── LOWER HALF — fixed BACK face: placement guides (no cuts) ───────────────
-  // Window placement guide. Its label sits 3 mm below the window rect — inside
-  // the glued frame's 7 mm bottom border, so the frame hides it once mounted.
+  // Window placement guide. Its label sits INSIDE the guide rect — after
+  // assembly the sliding message strip permanently covers this spot on the
+  // back face (and 3 mm below would collide with the Ⓑ bridge anchor).
   const winY = round(spineY + W - winH / 2);
   addRect(g, round(cx - winW / 2), winY, winW, round(winH), SCORE);
-  addText(g, round(cx), round(spineY + W + winH / 2 + 3), '창문 액자 자리', 2.3, 'middle');
+  addText(g, round(cx), round(spineY + W + 0.8), '창문 액자 자리', 2.3, 'middle');
 
   // Two guide-bridge glue targets, spaced along travel to resist racking.
   // (No strip-travel band is printed — unlabeled dashed lines read as cuts;

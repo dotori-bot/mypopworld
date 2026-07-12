@@ -329,8 +329,9 @@ export const generateRisingSlide = (svg, options = {}) => {
   addText(g, round(xS + sliderW / 2), round(top - 2), '손잡이 (위로 당기기)', 2.4, 'middle');
   addText(g, Rf + 1, round((flTop + flBot) / 2), `← 멈춤 날개 (폭 ${geo.flangeW}mm)`, 2.2, 'start');
   addText(g, round(xS + sliderW / 2), round(mountBot + 3.5), '그림 붙이는 곳', 2.2, 'middle');
-  addText(g, Lf - 1, round(top + stripLen * 0.5), `슬라이더 폭 ${sliderW}mm`, 2.2, 'end');
-  addText(g, Rf + 1, round(top + 8), `이동 거리 ${travel}mm`, 2.2, 'start');
+  // (width note rides with the travel note on the right — an end-anchored
+  // label left of the strip would run off the page edge)
+  addText(g, Rf + 1, round(top + 8), `이동 거리 ${travel}mm · 폭 ${sliderW}mm`, 2.2, 'start');
 
   // Two retainer strips to the right.
   const xRet = Math.min(round(R + L.STOP_CATCH + 42), round(PAPER_SIZES[geo.paperSize].width - PRINT.MARGIN - (channelGap + 2 * L.GLUE_END) - 2));

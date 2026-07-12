@@ -330,7 +330,7 @@ function drawPostPiece(g, ox, oy, geo, isColor) {
   addRect(g, round(neckL + 0.6), round(bodyBot + 1.5), round(L.PIVOT_TAB_W - 1.2), round(L.PIVOT_TAB_LEN - 3), GLUE);
   addText(g, round(cx + w / 2 + 1), round((bodyBot + neckBot) / 2), '목→구멍+캡 고정', 2.1, 'start');
 
-  addText(g, cx, round(pinTop - 2), `기둥(팔) 1개 · 길이 ${geo.r}mm`, 2.1, 'middle');
+  addText(g, cx, round(pinTop - 2), `기둥(팔) ${geo.r}mm`, 2.1, 'middle');
 }
 
 /**
