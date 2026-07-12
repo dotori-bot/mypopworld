@@ -230,53 +230,14 @@ export function resolveLayeredStageGeometry(opts = {}) {
 }
 
 /**
- * Draw a light decorative building facade (door + two windows + roofline) onto a
- * wall face, as SCORE-style guides only — these never cut through the wall or
- * touch a fold crease, so they don't affect foldability. Drawn between the base
- * crease (baseY, nearer the spine) and the roof crease (roofY, further out).
- *
- * @param {SVGElement} g
- * @param {number} cx
- * @param {number} baseY - y of the wall's base (near crease side)
- * @param {number} roofY - y of the wall's top (far crease side)
- * @param {number} w
- * @param {object} style - SCORE line style
- */
-function drawFacade(g, cx, baseY, roofY, w, style) {
-  const dir = roofY < baseY ? -1 : 1;          // +1 = wall grows downward (lower face)
-  const span = Math.abs(roofY - baseY);
-  if (span < 6 || w < 12) return;              // too small to decorate cleanly
-
-  // Door: centred rectangle rising ~45% of the wall from the base.
-  const doorW = Math.min(round(w * 0.22), 12);
-  const doorH = round(span * 0.45);
-  const doorX = round(cx - doorW / 2);
-  const doorY = dir < 0 ? round(baseY - doorH) : round(baseY);
-  addRect(g, doorX, doorY, doorW, doorH, style);
-
-  // Two windows flanking the door, up near the roof.
-  const winW = Math.min(round(w * 0.14), 8);
-  const winH = round(span * 0.22);
-  const winY = dir < 0 ? round(roofY + span * 0.2) : round(roofY - span * 0.2 - winH);
-  const offset = round(w * 0.28);
-  addRect(g, round(cx - offset - winW / 2), winY, winW, winH, style);
-  addRect(g, round(cx + offset - winW / 2), winY, winW, winH, style);
-
-  // Roofline: a shallow gable score just inside the roof crease.
-  const gableY = round(roofY + dir * -span * 0.12); // slightly toward the base from the crease
-  const apexY = round(roofY + dir * span * 0.06);   // apex nudged past the crease side
-  const hw = round(w / 2);
-  addPath(
-    g,
-    `M ${round(cx - hw)} ${gableY} L ${round(cx)} ${apexY} L ${round(cx + hw)} ${gableY}`,
-    style,
-  );
-}
-
-/**
  * Draw one tier strip (a self-contained cut-out piece) with its creases, glue
- * flaps, facade and, when a tier sits on top of this one, the glue-position
- * guide line on the top panel.
+ * flaps and, when a tier sits on top of this one, the glue-position guide
+ * line on the top panel.
+ *
+ * The front panel is left intentionally blank: decoration art arrives on its
+ * own pages (see registry decorationSlots) and is pasted over the full face,
+ * and every gray SCORE line on this pattern must mean exactly one thing —
+ * "glue here" — so no decorative score guides are drawn.
  *
  * Printed top → bottom: rear flap / top panel / front panel / bottom flap.
  * As assembled (decorated side toward the viewer): rear-flap crease and
@@ -327,9 +288,6 @@ function drawTierStrip(g, x, yTop, layer, nextLayer, styles, flap) {
     addText(g, cxS, round(gy - 1.4), `㉡ ${nextLayer.index}층 아래 날개 붙는 선`, 2.4, 'middle');
   }
 
-  // Facade decoration on the front panel (crest at y2 = the printed top edge
-  // of the face, exactly the assembled orientation).
-  drawFacade(g, cxS, y3, y2, w, scoreStyle);
   addText(g, cxS, round(y1 + 3.4), `무대 ${layer.index}층 (아래←${layer.index})`, 2.8, 'middle');
 
   return y4 - y0;
