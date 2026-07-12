@@ -276,32 +276,31 @@ export const generateRisingSlide = (svg, options = {}) => {
     round(sceneHalfW * 2), round(sceneBotY - sceneTopY),
     SCORE,
   );
-  addText(g, cx, round(sceneTopY - 2), '앞면: 배경(빛줄기) 그림 영역', 2.6, 'middle');
 
   // Vertical slot (closed rectangle = inherent end stop).
   const slotLeft = round(cx - slotWidth / 2);
   addRect(g, slotLeft, slotTopY, slotWidth, round(slotBotY - slotTopY), CUT);
-  addText(g, round(cx + slotWidth + 3), round((slotTopY + slotBotY) / 2), `슬롯 ${round(slotBotY - slotTopY)}×${slotWidth}mm`, 2.2, 'start');
-
-  // Handle-exit indicator at the top of the scene (text only — a tick here
-  // would lie exactly on the scene frame's top edge and double the line).
-  addText(g, cx, round(sceneTopY + 3), '↑ 손잡이 나오는 곳', 2.2, 'middle');
-
-  // Figure start position (hidden low in the beam) at slot bottom.
-  addText(g, cx, round(slotBotY + 3.5), '그림 시작(빛 속에 숨김)', 2.2, 'middle');
 
   // Back-side retainer glue TARGETS (dashed) — where the two strips glue.
   const retHalf = round(channelGap / 2 + L.GLUE_END);
   // Top stop bridge, just above the slot top.
   const topRetY = round(slotTopY - L.RET_W - 1);
   addRect(g, round(cx - retHalf), topRetY, round(retHalf * 2), L.RET_W, SCORE);
-  addText(g, round(cx - retHalf - 1), round(topRetY + L.RET_W / 2), '뒷면 ① 위 멈춤 띠', 2, 'end');
   // Lower alignment guide, near the lower third of travel.
   const lowRetY = round(slotBotY - (slotBotY - slotTopY) * 0.28);
   addRect(g, round(cx - retHalf), lowRetY, round(retHalf * 2), L.RET_W, SCORE);
-  addText(g, round(cx - retHalf - 1), round(lowRetY + L.RET_W / 2), '뒷면 ② 안내 띠', 2, 'end');
 
-  addText(g, cx, round(PRINT.MARGIN + 3), '빛줄기 상승 슬라이드 (Rising Slide)', 3, 'middle');
+  // The upper half IS the card front, so no annotation may print inside the
+  // trim rect there — everything about the face is summarized on one line in
+  // the outer waste margin above the trim line.
+  addText(
+    g,
+    cx,
+    PRINT.MARGIN - 1.5,
+    `빛줄기 상승 슬라이드 — 가운데 세로 구멍: 슬롯 ${round(slotBotY - slotTopY)}×${slotWidth}mm (손잡이는 위로) · 점선 칸: 뒷면 ① 위 멈춤 띠 / ② 안내 띠 자리 · 그림은 슬롯 아래 끝에서 시작`,
+    2.4,
+    'middle',
+  );
 
   // ── WHITESPACE (lower half): loose slider + retainers + figure ───────────
   const xS = PRINT.MARGIN + 15;          // slider strip left edge

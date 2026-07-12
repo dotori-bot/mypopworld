@@ -357,10 +357,9 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   addRect(g, round(ox + w + 1), round(tabY0 + 1), round(tabLen - 2), round(L_.STRUT_W - 2), GLUE);
   // attach crease (parallel to spine → horizontal here) across the tab root
   addPath(g, `M ${round(ox + w)} ${round(oy + vAttach)} L ${round(ox + w + tabLen)} ${round(oy + vAttach)}`, MOUNT);
-  addText(g, round(ox + w + tabLen + 1), round(oy + vAttach), '② 지지대 아래 끝 붙이는 곳', 2.2, 'start');
-
-  addText(g, round(ox + w / 2), round(oy - sc - 1.5), '메시지 띠(슬라이더) — 한 조각', 2.6, 'middle');
-  addText(g, round(ox + w / 2), round(oy + h + fh + 3), `이동 거리 ${geo.travel}mm`, 2.2, 'middle');
+  // The ② tag sits INSIDE the tab's glue face (the strut end covers it); the
+  // parts area shares the sheet with the card's front face, so no free text.
+  addText(g, round(ox + w + tabLen / 2), round(tabY0 + L_.STRUT_W / 2 + 0.8), '② 자리', 2.2, 'middle');
 }
 
 /**
@@ -386,10 +385,10 @@ function drawStrutPiece(g, ox, oy, geo, isColor) {
   addPath(g, `M ${ox} ${round(oy + ge)} L ${round(ox + w)} ${round(oy + ge)}`, MOUNT);
   addPath(g, `M ${ox} ${round(oy + total - ge)} L ${round(ox + w)} ${round(oy + total - ge)}`, MOUNT);
 
-  addText(g, round(ox + w / 2), round(oy - 1.5), '지지대(팔) — 한 조각', 2.4, 'middle');
-  addText(g, round(ox + w + 1), round(oy + ge / 2 + 1), '① 위: 앞면에', 2, 'start');
-  addText(g, round(ox + w + 1), round(oy + total - ge / 2 + 1), '② 아래: 띠에', 2, 'start');
-  addText(g, round(ox + w + 1), round(oy + total / 2), `길이 ${geo.L}mm`, 2, 'start');
+  // ①/② tags INSIDE the glue tabs only (hidden once glued) — the parts area
+  // shares the sheet with the card's front face, so no free-floating labels.
+  addText(g, round(ox + w / 2), round(oy + ge - 1), '①', 2.2, 'middle');
+  addText(g, round(ox + w / 2), round(oy + total - 1.5), '②', 2.2, 'middle');
 }
 
 /**
@@ -413,8 +412,10 @@ function drawFramePiece(g, ox, oy, geo, isColor) {
   addRect(g, round(ox + 1), round(oy + 1), round(b - 2), round(outerH - 2), GLUE);
   addRect(g, round(ox + outerW - b + 1), round(oy + 1), round(b - 2), round(outerH - 2), GLUE);
 
-  addText(g, round(ox + outerW / 2), round(oy - 1.5), '창문 액자(뒷면에 덮어 붙이기)', 2.4, 'middle');
-  addText(g, round(ox + outerW / 2), round(oy + outerH + 3), '좌·우만 풀칠 (위·아래는 열어두기)', 2.1, 'middle');
+  // Labels INSIDE the window opening — that cutout is discarded waste, so the
+  // text never appears on the assembled frame or the card.
+  addText(g, round(ox + outerW / 2), round(oy + b + geo.winH / 2 - 1), '창문 액자 → 뒷면에 덮기', 2.1, 'middle');
+  addText(g, round(ox + outerW / 2), round(oy + b + geo.winH / 2 + 3), '좌·우 초록만 풀칠', 2.1, 'middle');
 }
 
 /**
@@ -436,8 +437,10 @@ function drawGuidePiece(g, ox, oy, geo, label, isColor) {
   const chR = round(ox + w - L_.GLUE_END);
   addPath(g, `M ${chL} ${oy} L ${chL} ${round(oy + h)}`, SCORE);
   addPath(g, `M ${chR} ${oy} L ${chR} ${round(oy + h)}`, SCORE);
-  addText(g, round(ox + w / 2), round(oy + h + 3), label, 2.1, 'middle');
-  addText(g, round(ox + w / 2), round(oy - 1.5), '가운데는 붙이지 마세요', 2, 'middle');
+  // One line INSIDE the channel band: the piece is glued printed-side down, so
+  // this text ends up facing the card, hidden — and while gluing it marks the
+  // exact zone that must stay paste-free.
+  addText(g, round(ox + w / 2), round(oy + h / 2 + 0.7), `${label} · 가운데 풀칠 금지`, 1.9, 'middle');
 }
 
 /**
@@ -470,12 +473,11 @@ export const generateAutoSlideWindow = (svg, options = {}) => {
   const { spineY, cx, x1, W, winW, winH } = geo;
 
   // ── LOWER HALF — fixed BACK face: placement guides (no cuts) ───────────────
-  addText(g, cx, round(spineY + 4), '↓ 아래쪽: 고정 뒷면 (붙이는 위치 안내만)', 2.6, 'middle');
-
-  // Window placement guide.
+  // Window placement guide. Its label sits 3 mm below the window rect — inside
+  // the glued frame's 7 mm bottom border, so the frame hides it once mounted.
   const winY = round(spineY + W - winH / 2);
   addRect(g, round(cx - winW / 2), winY, winW, round(winH), SCORE);
-  addText(g, round(cx), round(spineY + W + winH / 2 + 3), `창문 액자 위치 (척추에서 ${W}mm)`, 2.3, 'middle');
+  addText(g, round(cx), round(spineY + W + winH / 2 + 3), '창문 액자 자리', 2.3, 'middle');
 
   // Two guide-bridge glue targets, spaced along travel to resist racking.
   // (No strip-travel band is printed — unlabeled dashed lines read as cuts;
@@ -483,20 +485,30 @@ export const generateAutoSlideWindow = (svg, options = {}) => {
   const gHalf = round(geo.channelGap / 2 + L_.GLUE_END);
   const gy1 = round(spineY + W - winH / 2 - L_.GUIDE_W - 2);
   const gy2 = round(spineY + W + winH / 2 + 2);
-  for (const [gy, tag] of [[gy1, 'Ⓐ 위 안내다리'], [gy2, 'Ⓑ 아래 안내다리']]) {
+  // The Ⓐ/Ⓑ tags sit INSIDE the anchor rects — the glued bridge covers its
+  // whole footprint, hiding them after assembly.
+  for (const [gy, tag] of [[gy1, 'Ⓐ 위 안내다리 자리'], [gy2, 'Ⓑ 아래 안내다리 자리']]) {
     addRect(g, round(cx - gHalf), gy, round(gHalf * 2), L_.GUIDE_W, SCORE);
-    addText(g, round(cx - gHalf - 1), round(gy + L_.GUIDE_W / 2), tag, 2, 'end');
+    addText(g, cx, round(gy + L_.GUIDE_W / 2 + 0.7), tag, 2, 'middle');
   }
 
   // ── UPPER HALF — moving FRONT face pivot anchor + parts area ───────────────
-  addText(g, cx, round(spineY - 3), '↑ 위쪽: 여는 앞면 + 부품 (오려서 조립)', 2.6, 'middle');
-
-  // Pivot anchor on the moving face at (x1, spine − p). Keep this solid.
+  // Pivot anchor on the moving face at (x1, spine − p). Keep this solid. The
+  // ① tag sits inside the glue face (the strut end covers it).
   const anchorY = round(spineY - geo.p - 3);
   addRect(g, round(x1 - L_.STRUT_W / 2), anchorY, L_.STRUT_W, 6, GLUE);
-  addText(g, round(x1 + L_.STRUT_W / 2 + 1), round(anchorY + 3), `① 지지대 위 끝 붙이는 곳 (척추에서 ${geo.p}mm)`, 2.1, 'start');
+  addText(g, round(x1), round(anchorY + 4), '① 자리', 2.2, 'middle');
 
-  addText(g, cx, round(PRINT.MARGIN + 3), '열면 바뀌는 액자 카드 (Auto-Slide Window)', 3, 'middle');
+  // Title + face notes on one line in the outer waste margin — both halves of
+  // this sheet are card faces, so no free text may sit inside the trim rect.
+  addText(
+    g,
+    cx,
+    PRINT.MARGIN - 1.5,
+    `열면 바뀌는 액자 카드 — 아래 절반=고정 뒷면(점선 칸: 창문 액자 · Ⓐ/Ⓑ 안내다리 자리, 척추에서 ${W}mm) · 위 절반=여는 앞면(초록 ①에 지지대 위 끝, 척추에서 ${geo.p}mm) + 오릴 부품`,
+    2.1,
+    'middle',
+  );
 
   // Loose parts, laid out across the upper half's free area, left → right, kept
   // inside [MARGIN, paper.width − MARGIN] and above the spine.
@@ -515,8 +527,8 @@ export const generateAutoSlideWindow = (svg, options = {}) => {
 
   // Two guide bridges near the bottom-left of the upper half.
   const guideY = Math.min(round(topY + geo.stripLen + 14), round(spineY - 2 * L_.GUIDE_W - 12));
-  drawGuidePiece(g, sliderX, guideY, geo, 'Ⓐ 위 안내다리 (뒷면에)', isColor);
-  drawGuidePiece(g, sliderX, round(guideY + L_.GUIDE_W + 10), geo, 'Ⓑ 아래 안내다리 (뒷면에)', isColor);
+  drawGuidePiece(g, sliderX, guideY, geo, 'Ⓐ 위 안내다리', isColor);
+  drawGuidePiece(g, sliderX, round(guideY + L_.GUIDE_W + 10), geo, 'Ⓑ 아래 안내다리', isColor);
 
   return g;
 };

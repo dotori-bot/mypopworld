@@ -205,7 +205,7 @@ export function resolveFlapClapGeometry(opts = {}) {
  * @param {number} propY - top y to lay out this flap's loose prop piece
  */
 function drawFlap(g, cx, cy, sign, geo, styles, propX, propY) {
-  const { a, h, b, delta, clapAngle } = geo;
+  const { a, h, b } = geo;
   const L = FLAP_CLAP_LIMITS;
 
   const hingeY = round(cy + sign * a);
@@ -231,24 +231,17 @@ function drawFlap(g, cx, cy, sign, geo, styles, propX, propY) {
   const anchorY = round(cy + sign * (a - geo.propAnchorGap));
   addRect(g, round(cx - r), round(anchorY - r), r * 2, r * 2, styles.glue);
 
-  // Angle-reference label at the hinge, so the assembler knows how far to
-  // stand the flap up.
-  addText(g, round(cx + b + 2), hingeY, `${delta}°로 세워 프롭에 붙이기`, 2.3, 'start');
-
-  // Loose brace prop piece, laid out in the page's whitespace margin: a
-  // simple strip with a glue-tab crease near each end. Its FIXED cut length
-  // (geo.propLen) is what locks the flap to exactly δ once both ends are
-  // glued down — see file header.
+  // Loose brace prop piece, laid out beside the flap. The page IS the card,
+  // so the prop carries no free-floating labels — only ①/② numbers INSIDE
+  // its green glue ends (hidden once glued); everything else is said in the
+  // margin summary line.
   const propW = L.PROP_W;
   const ge = 5; // glue-end depth, each end
   addRect(g, propX, propY, propW, round(geo.propLen), styles.cut);
   addRect(g, round(propX + 1), round(propY + 1), round(propW - 2), round(ge - 2), styles.glue);
   addRect(g, round(propX + 1), round(propY + geo.propLen - ge + 1), round(propW - 2), round(ge - 2), styles.glue);
-  addText(g, round(propX + propW / 2), round(propY - 2), '지지대(프롭) 1개', 2.2, 'middle');
-  addText(g, round(propX + propW + 2), round(propY + ge / 2), '① 플랩 붙이는 곳', 2, 'start');
-  addText(g, round(propX + propW + 2), round(propY + geo.propLen - ge / 2), '② 뒷면 붙이는 곳', 2, 'start');
-
-  addText(g, cx, round(cy + sign * (a + h + 8)), `탁! 각도 ≈ ${clapAngle}°`, 2.2, 'middle');
+  addText(g, round(propX + propW / 2), round(propY + ge - 1.5), '①', 2.2, 'middle');
+  addText(g, round(propX + propW / 2), round(propY + geo.propLen - 1.5), '②', 2.2, 'middle');
 }
 
 /**
@@ -291,7 +284,15 @@ export const generateFlapClap = (svg, options = {}) => {
   drawFlap(g, cx, cy, -1, geo, styles, propX, round(cy - geo.a - geo.h));
   drawFlap(g, cx, cy, 1, geo, styles, propX, round(cy + geo.a));
 
-  addText(g, cx, round(cy - geo.a - geo.h - 6), '통통 플랩 (Flap Clap)', 3, 'middle');
+  // Title + assembly numbers, in the outer waste margin (the page is the card).
+  addText(
+    g,
+    cx,
+    PRINT.MARGIN - 1.5,
+    `통통 플랩 (Flap Clap) — 플랩을 ${geo.delta}°로 세워 지지대 ①을 플랩의 초록 점에, ②를 카드면 초록 점에 붙이기 · 탁! 각도 ≈ ${geo.clapAngle}°`,
+    2.4,
+    'middle',
+  );
 
   return g;
 };

@@ -44,7 +44,7 @@ export const generateStrawRocket = (svg, options = {}) => {
     [tubeX + tubeWidth + tabWidth, tubeY + tubeHeight],
     [tubeX + tubeWidth, tubeY + tubeHeight]
   ], glueStyle);
-  addText(g, tubeX + tubeWidth + 1, tubeY + tubeHeight / 2 + 1, '풀칠 (Glue)', 2);
+  addText(g, tubeX + tubeWidth + tabWidth / 2, tubeY + tubeHeight / 2 + 1, '풀칠', 2, 'middle');
 
   // Top Seal Tab (to close the top of the tube so air pushes it)
   const sealHeight = 8;
@@ -63,16 +63,17 @@ export const generateStrawRocket = (svg, options = {}) => {
   const decHeight = 50;
   const decY = cy - 40;
   
-  // Front Decoration
+  // Front Decoration — labels sit in the waste area around the cut box, never
+  // inside it: the box front is the rocket's visible face.
   const frontX = cx - decWidth - 5;
   addRect(g, frontX, decY, decWidth, decHeight, cutStyle); // Placeholder box
-  addText(g, frontX + decWidth/2, decY + decHeight/2, `[${theme} 앞면]`, 4, 'middle');
-  addText(g, frontX + decWidth/2, decY + decHeight/2 + 6, '여기에 튜브 부착', 2, 'middle');
-  
+  addText(g, frontX + decWidth/2, decY - 2, `[${theme} 앞면]`, 4, 'middle');
+  addText(g, frontX + decWidth/2, decY + decHeight + 4, '뒷면 가운데에 튜브 부착', 2, 'middle');
+
   // Back Decoration (Mirror)
   const backX = cx + 5;
   addRect(g, backX, decY, decWidth, decHeight, cutStyle); // Placeholder box
-  addText(g, backX + decWidth/2, decY + decHeight/2, `[${theme} 뒷면]`, 4, 'middle');
+  addText(g, backX + decWidth/2, decY - 2, `[${theme} 뒷면]`, 4, 'middle');
 
   // Instruction text
   addText(g, cx, cy - 60, "💡 빨대 로켓 (Straw Rocket) 도안", 4, 'middle');

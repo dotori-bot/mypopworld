@@ -65,8 +65,9 @@ export default function SVGPreview() {
         addText(svg1, paper.width / 2, paper.height / 2, '아직 지원되지 않는 메커니즘입니다.', 5, 'middle');
       }
       if (els.length > 1) {
-        // Part number matching the assembly-map footprint labels.
-        addText(svg1, PRINT.MARGIN + 3, PRINT.MARGIN + 8, `${CIRCLED_NUMBERS[i] || i + 1} 부품`, 5, 'start');
+        // Part number matching the assembly-map footprint labels — kept in the
+        // outer waste margin (above the trim line) so it never prints on the card.
+        addText(svg1, PRINT.MARGIN, PRINT.MARGIN - 1.2, `${CIRCLED_NUMBERS[i] || i + 1} 부품`, 3.5, 'start');
       }
       return svg1;
     });
@@ -229,8 +230,9 @@ export default function SVGPreview() {
           const shapeCenterX = decoX + decoW / 2;
           const shapeBottom = decoY + decoH;
 
-          // Dimension labels, right on/under the shape.
-          addText(svg, shapeCenterX, decoY + decoH / 2, `${decoW.toFixed(0)}mm × ${decoH.toFixed(0)}mm`, 4, 'middle');
+          // Dimension label just below the shape — outside the cut outline so
+          // it never prints on the child's cut-out drawing.
+          addText(svg, shapeCenterX, shapeBottom + 6, `${decoW.toFixed(0)}mm × ${decoH.toFixed(0)}mm`, 4, 'middle');
 
           // Position description in human terms, relative to the page center,
           // plus the exact mm offset for precision.

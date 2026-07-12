@@ -266,10 +266,13 @@ function drawTierStrip(g, x, yTop, layer, nextLayer, styles, flap) {
   addPath(g, `M ${xL} ${y2} L ${xR} ${y2}`, mountainStyle);
   addPath(g, `M ${xL} ${y3} L ${xR} ${y3}`, valleyStyle);
 
-  // Glue flaps (highlighted like every other mechanism's 풀칠 자리).
+  // Glue flaps (highlighted like every other mechanism's 풀칠 자리). All text
+  // on this strip lives on glue faces only — the flaps (glued face-down) and
+  // the next tier's landing band — so nothing prints on a visible surface.
+  // The tier number rides on the rear-flap label (no separate panel label).
   addRect(g, xL, y0, w, flap, glueStyle);
   addRect(g, xL, y3, w, flap, glueStyle);
-  addText(g, cxS, round(y0 + flap - 1.6), `뒤 날개 → 뒷면 ${'①②③④'[layer.index - 1]}`, 2.6, 'middle');
+  addText(g, cxS, round(y0 + flap - 1.6), `${layer.index}층 · 뒤 날개 → 뒷면 ${'①②③④'[layer.index - 1]}`, 2.4, 'middle');
   addText(
     g,
     cxS,
@@ -281,14 +284,16 @@ function drawTierStrip(g, x, yTop, layer, nextLayer, styles, flap) {
 
   // Next tier's glue-position guide, drawn ON this top panel: a score line at
   // distance t_{i+1} from the rear (y1) crease, as wide as the next strip.
+  // The next tier's bottom flap points toward the backdrop (toward y1), so it
+  // covers the band [gy − flap, gy] — mark that band as an explicit glue face
+  // and keep the ㉡ label INSIDE it, where the flap will hide it.
   if (nextLayer) {
     const gy = round(y1 + nextLayer.topDepth);
     const ghw = round(nextLayer.width / 2);
+    addRect(g, round(cxS - ghw), round(gy - flap), round(nextLayer.width), flap, glueStyle);
     addPath(g, `M ${round(cxS - ghw)} ${gy} L ${round(cxS + ghw)} ${gy}`, scoreStyle);
-    addText(g, cxS, round(gy - 1.4), `㉡ ${nextLayer.index}층 아래 날개 붙는 선`, 2.4, 'middle');
+    addText(g, cxS, round(gy - 2), `㉡ ${nextLayer.index}층 아래 날개 자리`, 2.2, 'middle');
   }
-
-  addText(g, cxS, round(y1 + 3.4), `무대 ${layer.index}층 (아래←${layer.index})`, 2.8, 'middle');
 
   return y4 - y0;
 }
@@ -338,22 +343,28 @@ export const generateLayeredStage = (svg, options = {}) => {
   const circled = '①②③④';
 
   // ── Backdrop face (upper half): rear-flap glue lines ①..Ⓝ ────────────────
-  // Tier i's rear flap glues with its crease ON this line, flap pointing up.
+  // Tier i's rear flap glues with its crease ON this line, flap pointing up —
+  // it covers the band [gy − flap, gy]. That band is drawn as an explicit glue
+  // face with its number label INSIDE, so once the flap is glued the label is
+  // hidden and nothing stray prints on the visible card face.
   for (const layer of geo.layers) {
     const gy = round(cy - layer.crest);
     const hw = round(layer.width / 2);
+    addRect(g, round(cx - hw), round(gy - flap), round(layer.width), flap, styles.glueStyle);
     addPath(g, `M ${round(cx - hw)} ${gy} L ${round(cx + hw)} ${gy}`, styles.scoreStyle);
-    addText(g, round(cx + hw + 2), round(gy + 1), `${circled[layer.index - 1]} ${layer.index}층 뒤 날개`, 2.4, 'start');
+    addText(g, cx, round(gy - 2), `${circled[layer.index - 1]} ${layer.index}층 뒤 날개 자리`, 2.2, 'middle');
   }
-  addText(g, cx, round(cy - geo.layers[geo.layers.length - 1].crest - flap - 3), '↑ 뒷벽 면 (풀칠선 위치)', 2.6, 'middle');
 
   // ── Floor face (lower half): tier 1's bottom-flap glue line ㉠ ────────────
+  // The flap points toward the spine, covering [gy − flap, gy] — same
+  // glue-face treatment as the backdrop lines.
   const floorLine = geo.layers[0];
   {
     const gy = round(cy + floorLine.topDepth);
     const hw = round(floorLine.width / 2);
+    addRect(g, round(cx - hw), round(gy - flap), round(floorLine.width), flap, styles.glueStyle);
     addPath(g, `M ${round(cx - hw)} ${gy} L ${round(cx + hw)} ${gy}`, styles.scoreStyle);
-    addText(g, round(cx + hw + 2), round(gy + 1), '㉠ 1층 아래 날개', 2.4, 'start');
+    addText(g, cx, round(gy - 2), '㉠ 1층 아래 날개 자리', 2.2, 'middle');
   }
 
   // ── Tier strips (fully cut-out pieces) ────────────────────────────────────
@@ -378,8 +389,9 @@ export const generateLayeredStage = (svg, options = {}) => {
     rowY += rowH + 8;
   }
 
-  // Title above everything, clamped inside the page.
-  addText(g, cx, Math.max(round(strip1Top - 3), PRINT.MARGIN + 3), '층층이 무대 (Layered Stage)', 3, 'middle');
+  // Title in the outer waste margin (above the trim line) — the whole page is
+  // the card, so no free-floating text may sit inside the trim rect.
+  addText(g, cx, PRINT.MARGIN - 1.5, '층층이 무대 (Layered Stage)', 3, 'middle');
 
   return g;
 };
