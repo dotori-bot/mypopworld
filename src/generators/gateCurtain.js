@@ -523,11 +523,9 @@ export const generateGateCurtain = (svg, options = {}) => {
   addText(g, round(cX - frameW / 2 - 1), round(frTop + K.FRAME_BORDER / 2), '③ 액자 윗변 풀칠', 2, 'end');
   addText(g, round(cX - frameW / 2 - 1), round(frBot - K.FRAME_BORDER / 2), '③ 액자 아랫변 풀칠', 2, 'end');
 
-  // Curtain travel band (where the two curtains sweep, dashed guide).
-  addPath(g, `M ${round(cX - doorW + K.FRAME_BORDER)} ${round(pcY - geo.Hc / 2)} L ${round(cX + doorW - K.FRAME_BORDER)} ${round(pcY - geo.Hc / 2)}`, SCORE);
-  addPath(g, `M ${round(cX - doorW + K.FRAME_BORDER)} ${round(pcY + geo.Hc / 2)} L ${round(cX + doorW - K.FRAME_BORDER)} ${round(pcY + geo.Hc / 2)}`, SCORE);
-
   // Strap→door attach points, on each door at distance d from its hinge, at pcY.
+  // (No curtain-travel band is printed — the curtains aren't glued along their
+  // sweep, and unlabeled dashed lines there read as cuts/folds.)
   const attachR = round(hingeRx + geo.d);
   const attachL = round(hingeLx - geo.d);
   for (const [ax, tag] of [[attachR, 'Ⓡ'], [attachL, 'Ⓛ']]) {

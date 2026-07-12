@@ -200,7 +200,7 @@ export function resolveFlapClapGeometry(opts = {}) {
  * @param {number} cy
  * @param {-1|1} sign - -1 = upper page (above spine), +1 = lower page (below)
  * @param {FlapClapGeometry} geo
- * @param {Object} styles - { cut, mountain, glue, score }
+ * @param {Object} styles - { cut, mountain, glue }
  * @param {number} propX - left x to lay out this flap's loose prop piece
  * @param {number} propY - top y to lay out this flap's loose prop piece
  */
@@ -231,8 +231,8 @@ function drawFlap(g, cx, cy, sign, geo, styles, propX, propY) {
   const anchorY = round(cy + sign * (a - geo.propAnchorGap));
   addRect(g, round(cx - r), round(anchorY - r), r * 2, r * 2, styles.glue);
 
-  // Angle-reference guide arc + label at the hinge (SCORE style — a guide,
-  // not a cut/fold), so the assembler knows how far to stand the flap up.
+  // Angle-reference label at the hinge, so the assembler knows how far to
+  // stand the flap up.
   addText(g, round(cx + b + 2), hingeY, `${delta}°로 세워 프롭에 붙이기`, 2.3, 'start');
 
   // Loose brace prop piece, laid out in the page's whitespace margin: a
@@ -283,7 +283,6 @@ export const generateFlapClap = (svg, options = {}) => {
     cut: getLineStyle('CUT', isColor),
     mountain: getLineStyle('MOUNTAIN_FOLD', isColor),
     glue: getLineStyle('GLUE_TAB', isColor),
-    score: getLineStyle('SCORE', isColor),
   };
 
   // Loose props are laid out to the right of each flap, inside the margin.

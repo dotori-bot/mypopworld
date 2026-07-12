@@ -398,9 +398,9 @@ function drawGuidePiece(g, ox, oy, geo, label, isColor) {
 /**
  * Draw the slide-to-swing flat pattern into a passed-in SVG/group.
  *
- * Upper half = the DISPLAY face: the pivot hole cut into the card plus dashed
- * placement/motion guides (decoration rest + swing ghosts, slider band, guide
- * anchors). Lower half = the loose parts to cut out and assemble.
+ * Upper half = the DISPLAY face: the pivot hole cut into the card plus the two
+ * dashed guide-strip glue anchors. Lower half = the loose parts to cut out and
+ * assemble.
  *
  * @param {SVGElement} svg
  * @param {Object} [options]
@@ -424,7 +424,7 @@ export const generateSlideToSwing = (svg, options = {}) => {
   const SCORE = getLineStyle('SCORE', isColor);
   const GLUE = getLineStyle('GLUE_TAB', isColor);
 
-  const { px, py, r, thetaMax, ySlot } = geo;
+  const { px, py, ySlot } = geo;
 
   addText(g, px, round(M + 3), '손잡이를 밀면 흔들리는 장치 (Slide-to-Swing / Scotch Yoke)', 3, 'middle');
 
@@ -433,26 +433,15 @@ export const generateSlideToSwing = (svg, options = {}) => {
   addPath(g, circlePath(px, py, L.PIVOT_HOLE / 2), CUT);
   addText(g, round(px + L.PIVOT_HOLE / 2 + 2), round(py + 1), '기둥 회전축 구멍', 2.2, 'start');
 
-  // Post rest + swing ghosts (score) and decoration rest + swing ghosts.
-  const decoDist = r + L.DECO_OFF;
-  for (const th of [-thetaMax, 0, thetaMax]) {
-    const pin = pinPosition(th, px, py, r);
-    const a = degToRad(th);
-    const decoC = { x: px + decoDist * Math.sin(a), y: py - decoDist * Math.cos(a) };
-    addPath(g, `M ${round(px)} ${round(py)} L ${round(pin.x)} ${round(pin.y)}`, SCORE);
-    addPath(g, circlePath(decoC.x, decoC.y, geo.decoR), SCORE);
-  }
-  addText(g, px, round(py - decoDist - geo.decoR - 2), '장식이 흔들리는 범위 (점선)', 2.2, 'middle');
-
-  // Slider band + slot placement (score) centred on ySlot.
+  // No motion "ghosts" or slider-band depiction are printed on the display
+  // face: the 3D preview shows the motion, and every dashed line on the card
+  // must be an actual glue/placement target. The band extents below only
+  // position the two guide-strip anchors.
   const bandX = round(px - geo.amplitude - L.SLIDER_BODY_W / 2);
   const bandW = round(geo.travel + L.SLIDER_BODY_W);
   const bandTop = round(ySlot - geo.sliderH / 2);
-  addRect(g, bandX, bandTop, bandW, geo.sliderH, SCORE);
-  addRect(g, round(px - geo.slotWidthX / 2), geo.slotTopY, geo.slotWidthX, geo.slotLen, SCORE);
-  addText(g, round(bandX + bandW / 2), round(bandTop - 1.5), '슬라이더 이동 범위 (여기서 좌우로)', 2.1, 'middle');
 
-  // Guide-strip glue anchors (dashed) above & below the band.
+  // Guide-strip glue anchors (dashed) above & below the slider's band.
   const gTopY = round(bandTop - L.GUIDE_W - 1);
   const gBotY = round(bandTop + geo.sliderH + 1);
   for (const [gy, tag] of [[gTopY, 'Ⓐ 위 안내띠'], [gBotY, 'Ⓑ 아래 안내띠']]) {
