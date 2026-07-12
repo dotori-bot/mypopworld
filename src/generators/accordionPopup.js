@@ -172,9 +172,10 @@ export const generateAccordion = (svg, options = {}) => {
     addPath(g, `M ${xL} ${y} L ${xR} ${y}`, style);
   }
 
-  // 5. Labels
-  const labelY = Math.max(round(yTop - 3), PRINT.MARGIN + 3);
-  addText(g, cx, labelY, '병풍 팝업 (Accordion)', 3, 'middle');
+  // 5. Labels — the title goes in the outer waste margin (above the trim
+  // line) so it can never print on a card face; the 풀칠 labels stay because
+  // they sit inside the green glue panels (covered when glued).
+  addText(g, cx, PRINT.MARGIN - 1.5, '병풍 팝업 (Accordion)', 3, 'middle');
   addText(g, cx, round(yTop + tabDepth / 2 + 1), '풀칠', 2.5, 'middle');
   addText(g, cx, round(yBot - tabDepth / 2 + 1), '풀칠', 2.5, 'middle');
 

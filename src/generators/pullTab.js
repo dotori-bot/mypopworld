@@ -220,12 +220,16 @@ export function generatePullTab(rawParams) {
   ];
 
   // ── Markers ──────────────────────────────────────────────────────
+  // The full page folds into the card, so no marker may print inside the trim
+  // rect (it would show on the finished card). Everything is summarized on one
+  // line in the outer waste margin above the trim line instead.
   /** @type {Array<{x:number,y:number,text:string}>} */
   const markers = [
-    { x: trackCenterX, y: trackTop - 2, text: `슬롯 (Slot) ${round(trackLength)}×${slotWidth}mm` },
-    { x: trackCenterX, y: trackBot + 4, text: `이동 거리: ${travel}mm` },
-    { x: sliderAreaX + sw / 2, y: sliderAreaY - 3, text: `슬라이더 (Slider) ${sw}×${sh}mm` },
-    { x: round(sliderAreaX + sw + handleW / 2), y: sliderAreaY + sh + 4, text: '손잡이 (Handle)' },
+    {
+      x: paper.width / 2,
+      y: PRINT.MARGIN - 1.5,
+      text: `풀탭 — 슬롯 ${round(trackLength)}×${slotWidth}mm · 이동 거리 ${travel}mm · 슬라이더 ${sw}×${sh}mm (오른쪽 사다리꼴 = 손잡이)`,
+    },
   ];
 
   return {

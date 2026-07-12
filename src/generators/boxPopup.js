@@ -1,4 +1,5 @@
 import { addPath, addPolygon, getLineStyle, addText, addGroup, createTemplate } from './svgBuilder';
+import { PRINT } from './constants';
 
 /**
  * Generates an SVG group for a Box Popup mechanism
@@ -53,7 +54,10 @@ export const generateBoxPopup = (svg, options = {}) => {
     [cx + hw, cy + d]
   ], glueStyle);
 
-  addText(g, cx, cy - d + 4, '상자 팝업 (Box)', 3, 'middle');
+  // Title lives in the outer waste margin (above the trim line): the whole
+  // page is the card here, so any text inside the trim rect would show on
+  // the finished card.
+  addText(g, cx, PRINT.MARGIN - 1.5, '상자 팝업 (Box)', 3, 'middle');
 
   return g;
 };

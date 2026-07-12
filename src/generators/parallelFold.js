@@ -192,13 +192,6 @@ export function generateParallelFold(rawParams) {
       mountainFolds.push(`M ${left} ${lowerStart} L ${right} ${lowerStart}`);
     }
 
-    // ── Labels ────────────────────────────────────────────────────
-    markers.push({
-      x: posX,
-      y: round((upperStart + upperEnd) / 2),
-      text: `단계 ${i + 1}: ${round(depth)}mm`,
-    });
-
     accumulatedDepth = cutDepthFromSpine;
   }
 
@@ -208,7 +201,14 @@ export function generateParallelFold(rawParams) {
     `L ${round(posX + levels[0].width / 2 + 5)} ${round(spineY)}`
   );
 
-  markers.push({ x: posX, y: spineY + 3, text: '골접기 (Valley fold / Spine)' });
+  // The whole page IS the card, so no marker may sit inside the trim rect —
+  // everything is summarized on one line in the outer waste margin instead.
+  const stepSummary = levels.map((l, i) => `단계 ${i + 1} ${round(l.depth)}mm`).join(' · ');
+  markers.push({
+    x: posX,
+    y: PRINT.MARGIN - 1.5,
+    text: `계단 팝업 — 가운데 가로선은 골접기(척추) · ${stepSummary}`,
+  });
 
   return { cuts, mountainFolds, valleyFolds, markers, levels };
 }

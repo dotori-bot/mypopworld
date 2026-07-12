@@ -264,9 +264,10 @@ export const generateFlipDisc = (svg, options = {}) => {
     // Glue only the tab (this is the binding). Never the disc face.
     addRect(g, round(dcx - tab), round(dcy - R), tab, round(2 * R), glueStyle);
     addText(g, round(dcx - tab / 2), round(dcy + 1), '풀칠', 2.2, 'middle');
-    // Page label at the disc centre (kid draws art here).
+    // Page label BELOW the disc (in the sheet waste) — the disc face is the
+    // kid's drawing surface and must stay free of printed text.
     const label = CIRCLED[k] || String(k + 1);
-    addText(g, round(dcx + R * 0.45), round(dcy + 1), `${label} 그림`, 3, 'middle');
+    addText(g, round(dcx + R / 2), labelY, `${label} 그림`, 3, 'middle');
   }
 
   // Title (inside the reserved top band)

@@ -447,10 +447,12 @@ function drawStrapPiece(g, ox, oy, geo, label, isColor) {
   addPath(g, `M ${round(ox + ge)} ${oy} L ${round(ox + ge)} ${round(oy + h)}`, MOUNT);
   addPath(g, `M ${round(ox + total - ge)} ${oy} L ${round(ox + total - ge)} ${round(oy + h)}`, MOUNT);
 
+  // All strap annotations stay OUTSIDE the cut outline — the strap is visible
+  // on the finished card (only its glue ends get covered).
   addText(g, round(ox + total / 2), round(oy - 1.5), label, 2.3, 'middle');
   addText(g, round(ox + ge / 2), round(oy + h + 3), '문에', 2, 'middle');
   addText(g, round(ox + total - ge / 2), round(oy + h + 3), '커튼에', 2, 'middle');
-  addText(g, round(ox + total / 2), round(oy + h / 2 + 1), `${geo.L}mm`, 2, 'middle');
+  addText(g, round(ox + total / 2), round(oy + h + 3), `${geo.L}mm`, 2, 'middle');
 }
 
 /** Draw one loose door STONE decoration (optional, glued to the outer door face). */
@@ -458,8 +460,8 @@ function drawStonePiece(g, ox, oy, geo, isColor) {
   const K = GATE_CURTAIN_LIMITS;
   const CUT = getLineStyle('CUT', isColor);
   addPath(g, roundRectPath(ox, oy, K.STONE_W, K.STONE_H, 12), CUT);
-  addText(g, round(ox + K.STONE_W / 2), round(oy + K.STONE_H / 2 + 1), '돌', 3, 'middle');
-  addText(g, round(ox + K.STONE_W / 2), round(oy + K.STONE_H + 3), '문 바깥에(장식)', 2, 'middle');
+  // Label below the piece only — the stone's face is visible on the door.
+  addText(g, round(ox + K.STONE_W / 2), round(oy + K.STONE_H + 3), '돌 — 문 바깥에(장식)', 2, 'middle');
 }
 
 /**
@@ -491,8 +493,16 @@ export const generateGateCurtain = (svg, options = {}) => {
   const { panelW, panelH, doorW, cardW, frameW, frameH, revealW, revealH } = geo;
   const cX = round(paper.width / 2);
 
-  // Title.
-  addText(g, cX, round(PRINT.MARGIN + 4), '커튼 문 카드 (문을 열면 커튼이 걷히는 카드)', 3, 'middle');
+  // Title (in the sheet waste above the cut-out card) — it also carries the
+  // face layout, since no free text may print on the card itself.
+  addText(
+    g,
+    cX,
+    round(PRINT.MARGIN + 4),
+    '커튼 문 카드 (문을 열면 커튼이 걷히는 카드) — 세로 접기: 왼쪽 문 | 가운데 뒷판(그림·커튼·액자) | 오른쪽 문',
+    2.6,
+    'middle',
+  );
 
   // ── UNFOLDED GATE CARD (one cut-out, two vertical valley folds) ────────────
   const cardTop = round(PRINT.MARGIN + K.TITLE_H);
@@ -505,32 +515,31 @@ export const generateGateCurtain = (svg, options = {}) => {
   addPath(g, `M ${hingeLx} ${cardTop} L ${hingeLx} ${cardBot}`, VALLEY);  // left hinge
   addPath(g, `M ${hingeRx} ${cardTop} L ${hingeRx} ${cardBot}`, VALLEY);  // right hinge
 
-  addText(g, round((cardLeft + hingeLx) / 2), round(cardTop + 4), '왼쪽 문', 2.6, 'middle');
-  addText(g, cX, round(cardTop + 4), '가운데(뒷판) — 그림·커튼·액자를 이 면에', 2.4, 'middle');
-  addText(g, round((hingeRx + cardLeft + cardW) / 2), round(cardTop + 4), '오른쪽 문', 2.6, 'middle');
-
   const pcY = round(cardTop + panelH / 2);
 
-  // Character placement guide (centre of the panel, under the curtains).
+  // Character placement guide (centre of the panel, under the curtains). The
+  // ① label sits INSIDE the guide rect — the glued character art covers it.
   addRect(g, round(cX - revealW / 2), round(pcY - revealH / 2), round(revealW), round(revealH), SCORE);
-  addText(g, cX, round(pcY + revealH / 2 + 3), '① 주인공 그림 붙이는 곳', 2.2, 'middle');
+  addText(g, cX, round(pcY + 1), '① 주인공 그림 자리', 2.2, 'middle');
 
-  // Frame rail glue guides (top + bottom rails land here; curtains slide between).
+  // Frame rail glue guides (top + bottom rails land here; curtains slide
+  // between). The ③ labels sit INSIDE the rail bands, hidden under the rails.
   const frTop = round(pcY - frameH / 2);
   const frBot = round(pcY + frameH / 2);
   addRect(g, round(cX - frameW / 2), frTop, round(frameW), K.FRAME_BORDER, SCORE);
   addRect(g, round(cX - frameW / 2), round(frBot - K.FRAME_BORDER), round(frameW), K.FRAME_BORDER, SCORE);
-  addText(g, round(cX - frameW / 2 - 1), round(frTop + K.FRAME_BORDER / 2), '③ 액자 윗변 풀칠', 2, 'end');
-  addText(g, round(cX - frameW / 2 - 1), round(frBot - K.FRAME_BORDER / 2), '③ 액자 아랫변 풀칠', 2, 'end');
+  addText(g, cX, round(frTop + K.FRAME_BORDER / 2 + 0.7), '③ 액자 윗변 풀칠', 2, 'middle');
+  addText(g, cX, round(frBot - K.FRAME_BORDER / 2 + 0.7), '③ 액자 아랫변 풀칠', 2, 'middle');
 
   // Strap→door attach points, on each door at distance d from its hinge, at pcY.
   // (No curtain-travel band is printed — the curtains aren't glued along their
   // sweep, and unlabeled dashed lines there read as cuts/folds.)
+  // The ②Ⓡ/②Ⓛ tags sit INSIDE the glue patches (the strap ends cover them).
   const attachR = round(hingeRx + geo.d);
   const attachL = round(hingeLx - geo.d);
   for (const [ax, tag] of [[attachR, 'Ⓡ'], [attachL, 'Ⓛ']]) {
     addRect(g, round(ax - K.GLUE_END / 2), round(pcY - K.STRAP_W / 2), K.GLUE_END, K.STRAP_W, GLUE);
-    addText(g, ax, round(pcY - K.STRAP_W / 2 - 1.5), `② ${tag} 지지대 붙이는 곳`, 2, 'middle');
+    addText(g, ax, round(pcY + 0.7), `②${tag}`, 1.9, 'middle');
   }
 
   // ── LOOSE PIECES ───────────────────────────────────────────────────────────

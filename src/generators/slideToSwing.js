@@ -319,17 +319,18 @@ function drawPostPiece(g, ox, oy, geo, isColor) {
   const pinL = round(cx - L.PIN_NECK / 2);
   addRect(g, pinL, pinTop, L.PIN_NECK, L.PIN_NECK, CUT);
   addPath(g, `M ${pinL} ${bodyTop} L ${round(pinL + L.PIN_NECK)} ${bodyTop}`, MOUNT);
-  addText(g, round(cx + w / 2 + 1), round(bodyTop - 1), '핀: 앞으로 접어 슬롯에 끼우기', 2.1, 'start');
+  // Side labels are kept SHORT so they end well before the slider piece laid
+  // out ~22 mm to the right (long text here would print across that piece).
+  addText(g, round(cx + w / 2 + 1), round(bodyTop - 1), '핀→슬롯에 끼우기', 2.1, 'start');
 
   // Pivot neck + splay tab at the base (passes through the card hole).
   const neckL = round(cx - L.PIVOT_TAB_W / 2);
   addRect(g, neckL, bodyBot, L.PIVOT_TAB_W, L.PIVOT_TAB_LEN, CUT);
   addPath(g, `M ${neckL} ${bodyBot} L ${round(neckL + L.PIVOT_TAB_W)} ${bodyBot}`, VALLEY);
   addRect(g, round(neckL + 0.6), round(bodyBot + 1.5), round(L.PIVOT_TAB_W - 1.2), round(L.PIVOT_TAB_LEN - 3), GLUE);
-  addText(g, round(cx + w / 2 + 1), round((bodyBot + neckBot) / 2), '회전축 목: 구멍에 끼워 뒤에서 캡으로 고정', 2.1, 'start');
+  addText(g, round(cx + w / 2 + 1), round((bodyBot + neckBot) / 2), '목→구멍+캡 고정', 2.1, 'start');
 
-  addText(g, cx, round(pinTop - 2), '기둥(팔) — 한 조각', 2.4, 'middle');
-  addText(g, round(ox - 1), round((bodyTop + bodyBot) / 2), `길이 ${geo.r}mm`, 2.1, 'end');
+  addText(g, cx, round(pinTop - 2), `기둥(팔) ${geo.r}mm`, 2.1, 'middle');
 }
 
 /**
@@ -362,16 +363,17 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   const slotX = round(ox + w / 2 - geo.slotWidthX / 2);
   const slotY = round(oy + (h - geo.slotLen) / 2);
   addRect(g, slotX, slotY, geo.slotWidthX, geo.slotLen, CUT);
+  // All slider annotations stay OUTSIDE the cut outline — the slider (and its
+  // grip) is a visible moving part on the finished card.
   addText(g, round(ox + w / 2), round(oy - sc - 1.5), '슬라이더 — 한 조각', 2.4, 'middle');
-  addText(g, round(ox + w / 2 + geo.slotWidthX), round(oy + h / 2), `세로 슬롯 ${geo.slotLen}mm`, 2, 'start');
 
   // Side handle grip (extends +x), with a fold-free grip (single sheet).
   const hx = round(ox + w);
   const hy = round(oy + (h - L.GRIP_H) / 2);
   addRect(g, hx, hy, geo.grip, L.GRIP_H, CUT);
   addPath(g, `M ${hx} ${hy} L ${hx} ${round(hy + L.GRIP_H)}`, VALLEY);
-  addText(g, round(hx + geo.grip / 2), round(hy + L.GRIP_H / 2 + 0.8), '손잡이', 2.2, 'middle');
-  addText(g, round(ox + w / 2), round(oy + h + sc + 3), `이동 거리 ${geo.travel}mm`, 2.1, 'middle');
+  addText(g, round(hx + geo.grip / 2), round(hy + L.GRIP_H + 3), '← 손잡이', 2.2, 'middle');
+  addText(g, round(ox + w / 2), round(oy + h + sc + 3), `이동 거리 ${geo.travel}mm · 세로 슬롯 ${geo.slotLen}mm`, 2.1, 'middle');
 }
 
 /**
@@ -426,12 +428,20 @@ export const generateSlideToSwing = (svg, options = {}) => {
 
   const { px, py, ySlot } = geo;
 
-  addText(g, px, round(M + 3), '손잡이를 밀면 흔들리는 장치 (Slide-to-Swing / Scotch Yoke)', 3, 'middle');
+  // Title + display-face notes live in the outer waste margin: the upper half
+  // is the finished card's display face, so no text may print inside it.
+  addText(
+    g,
+    px,
+    M - 1.5,
+    '손잡이를 밀면 흔들리는 장치 (Slide-to-Swing) — 가운데 작은 원: 기둥 회전축 구멍 · 점선 칸: Ⓐ/Ⓑ 안내띠 붙이는 자리',
+    2.4,
+    'middle',
+  );
 
   // ── UPPER HALF — display face: real pivot-hole cut + dashed guides ─────────
   // Pivot hole (a real cut — the post's neck passes through it).
   addPath(g, circlePath(px, py, L.PIVOT_HOLE / 2), CUT);
-  addText(g, round(px + L.PIVOT_HOLE / 2 + 2), round(py + 1), '기둥 회전축 구멍', 2.2, 'start');
 
   // No motion "ghosts" or slider-band depiction are printed on the display
   // face: the 3D preview shows the motion, and every dashed line on the card
@@ -444,9 +454,11 @@ export const generateSlideToSwing = (svg, options = {}) => {
   // Guide-strip glue anchors (dashed) above & below the slider's band.
   const gTopY = round(bandTop - L.GUIDE_W - 1);
   const gBotY = round(bandTop + geo.sliderH + 1);
-  for (const [gy, tag] of [[gTopY, 'Ⓐ 위 안내띠'], [gBotY, 'Ⓑ 아래 안내띠']]) {
+  // The Ⓐ/Ⓑ tags sit INSIDE the anchor rects: the glued guide strip
+  // (guideLen > bandW, same width) covers them completely after assembly.
+  for (const [gy, tag] of [[gTopY, 'Ⓐ 위 안내띠 자리'], [gBotY, 'Ⓑ 아래 안내띠 자리']]) {
     addRect(g, bandX, gy, bandW, L.GUIDE_W, SCORE);
-    addText(g, round(bandX - 1), round(gy + L.GUIDE_W / 2), tag, 2, 'end');
+    addText(g, px, round(gy + L.GUIDE_W / 2 + 0.7), tag, 2, 'middle');
   }
 
   // ── LOWER HALF — loose parts to cut ───────────────────────────────────────

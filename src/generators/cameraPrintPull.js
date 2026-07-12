@@ -325,18 +325,25 @@ export const generateCameraPrintPull = (svg, options = {}) => {
   const GLUE = getLineStyle('GLUE_TAB', isColor);
   const paper = PAPER_SIZES[geo.paperSize];
 
-  addText(g, cx, round(PRINT.MARGIN + 3), '카메라 인화 손잡이 (Camera-Print Pull)', 3, 'middle');
+  // The upper half IS the card front, so no annotation may print inside the
+  // trim rect there — the face is summarized on one line in the outer waste
+  // margin above the trim line instead.
+  addText(
+    g,
+    cx,
+    PRINT.MARGIN - 1.5,
+    `카메라 인화 손잡이 — 세로 구멍: 사진 슬롯 ${round(slotBotY - slotTopY)}×${slotWidth}mm · 아래 구멍: 손잡이(아래로 당김) · 위 초록칸/점선: 뒷면 ① 롤러(양 끝만 붙임)·② 멈춤 띠 자리 · 앞면은 카메라 그림으로 꾸미기`,
+    2.2,
+    'middle',
+  );
 
   // ── FRONT FACE: photo slot, roller/retainer targets, tab slot ─────────────
   // The camera look itself is the child's own drawing/decoration — no printed
   // silhouette, so nothing on this face can be mistaken for a cut/fold line.
-  addText(g, cx, round(slotTopY + 4), '앞면: 카메라 그림을 자유롭게 그려 꾸미기', 2.4, 'middle');
 
   // Vertical photo slit (closed rectangle = inherent reset stop at the bottom).
   const slotLeft = round(cx - slotWidth / 2);
   addRect(g, slotLeft, slotTopY, slotWidth, round(slotBotY - slotTopY), CUT);
-  addText(g, round(cx + 6), slotTopY, `↑ 사진 나오는 슬롯 ${round(slotBotY - slotTopY)}×${slotWidth}mm`, 2.2, 'start');
-  addText(g, cx, round(slotBotY + 3.5), '사진 시작 위치(살짝 보임)', 2.2, 'middle');
 
   // Roller (tube) glue TARGETS at the very top — glued by the two ends only, so
   // the centre arches free and the strip slides 180° over it.
@@ -345,22 +352,17 @@ export const generateCameraPrintPull = (svg, options = {}) => {
   addRect(g, round(cx - rollHalf), yRollTarget, L.ROLLER_END_GLUE, L.RET_W, GLUE);
   addRect(g, round(cx + rollHalf - L.ROLLER_END_GLUE), yRollTarget, L.ROLLER_END_GLUE, L.RET_W, GLUE);
   addPath(g, `M ${round(cx - rollHalf + L.ROLLER_END_GLUE)} ${round(yRollTarget + L.RET_W / 2)} L ${round(cx + rollHalf - L.ROLLER_END_GLUE)} ${round(yRollTarget + L.RET_W / 2)}`, SCORE);
-  addText(g, cx, round(yRollTarget - 1.5), '뒷면 ① 롤러(튜브): 양 끝만 붙여 다리처럼', 2, 'middle');
 
   // Retainer glue target just above the photo slot (seats the stop flange).
   const retHalf = round(channelGap / 2 + L.GLUE_END);
   const topRetY = round(slotTopY - L.RET_W - 1);
   addRect(g, round(cx - retHalf), topRetY, round(retHalf * 2), L.RET_W, SCORE);
-  addText(g, round(cx - retHalf - 1), round(topRetY + L.RET_W / 2), '뒷면 ② 멈춤/안내 띠', 2, 'end');
 
   // Bottom (tab) slit — the strip passes back→front here and hangs down as PULL.
+  // (No printed hint below it: the hanging tab itself shows where to pull, and
+  // any text there would peek out beside the tab on the finished card.)
   const botSlotLen = round(stripW + slotWidth * 2);
   addRect(g, round(cx - botSlotLen / 2), round(botSlotY - slotWidth / 2), botSlotLen, slotWidth, CUT);
-  addText(g, round(cx + botSlotLen / 2 + 2), botSlotY, `손잡이 나오는 슬롯 ${botSlotLen}×${slotWidth}mm`, 2.2, 'start');
-  // Printed "PULL ↓" hint where the tab hangs below this slot (text only — a
-  // dashed arrow here reads as a cut/fold line).
-  const pullTop = round(botSlotY + 3);
-  addText(g, cx, round(pullTop + grip / 2), 'PULL ↓ (아래로 당기기)', 2.4, 'middle');
 
   // ── WHITESPACE (lower half): reversing strip + roller tube + retainer + photo ──
   // Reversing strip — ONE straight horizontal piece. Left end = grip/PULL tab;
