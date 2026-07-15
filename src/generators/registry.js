@@ -23,6 +23,7 @@ import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
 import { renderGateCurtain, resolveGateCurtain } from './gateCurtain.js';
+import { renderMagicShutter } from './magicShutter.js';
 import { PARAM_SCHEMAS } from './paramSchemas.js';
 import { getElements } from '../store/cardModel.js';
 
@@ -191,6 +192,13 @@ export const MECHANISM_REGISTRY = {
         { label: '오른쪽 문 바깥 장식 (돌 등)', width: 30, height: 40 },
       ];
     },
+  },
+  'magic-shutter': {
+    sceneType: 'flat',
+    labelKo: '매직 셔터 (손잡이를 옆으로 밀면 창문 그림이 바뀌는 액자)',
+    render: (params) => renderMagicShutter(params),
+    defaultParams: { windowWidth: 96, windowHeight: 60, pitch: 6, grip: 24 },
+    instructionStyle: 'magic-shutter',
   },
 };
 
@@ -379,6 +387,18 @@ export const INSTRUCTION_TEXT = {
       '문 바깥면에 돌 장식을 붙이면 완성. 두 문을 함께 열면 커튼이 좌우로 걷히며 주인공 둘레에 노란 다이아몬드가 열리고, 닫으면 커튼이 저절로 다시 모여 주인공을 덮습니다.',
     ],
     tips: '핵심은 두 가지입니다. (1) 장식 액자는 위·아래만 풀칠 — 좌·우를 붙이면 커튼이 못 움직입니다. (2) 지지대 두 접힘선을 문 경첩과 나란히, 좌우 대칭으로 붙이기. 너무 뻑뻑하면 액자 위·아래 풀칠을 아주 살짝만 하고, 열어도 주인공이 반쯤 가리면 지지대를 커튼 바깥 끝에 더 정확히 다시 붙여 주세요. 닫을 때는 종이가 살짝 도톰하니 억지로 세게 누르지 말고 살살 접으세요.',
+  },
+  'magic-shutter': {
+    title: '매직 셔터 조립 설명서',
+    materials: '가위 또는 칼(어른과 함께), 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 오려주세요: ① 앞면 카드의 창문 안 세로 틈(길쭉한 구멍)들 — 중요: 틈 사이의 세로살(빗살)은 절대 자르지 마세요! 살은 위아래가 액자에 붙어 있어야 합니다. ② 오른쪽에 손잡이가 달린 큰 슬라이더 판(가운데 가로로 길쭉한 멈춤 슬롯도 오려냄), ③ 위 안내 다리 띠 1개, ④ 멈춤 핀이 달린 아래 안내 다리 띠 1개.',
+      '슬라이더 판의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.',
+      '슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.',
+      '중요(안내·멈춤 다리): 두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 접는 선의 립(날개)을 슬라이더 쪽으로 접어 덮어주세요 — 립은 슬라이더에 붙이면 안 됩니다! 아래 안내 다리도 같은 방법으로 슬라이더 아래쪽에 붙이되, 가운데 멈춤 핀을 산접기로 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)을 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.',
+      '손잡이를 왼쪽 끝까지 밀면 그림 ①, 오른쪽 끝까지 당기면 그림 ②가 짠! 하고 나타납니다. 끝까지 밀어 핀에 딱 걸리는 자리가 그림이 정확히 맞는 자리예요.',
+    ],
+    tips: '핵심은 세 가지입니다. (1) 창문의 세로살은 자르지 않기 — 틈만 오려냅니다. (2) 안내 다리는 카드에만 풀칠하고 슬라이더에는 절대 붙이지 않기 — 붙이면 안 움직여요. (3) 멈춤 핀을 슬롯에 꼭 끼우기 — 핀이 없으면 그림이 어중간한 자리에 멈춰 반반씩 보입니다. 너무 뻑뻑하면 안내 다리 립을 살짝 느슨하게 접어 주세요.',
   },
 };
 

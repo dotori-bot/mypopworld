@@ -61,6 +61,7 @@ export default async function handler(req, res) {
 - "flap-clap": 카드를 열고 닫으면 위쪽 면과 아래쪽 면에 붙은 두 조각(지느러미·손·발 등)이 서로 가까워졌다 멀어졌다 하면서 "탁!" 하고 마주 부딪히는 장치. 물범이 배를 통통 치거나, 손뼉을 치거나, 발을 구르는 듯한 주제에 잘 어울립니다 (배를 통통 두드리는 물범·바다표범, 손뼉 치는 원숭이, 발 구르는 펭귄 등). 지지대(프롭)로 각도를 고정해 붙여야 해서 조립에 약간 주의가 필요합니다 (난이도: 중, 7세 이상 추천)
 - "camera-print-pull": 카메라 모양 카드 아래쪽 손잡이를 당기면, 위쪽 슬롯에서 사진이 스르륵 올라오는 장치. 즉석카메라가 사진을 인화하는 모습을 흉내냅니다 (인스타 카메라로 찍은 사진이 나오는 장면, 폴라로이드 사진, 신기한 발명품 등). 뒷면 롤러(도르래) 구조로 아래로 당기는 힘을 위로 올라가는 움직임으로 바꾸는 것이 특징입니다 (난이도: 중~상, 7세 이상 추천)
 - "gate-curtain": 양쪽으로 여는 문(게이트폴드)이 달린 카드. 두 문을 열면 안쪽 노란 커튼 두 장이 저절로 좌우로 걷히면서 가운데 숨어 있던 주인공이 짠! 하고 나타납니다. 문과 커튼이 지지대(스트랩)로 연결되어 있어 문을 닫으면 커튼도 저절로 다시 모입니다. 깜짝 공개·등장 주제에 잘 어울립니다 (부활절 예수님 무덤, 무대 커튼 뒤의 주인공, 보물 상자 공개, 새 친구 소개 등) (난이도: 중~상, 8세 이상 추천)
+- "magic-shutter": 액자 카드 오른쪽에 튀어나온 손잡이를 옆으로 밀면 네모 창문 속 그림이 ①에서 ②로 짠! 하고 통째로 바뀌는 매직 셔터 카드. 창문의 세로 빗살 뒤에서 두 그림 조각이 번갈아 배치된 슬라이더가 딱 한 칸 움직여 그림을 교체합니다. 변신·반전 주제에 잘 어울립니다 (낮→밤, 닫힌 선물→열린 선물, "사랑해"→하트, 애벌레→나비, 표정 바뀌는 얼굴 등) (난이도: 중, 자르기가 조금 많지만 풀칠은 쉬움, 7세 이상 추천)
 
 [아이디어 제안 예시: "노아의 방주"]
 - 아이디어 1: 카드를 열면 커다란 방주가 튀어나오는 카드 (내부 매핑: box-popup)
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
 {
   "theme": "주제(예: 노아의 방주, 로켓)",
   "imagePrompt": "주제에 어울리는 구체적인 영문 이미지 묘사 (반드시 영어로 작성)",
-  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap | camera-print-pull | gate-curtain",
+  "mechanism": "v-fold | box-popup | parallel-fold | pull-tab | straw-rocket | accordion | volvelle | flip-disc | spiral-spring | rising-slide | layered-stage | auto-slide-window | slide-to-swing | flap-clap | camera-print-pull | gate-curtain | magic-shutter",
   "difficulty": "easy | medium | hard"
 }
 \`\`\`

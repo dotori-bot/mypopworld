@@ -1229,6 +1229,113 @@ export default function Instructions() {
           </>
         );
 
+      case 'magic-shutter':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>오리기 — 세로살은 자르지 마세요!</h4>
+                <p>검은색 실선을 따라 오려주세요: 앞면 카드 창문 안의 세로 틈(길쭉한 구멍)들, 오른쪽 손잡이가 달린 큰 슬라이더 판(가운데 가로 멈춤 슬롯도 오려냄), 위 안내 다리 1개, 멈춤 핀이 달린 아래 안내 다리 1개. 중요: 창문의 틈 사이 세로살(빗살)은 위아래가 액자에 붙은 채 남겨둡니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* Frame with picket grille: cut gaps (dark) between bars */}
+                    <rect x="8" y="8" width="56" height="40" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="16" y="14" width="40" height="28" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="21" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="31" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="41" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="51" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <text x="36" y="54" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">틈만 오려냄 (살은 그대로)</text>
+                    {/* Slider with grip */}
+                    <rect x="72" y="12" width="26" height="22" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="98" y="19" width="8" height="8" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <rect x="80" y="28" width="10" height="3" fill="rgba(15,23,42,0.7)" />
+                    <text x="86" y="42" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">슬라이더 + 손잡이</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>①/② 칸에 두 그림 나눠 그리기</h4>
+                <p>슬라이더의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="14" y="10" width="72" height="30" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    {[0, 1, 2, 3, 4, 5].map((k) => (
+                      <rect key={k} x={20 + k * 10} y="10" width="10" height="30" fill={k % 2 === 0 ? 'rgba(245,158,11,0.5)' : 'rgba(59,130,246,0.45)'} stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    ))}
+                    <text x="25" y="28" fontSize="5" textAnchor="middle">①</text>
+                    <text x="35" y="28" fontSize="5" textAnchor="middle">②</text>
+                    <text x="45" y="28" fontSize="5" textAnchor="middle">①</text>
+                    <text x="55" y="28" fontSize="5" textAnchor="middle">②</text>
+                    <text x="50" y="49" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">①과 ②를 번갈아 그리기</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>슬라이더 끼우기</h4>
+                <p>슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="20" y="12" width="48" height="34" fill="var(--bg-glass)" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" /> {/* slider behind */}
+                    <rect x="10" y="8" width="60" height="42" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* card front */}
+                    <rect x="68" y="24" width="14" height="10" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" /> {/* grip out the right */}
+                    <text x="75" y="42" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">손잡이는 오른쪽 밖으로</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>중요 — 안내 다리 붙이고 멈춤 핀 끼우기</h4>
+                <p>두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)은 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="18" y="20" width="64" height="16" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" /> {/* slider edge */}
+                    <rect x="12" y="10" width="76" height="6" fill="rgba(226,232,240,0.9)" stroke="var(--text-secondary)" strokeWidth="0.8" /> {/* top guide */}
+                    <rect x="12" y="10" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="80" y="10" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="12" y="40" width="76" height="6" fill="rgba(226,232,240,0.9)" stroke="var(--text-secondary)" strokeWidth="0.8" /> {/* bottom guide */}
+                    <rect x="12" y="40" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="80" y="40" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="44" y="27" width="12" height="4" fill="rgba(15,23,42,0.7)" /> {/* stop slot */}
+                    <rect x="48" y="27" width="3" height="13" fill="var(--primary-main)" /> {/* pin */}
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">초록(양 끝)만 풀칠 · 핀은 슬롯에 끼우기</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>밀어보기 — 짠!</h4>
+                <p>손잡이를 왼쪽 끝까지 밀면 그림 ①, 오른쪽 끝까지 당기면 그림 ②가 짠! 하고 나타납니다. 끝까지 밀어 핀에 딱 걸리는 자리가 그림이 정확히 맞는 자리예요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="110" viewBox="0 0 110 55" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* State ① */}
+                    <rect x="6" y="10" width="40" height="30" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="12" y="16" width="28" height="18" fill="rgba(245,158,11,0.55)" stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    <text x="26" y="48" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">← 끝까지 밀면 그림 ①</text>
+                    {/* Arrow */}
+                    <path d="M50 25 L60 25 M57 22 L60 25 L57 28" fill="none" stroke="var(--primary-main)" strokeWidth="1.5" />
+                    {/* State ② */}
+                    <rect x="64" y="10" width="40" height="30" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="70" y="16" width="28" height="18" fill="rgba(59,130,246,0.5)" stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    <text x="84" y="48" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">끝까지 당기면 그림 ② →</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'generic':
         return (
           <>

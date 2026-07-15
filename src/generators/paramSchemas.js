@@ -40,6 +40,7 @@ import { SLIDE_SWING_LIMITS, resolveSlideToSwing } from './slideToSwing.js';
 import { FLAP_CLAP_LIMITS, resolveFlapClapGeometry } from './flapClap.js';
 import { CAMERA_PULL_LIMITS, resolveCameraPull } from './cameraPrintPull.js';
 import { GATE_CURTAIN_LIMITS, resolveGateCurtain } from './gateCurtain.js';
+import { MAGIC_SHUTTER_LIMITS, resolveMagicShutter } from './magicShutter.js';
 
 const card = (paperSize) => CARD_SIZES[paperSize] || CARD_SIZES.A4;
 const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -346,6 +347,33 @@ export const PARAM_SCHEMAS = {
         min: GATE_CURTAIN_LIMITS.D_MIN,
         max: resolveGateCurtain({ paperSize, panelWidth: p.panelWidth, hingeOffset: 9999 }).d,
       }),
+    },
+  ],
+
+  'magic-shutter': [
+    {
+      key: 'windowWidth', labelKo: '창문 폭 (windowWidth)', unit: 'mm', step: 1,
+      // Realized winW snaps to an odd column count × pitch; probe both ends of
+      // the fit clamp (whitespace must also hold slider + grip).
+      limits: (p, paperSize) => ({
+        min: Math.ceil(resolveMagicShutter({ paperSize, windowWidth: 0, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip }).winW),
+        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: 9999, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip }).winW),
+      }),
+    },
+    {
+      key: 'windowHeight', labelKo: '창문 높이 (windowHeight)', unit: 'mm', step: 1,
+      limits: (p, paperSize) => ({
+        min: MAGIC_SHUTTER_LIMITS.WIN_H_MIN,
+        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: p.windowWidth, windowHeight: 9999, pitch: p.pitch, grip: p.grip }).winH),
+      }),
+    },
+    {
+      key: 'pitch', labelKo: '세로살 폭 = 손잡이 이동 거리 (pitch)', unit: 'mm', step: 1,
+      limits: () => ({ min: MAGIC_SHUTTER_LIMITS.PITCH_MIN, max: MAGIC_SHUTTER_LIMITS.PITCH_MAX }),
+    },
+    {
+      key: 'grip', labelKo: '손잡이 길이 (grip)', unit: 'mm', step: 1,
+      limits: () => ({ min: MAGIC_SHUTTER_LIMITS.GRIP_MIN, max: MAGIC_SHUTTER_LIMITS.GRIP_MAX }),
     },
   ],
 };
