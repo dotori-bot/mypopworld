@@ -314,7 +314,7 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   const L_ = AUTO_SLIDE_LIMITS;
   const CUT = getLineStyle('CUT', isColor);
   const SCORE = getLineStyle('SCORE', isColor);
-  const MOUNT = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const VALLEY = getLineStyle('VALLEY_FOLD', isColor);
   const GLUE = getLineStyle('GLUE_TAB', isColor);
 
   const w = geo.sliderWx;
@@ -355,8 +355,11 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   const tabY0 = round(oy + vAttach - L_.STRUT_W / 2);
   addRect(g, round(ox + w), tabY0, round(tabLen), L_.STRUT_W, CUT);
   addRect(g, round(ox + w + 1), round(tabY0 + 1), round(tabLen - 2), round(L_.STRUT_W - 2), GLUE);
-  // attach crease (parallel to spine → horizontal here) across the tab root
-  addPath(g, `M ${round(ox + w)} ${round(oy + vAttach)} L ${round(ox + w + tabLen)} ${round(oy + vAttach)}`, MOUNT);
+  // attach crease (parallel to spine → horizontal here) across the tab root —
+  // VALLEY on the strip: the strut tents upward off the back face, so its
+  // slider-end hinge folds the paper toward the strut (the mountain half of
+  // the pair lives at the strut's pivot end, see file header ~line 66).
+  addPath(g, `M ${round(ox + w)} ${round(oy + vAttach)} L ${round(ox + w + tabLen)} ${round(oy + vAttach)}`, VALLEY);
   // The ② tag sits INSIDE the tab's glue face (the strut end covers it); the
   // parts area shares the sheet with the card's front face, so no free text.
   addText(g, round(ox + w + tabLen / 2), round(tabY0 + L_.STRUT_W / 2 + 0.8), '② 자리', 2.2, 'middle');
@@ -372,6 +375,7 @@ function drawStrutPiece(g, ox, oy, geo, isColor) {
   const CUT = getLineStyle('CUT', isColor);
   const GLUE = getLineStyle('GLUE_TAB', isColor);
   const MOUNT = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const VALLEY = getLineStyle('VALLEY_FOLD', isColor);
 
   const w = L_.STRUT_W;
   const ge = L_.GLUE_END;
@@ -381,9 +385,11 @@ function drawStrutPiece(g, ox, oy, geo, isColor) {
   // glue tabs at both ends
   addRect(g, round(ox + 1), round(oy + 1), round(w - 2), round(ge - 2), GLUE);
   addRect(g, round(ox + 1), round(oy + total - ge + 1), round(w - 2), round(ge - 2), GLUE);
-  // creases between tabs and body
+  // Creases between tabs and body — a mountain/valley PAIR, as the file
+  // header requires for the arm to collapse flat: ① pivot end (moving face)
+  // = MOUNTAIN, ② slider end = VALLEY (matches the strip tab's valley).
   addPath(g, `M ${ox} ${round(oy + ge)} L ${round(ox + w)} ${round(oy + ge)}`, MOUNT);
-  addPath(g, `M ${ox} ${round(oy + total - ge)} L ${round(ox + w)} ${round(oy + total - ge)}`, MOUNT);
+  addPath(g, `M ${ox} ${round(oy + total - ge)} L ${round(ox + w)} ${round(oy + total - ge)}`, VALLEY);
 
   // ①/② tags INSIDE the glue tabs only (hidden once glued) — the parts area
   // shares the sheet with the card's front face, so no free-floating labels.

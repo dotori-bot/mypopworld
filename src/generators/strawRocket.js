@@ -92,7 +92,9 @@ export const generateStrawRocket = (svg, options = {}) => {
  */
 export function renderStrawRocket(params = {}) {
   const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
-  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  // Parts-only sheet (tube + decorations — the rocket is not a folded card),
+  // so no spine fold line is printed (it used to cross the decoration boxes).
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode, { spine: false });
   generateStrawRocket(contentGroup, {
     cx: paper.width / 2,
     cy: spineY,

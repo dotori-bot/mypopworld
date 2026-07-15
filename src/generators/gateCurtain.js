@@ -142,6 +142,8 @@ import {
   addText,
   addGroup,
   getLineStyle,
+  ensureGlueHatchDefs,
+  addLegend,
 } from './svgBuilder.js';
 
 /** Fixed design limits / clamps (see file header for the derivations). */
@@ -436,6 +438,7 @@ function drawStrapPiece(g, ox, oy, geo, label, isColor) {
   const CUT = getLineStyle('CUT', isColor);
   const GLUE = getLineStyle('GLUE_TAB', isColor);
   const MOUNT = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const VALLEY = getLineStyle('VALLEY_FOLD', isColor);
 
   const ge = K.GLUE_END;
   const total = geo.L + 2 * ge;   // body L + glue tab each end
@@ -444,8 +447,11 @@ function drawStrapPiece(g, ox, oy, geo, label, isColor) {
   addRect(g, ox, oy, round(total), h, CUT);
   addRect(g, round(ox + 1), round(oy + 1), round(ge - 2), round(h - 2), GLUE);
   addRect(g, round(ox + total - ge + 1), round(oy + 1), round(ge - 2), round(h - 2), GLUE);
+  // Mountain/valley PAIR per the docstring: door end ('문에') mountain,
+  // curtain end ('커튼에') valley — a Z-fold, so the strap collapses flat as
+  // the doors close instead of fighting both creases the same way.
   addPath(g, `M ${round(ox + ge)} ${oy} L ${round(ox + ge)} ${round(oy + h)}`, MOUNT);
-  addPath(g, `M ${round(ox + total - ge)} ${oy} L ${round(ox + total - ge)} ${round(oy + h)}`, MOUNT);
+  addPath(g, `M ${round(ox + total - ge)} ${oy} L ${round(ox + total - ge)} ${round(oy + h)}`, VALLEY);
 
   // All strap annotations stay OUTSIDE the cut outline — the strap is visible
   // on the finished card (only its glue ends get covered).
@@ -526,8 +532,10 @@ export const generateGateCurtain = (svg, options = {}) => {
   // between). The ③ labels sit INSIDE the rail bands, hidden under the rails.
   const frTop = round(pcY - frameH / 2);
   const frBot = round(pcY + frameH / 2);
-  addRect(g, round(cX - frameW / 2), frTop, round(frameW), K.FRAME_BORDER, SCORE);
-  addRect(g, round(cX - frameW / 2), round(frBot - K.FRAME_BORDER), round(frameW), K.FRAME_BORDER, SCORE);
+  // These bands say "풀칠" — draw them in the GLUE style (hatch) like every
+  // other glue target, not as gray guides (one meaning per style).
+  addRect(g, round(cX - frameW / 2), frTop, round(frameW), K.FRAME_BORDER, GLUE);
+  addRect(g, round(cX - frameW / 2), round(frBot - K.FRAME_BORDER), round(frameW), K.FRAME_BORDER, GLUE);
   addText(g, cX, round(frTop + K.FRAME_BORDER / 2 + 0.7), '③ 액자 윗변 풀칠', 2, 'middle');
   addText(g, cX, round(frBot - K.FRAME_BORDER / 2 + 0.7), '③ 액자 아랫변 풀칠', 2, 'middle');
 
@@ -589,7 +597,10 @@ export function renderGateCurtain(params = {}) {
   const isColor = colorMode !== 'bw';
 
   const svg = createSVG(paper.width, paper.height);
-  // Outer trim / cut guide at the safe margin (own page — no createTemplate).
+  // Own page (no createTemplate) — so the glue-hatch <pattern> defs and the
+  // line-style legend must be added here explicitly.
+  ensureGlueHatchDefs(svg);
+  // Outer trim / cut guide at the safe margin.
   addRect(
     svg,
     PRINT.MARGIN,
@@ -598,6 +609,7 @@ export function renderGateCurtain(params = {}) {
     paper.height - 2 * PRINT.MARGIN,
     getLineStyle('CUT', isColor),
   );
+  addLegend(svg, geometry.paperSize, colorMode);
   const contentGroup = addGroup(svg, 'content');
   generateGateCurtain(contentGroup, { paperSize, ...opts, isColor });
   return { svg, geometry };

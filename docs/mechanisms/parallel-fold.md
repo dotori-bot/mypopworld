@@ -15,11 +15,11 @@
   - 위쪽(척추 위) 절단: `upperStart = spineY - accumulatedDepth`, `upperEnd = spineY - cutDepthFromSpine`; 좌우 세로 절단선을 이 범위(`upperStart~upperEnd`)에만 그린다(`parallelFold.js:138-146`) — "이 레벨 자신의 띠 범위만" 자른다는 주석(`141-142`)이 핵심: 계단 조각이 카드에서 들려 올라갈 수 있도록 그 레벨의 좌우 모서리만 자유롭게 한다.
   - 아래쪽(척추 아래)도 대칭으로 동일 계산(`148-153`).
   - **바깥쪽(절단 깊이) 가로선 처리가 이 메커니즘의 핵심 로직**(`155-180`, 주석 `156-158`): "한 선은 자르기 아니면 접기 둘 중 하나이지 둘 다일 수 없다"는 원칙 아래,
-    - 마지막(가장 안쪽/가장 깊은) 레벨이면: 바깥 모서리는 완전한 자유단이므로 폭 전체를 CUT으로 긋고 산접기는 등록하지 않는다(`159-164`).
+    - 마지막(가장 안쪽/가장 깊은) 레벨이면: 바깥 모서리는 **조각이 카드로 되돌아 붙는 유일한 앵커 = 골접기(VALLEY)**다. 폭 전체를 골접기로 긋는다 — 과거에는 CUT이어서 조각 둘레가 전부 절단선이 되어 카드에서 탈락하는 치명 버그였다(2026-07 수정).
     - 마지막이 아니면(다음에 더 좁은 레벨이 얹힐 예정이면): 다음 레벨 폭보다 바깥쪽의 "어깨(shoulder)" 부분만 CUT으로 자르고, 다음 레벨 폭 안쪽 가운데 띠는 자르지 않는다 — 이 안 잘린 가운데 띠가 다음 레벨(i+1)이 스스로 그리는 산접기 경첩이 되기 때문에, 여기서는 그 위치에 대해 `mountainFolds`를 절대 push하지 않는다(중복 라벨링 방지, `165-180`).
-  - **안쪽(척추에 가까운 쪽) 산접기**(`182-193`): 레벨 0이면 척추 위치 자체가 산접기선(`186-188`); 레벨 i>0이면 `accumulatedDepth` 위치(=이전 레벨의 안 잘린 바깥 모서리 가운데 띠)가 산접기선(`189-192`).
+  - **안쪽(척추에 가까운 쪽) 경첩**: 접기 방향은 최외곽 골접기 앵커에서 안쪽으로 골·산 교대다(중심 단면에서 접기각 합 = +90° 조건으로 유도; 코드 주석 참고). 위치 N−i+1이 홀수면 골, 짝수면 산 — N=1이면 척추 크리스가 산접기(고전 단일 계단 V·M·V), N=2면 척추 크리스가 골접기가 된다. 레벨 0의 경첩은 척추 구간 자체이며, 템플릿의 카드 척추 골선은 그 구간을 `spineGaps`로 건너뛴다(한 선 한 의미).
   - 라벨(`195-201`): 각 레벨 중앙에 `단계 N: depth mm` 텍스트.
-- 척추 자체에는 골접기 표시 라인 하나가 추가된다(`206-209`, 레벨 0 폭 기준 좌우 5mm 여유).
+- (과거의 '척추 골접기 표시 라인 ±5mm' 중복 표기는 제거됨 — 척추 구간 표기는 위 경첩 규칙 하나로 통일.)
 - `round()`/`clamp()`는 `src/utils/math.js`의 헬퍼(라운딩·범위 제한)를 그대로 사용.
 - `renderParallelFold(params)`(`parallelFold.js:221-235`)가 `createTemplate()`으로 페이지를 만들고 `cuts`/`mountainFolds`/`valleyFolds`/`markers`를 각각 `styles.CUT`/`MOUNTAIN_FOLD`/`VALLEY_FOLD`로 그린다.
 
@@ -45,6 +45,9 @@ parallel-fold의 히스토리는 세 단계다.
 
 1. **`4f9345e`("Fix select styling and implement parallel-fold mechanism logic")**: 이 시점엔 `SVGPreview.jsx`에 인라인으로 사각형/텍스트만 그리는 **자리표시자(placeholder)** 코드가 추가됐을 뿐, `src/generators/parallelFold.js` 자체는 아직 존재하지 않았다(파일 히스토리 확인 결과 `parallelFold.js`는 초기 커밋 `52ebea7`에서 이미 통째로 212줄짜리 완성된 모듈로 들어와 있었다).
 2. **`6defbad`("Fix broken parallel-fold/pull-tab, add mechanism registry, vector PDF export")**: `parallelFold.js`(및 `pullTab.js`)는 `createTemplate()`(`svgBuilder.js`)과 `getLineStyles()`(`constants.js`)를 이미 import해서 쓰고 있었지만, **그 두 함수 자체가 그때까지 코드베이스에 존재하지 않았다** — 즉 이 두 생성기는 처음부터 완성된 기하 로직을 갖고 있었음에도 실행하면 즉시 에러가 나 "도달 불가능(unreachable)"했고, `SVGPreview.jsx`는 그 대신 조용히 자리표시자 사각형만 그리고 있었다. 이 커밋이 누락된 두 헬퍼 함수를 추가하고 `registry.js`를 도입해 실제 생성기가 처음으로 실행되게 만들었다.
+
+> ⚠️ **후속 수정(2026-07)**: `b1367c1`은 "한 선에 CUT과 FOLD 중복" 버그를 지우면서 **접는선 쪽을 지우는 잘못된 선택**을 했다 — 마지막 레벨 바깥 모서리는 자유단이 아니라 조각의 유일한 카드 앵커(골접기)다. CUT을 남긴 결과 조각 둘레 전체가 절단선이 되어 조각이 탈락했다. 현재 코드는 골접기로 복원하고, 안쪽 경첩 방향도 골·산 교대 규칙(접기각 합 +90° 유도)으로 재정립했다. 교훈: 중복 표기를 지울 때는 "어느 쪽이 물리적으로 맞는가"를 단면 유도로 먼저 결정할 것.
+
 3. **`b1367c1`("Fix parallel-fold cut/fold bug and add its 3D staircase preview")**: 실제로 처음 실행 가능해진 뒤에야 드러난 **진짜 기하 버그**를 고쳤다 — box-popup(`be0a85b`)과 **완전히 같은 버그 클래스**: 각 레벨의 바깥 모서리(`upperEnd`/`lowerEnd`)가 `cuts` 배열과 `mountainFolds` 배열 양쪽에 동일 좌표로 동시에 push되고 있었다. 커밋 메시지: "every level's outer edge was pushed into BOTH the cuts array AND the mountainFolds array with identical coordinates." 수정 내용:
    - 마지막 레벨: 바깥 모서리는 자유단이므로 전체 폭을 CUT으로만 남기고 중복된 `mountainFolds` push를 삭제.
    - 마지막이 아닌 레벨: 다음(더 좁은) 레벨의 폭 바깥쪽 "어깨" 구간만 CUT으로 자르고, 가운데 띠는 자르지 않은 채로 남겨(다음 레벨이 스스로 그릴 산접기 경첩이 되므로) 여기서 이중으로 라벨링하지 않음.

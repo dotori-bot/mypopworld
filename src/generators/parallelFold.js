@@ -78,21 +78,19 @@ function buildLevels(params) {
  * Generate parallel fold mechanism data.
  *
  * Each level consists of:
- * - Two horizontal cut lines (left and right of the step)
- * - A fold line parallel to the spine at cut depth
- * - The spine itself acts as a valley fold
+ * - Two vertical CUT lines (left and right of the step, its own band only)
+ * - Horizontal FOLD lines at the band boundaries — never cuts (see the
+ *   fold-direction derivation at the outer-edge branch below)
  *
- * For a single step on the flat template:
+ * For a single step (N=1) on the flat template:
  *
  * ```
- *   ─────────────────────  spine (valley fold)
- *   │←── depth ──→│
- *   ├─────────────┤ ─ ─ ─  mountain fold (parallel to spine)
+ *   ├─────────────┤ ─ ─ ─  valley fold (anchor back to the card)
  *   │  step face  │
- *   ├─────────────┤ ─ ─ ─  mountain fold
- *   │←── depth ──→│
- *   ─────────────────────  spine continued
- *       ↑ width ↑
+ *   ├─────────────┤ ─·─·─  spine segment: MOUNTAIN (template valley gapped here)
+ *   │  step face  │
+ *   ├─────────────┤ ─ ─ ─  valley fold (anchor)
+ *       ↑ width ↑     │ = vertical cuts (the only cutting)
  * ```
  *
  * On the template, cuts go vertically from the spine outward.
@@ -153,15 +151,23 @@ export function generateParallelFold(rawParams) {
     cuts.push(`M ${right} ${lowerStart} L ${right} ${lowerEnd}`);
 
     // ── Outer edge (at cut depth) ────────────────────────────────
-    // The bug was cutting AND mountain-folding this same line. A line can be
-    // one or the other, never both. Which one depends on whether a narrower
-    // level sits on top of this one.
+    // A line carries exactly ONE meaning (cut or fold, never both). The
+    // outermost boundary of the LAST level is the strip's ONLY anchor back to
+    // the card: it must be a VALLEY hinge (same fold sense as the card spine).
+    // Cutting it — the old bug — left the strip's whole perimeter cut, so the
+    // piece simply fell out of the card.
+    //
+    // Fold-direction derivation (cross-section through the strip centre,
+    // card opened 90°; each crease turns the paper ±90°, and the polyline
+    // must leave the upper card face and land on the lower one, so the
+    // signed turns sum to +90°): with the two outermost anchors VALLEY,
+    // the interior creases must alternate M, V, M … inward, ending at the
+    // spine crease (VALLEY when the level count N is even, MOUNTAIN when
+    // odd — N=1 gives the classic V·M·V single step).
     const isLast = i === levels.length - 1;
     if (isLast) {
-      // Top of the staircase: the outer edge is a FREE edge → full cut across
-      // this level's width, and it is NOT a fold (no mountainFolds push).
-      cuts.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
-      cuts.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
+      valleyFolds.push(`M ${left} ${upperEnd} L ${right} ${upperEnd}`);
+      valleyFolds.push(`M ${left} ${lowerEnd} L ${right} ${lowerEnd}`);
     } else {
       // A narrower next level shares this outer edge as its hinge. Only cut the
       // exposed "shoulders" (tread edges) either side of the next level's
@@ -179,27 +185,24 @@ export function generateParallelFold(rawParams) {
       cuts.push(`M ${innerRight} ${lowerEnd} L ${right} ${lowerEnd}`);
     }
 
-    // ── Inner edge mountain fold (the hinge attaching this level) ──
+    // ── Inner edge fold (the hinge attaching this level) ──────────
     // For level 0 this coincides with the spine; for level i>0 it IS the shared
-    // hinge on level i-1's (uncut) outer-edge middle strip.
+    // hinge on level i-1's (uncut) outer-edge middle strip. Direction follows
+    // the alternation derived above: this crease sits at position N−i+1
+    // counting inward from the outermost VALLEY anchor, so it is a VALLEY when
+    // (N−i) is even and a MOUNTAIN when odd. (N=1 → spine MOUNTAIN, the
+    // classic step; the template's card-spine valley is gapped over the strip
+    // width in renderParallelFold so this line is the only mark there.)
+    const innerFolds = (levels.length - i) % 2 === 0 ? valleyFolds : mountainFolds;
     if (accumulatedDepth === 0) {
-      // First level: mountain fold at spine level across the step width
-      // (The paper between the cuts and the spine will fold up)
-      mountainFolds.push(`M ${left} ${round(spineY)} L ${right} ${round(spineY)}`);
+      innerFolds.push(`M ${left} ${round(spineY)} L ${right} ${round(spineY)}`);
     } else {
-      // Subsequent levels: fold at the accumulated depth line
-      mountainFolds.push(`M ${left} ${upperStart} L ${right} ${upperStart}`);
-      mountainFolds.push(`M ${left} ${lowerStart} L ${right} ${lowerStart}`);
+      innerFolds.push(`M ${left} ${upperStart} L ${right} ${upperStart}`);
+      innerFolds.push(`M ${left} ${lowerStart} L ${right} ${lowerStart}`);
     }
 
     accumulatedDepth = cutDepthFromSpine;
   }
-
-  // Valley fold note at spine
-  valleyFolds.push(
-    `M ${round(posX - levels[0].width / 2 - 5)} ${round(spineY)} ` +
-    `L ${round(posX + levels[0].width / 2 + 5)} ${round(spineY)}`
-  );
 
   // The whole page IS the card, so no marker may sit inside the trim rect —
   // everything is summarized on one line in the outer waste margin instead.
@@ -207,10 +210,10 @@ export function generateParallelFold(rawParams) {
   markers.push({
     x: posX,
     y: PRINT.MARGIN - 1.5,
-    text: `계단 팝업 — 가운데 가로선은 골접기(척추) · ${stepSummary}`,
+    text: `계단 팝업 — 세로 실선만 자르기 · 가로선은 전부 접기(하단 범례 참고) · ${stepSummary}`,
   });
 
-  return { cuts, mountainFolds, valleyFolds, markers, levels };
+  return { cuts, mountainFolds, valleyFolds, markers, levels, posX };
 }
 
 /**
@@ -221,8 +224,14 @@ export function generateParallelFold(rawParams) {
 export function renderParallelFold(params) {
   const colorMode = params.colorMode ?? 'color';
   const styles = getLineStyles(colorMode);
-  const { svg, contentGroup } = createTemplate(params.paperSize, colorMode);
   const result = generateParallelFold(params);
+  // The strip draws its own spine crease (direction depends on level parity),
+  // so the template's card-spine valley is gapped over the strip's width — one
+  // line, one meaning.
+  const halfW0 = result.levels[0].width / 2;
+  const { svg, contentGroup } = createTemplate(params.paperSize, colorMode, {
+    spineGaps: [[result.posX - halfW0, result.posX + halfW0]],
+  });
 
   const g = addGroup(contentGroup, 'parallel-fold', 'parallel-fold');
 

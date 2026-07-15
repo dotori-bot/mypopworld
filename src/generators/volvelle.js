@@ -180,7 +180,10 @@ export const generateVolvelle = (svg, options = {}) => {
   addPath(g, circlePath(P.rotor.x, P.rotor.y, R), cutStyle);
   for (let k = 0; k < sectors; k++) {
     const edge = polarToCartesian(P.rotor.x, P.rotor.y, R, k * sigma);
-    addPath(g, `M ${round(P.rotor.x)} ${round(P.rotor.y)} L ${round(edge.x)} ${round(edge.y)}`, cutStyle);
+    // Sector dividers are drawing guides (the rotor must stay one solid disc
+    // to rotate) — SCORE, never CUT: cutting them would slice the disc into
+    // pie wedges.
+    addPath(g, `M ${round(P.rotor.x)} ${round(P.rotor.y)} L ${round(edge.x)} ${round(edge.y)}`, scoreStyle);
     // sector number, kid-friendly — just OUTSIDE the rim at the sector's
     // mid-angle (sheet waste), so the rotor's drawing face stays print-free
     const mid = polarToCartesian(P.rotor.x, P.rotor.y, R + 3, k * sigma + sigma / 2);
@@ -235,7 +238,9 @@ export const generateVolvelle = (svg, options = {}) => {
  */
 export function renderVolvelle(params = {}) {
   const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
-  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  // Parts-only sheet (4 loose discs — the volvelle is not a folded card), so
+  // no spine fold line is printed.
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode, { spine: false });
   generateVolvelle(contentGroup, {
     cx: paper.width / 2,
     cy: spineY,

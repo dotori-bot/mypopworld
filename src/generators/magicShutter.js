@@ -434,6 +434,9 @@ function drawFrontWindow(g, geo, isColor) {
   const gl = clampX(guideL);
   const gr = clampX(guideL + guideW);
   addRect(g, gl, round(Math.max(PRINT.MARGIN, topGuideY)), round(gr - gl), L.RET_W, SCORE);
+  // Labels sit INSIDE the target rects — the glued guide legs cover them.
+  addText(g, round((gl + gr) / 2), round(Math.max(PRINT.MARGIN, topGuideY) + L.RET_W / 2 + 0.7),
+    '위 안내 다리 자리 (양 끝만 풀칠)', 1.9, 'middle');
   addRect(g, gl, botGuideY, round(gr - gl), L.STOP_BRIDGE_W, SCORE);
   addText(g, round((gl + gr) / 2), round(botGuideY + L.STOP_BRIDGE_W / 2 + 0.7),
     '아래 안내·멈춤 다리 자리 (양 끝만 풀칠 · 핀=멈춤)', 1.9, 'middle');
@@ -547,7 +550,7 @@ function drawBottomStopGuide(g, ox, oy, geo, isColor) {
   addText(g, round(ox + w / 2), round(oy - 1.5),
     '아래 안내·멈춤 다리 (윗변 초록만 풀칠 · 인쇄면이 카드 뒤로 가게 뒤집어 붙임)', 1.9, 'middle');
   addText(g, pinCx, round(pinRoot + L.MOUNT_LEN + 3),
-    '멈춤 핀: 위로 접어 슬롯에 끼우고 끝(파란 골선)을 아래로 접어 고정', 1.9, 'middle');
+    '멈춤 핀: 위로 접어 슬롯에 끼우고 끝(골접기 선)을 아래로 접어 고정', 1.9, 'middle');
 }
 
 /**

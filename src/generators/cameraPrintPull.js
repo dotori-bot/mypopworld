@@ -399,7 +399,7 @@ export const generateCameraPrintPull = (svg, options = {}) => {
 
   addText(g, round((xL + xTurn) / 2), round(top - 2), 'PULL 손잡이', 2.2, 'middle');
   addText(g, round((xTurn + xWrap) / 2), round(top - 2), '뒤로 내려가는 부분 (당김)', 2.2, 'middle');
-  addText(g, xWrap, round(bot + 3.5), '↑ 롤러 넘는 곳(살짝 접기)', 2, 'middle');
+  addText(g, xWrap, round(bot + 3.5), '↑ 롤러 넘는 곳(자연스럽게 휘어짐 · 접지 않기)', 2, 'middle');
   addText(g, round((xWrap + flInR) / 2), round(top - 2), '사진 올리는 부분', 2.2, 'middle');
   addText(g, flOutR, round(flTop - 1.5), '멈춤 날개', 2, 'middle');
   addText(g, round(flOutR + L.MOUNT_LEN / 2), round(bot + 3.5), '사진', 2, 'middle');

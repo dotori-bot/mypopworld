@@ -25,7 +25,7 @@
 - 창문 각도 `θ_w = max(σ − 2·δ, 10)`, 가드 `δ = GUARD_DEG(6)` (`thetaW`) — 이웃 섹터가 창문으로 새지 않게 좌우 6°씩 여유를 둔다.
 - `outerR = R + RIM(8)`, `innerR = R + CLEARANCE(1.0)`, `rOut = R − WINDOW_MARGIN(1.5)`
 
-원과 섹터 경로는 `circlePath` (`volvelle.js:63`), `sectorPath` (`volvelle.js:75`)가 그린다. 각도→좌표는 `utils/math.js`의 `polarToCartesian(cx, cy, r, deg)`를 쓰며 **0°가 위쪽**, 시계 방향 양수 규약이다. 창문은 `sectorPath(..., -thetaW/2, thetaW/2)` (`volvelle.js:163`)로 상단 중앙에 뚫린다. 돌림판 분할선은 `for k in [0,sectors)`에서 `polarToCartesian(..., R, k·σ)` 끝점으로 그린다 (`volvelle.js:181`).
+원과 섹터 경로는 `circlePath` (`volvelle.js:63`), `sectorPath` (`volvelle.js:75`)가 그린다. 각도→좌표는 `utils/math.js`의 `polarToCartesian(cx, cy, r, deg)`를 쓰며 **0°가 위쪽**, 시계 방향 양수 규약이다. 창문은 `sectorPath(..., -thetaW/2, thetaW/2)` (`volvelle.js:163`)로 상단 중앙에 뚫린다. 돌림판 분할선은 `for k in [0,sectors)`에서 `polarToCartesian(..., R, k·σ)` 끝점으로 그리되, **SCORE(자리 표시) 스타일**로 그린다 — 과거에는 CUT 실선이어서 지시대로 자르면 돌림판이 부채꼴 조각으로 해체되는 치명 버그였다(2026-07 수정). 돌림판은 회전을 위해 반드시 한 장짜리 원판으로 남아야 한다.
 
 - 창문 바깥 반지름 `rOut = R − 1.5`이므로 돌림판이 최대 1mm 표류해도 창문 가장자리가 절대 드러나지 않는다.
 - 손잡이 홈: 하단 180°에서 좌우 `notchHalf(15)`° 폭으로 `notchInner = R − 4`까지 파고들어 돌림판 rim(반지름 R < outerR)을 손끝에 노출시킨다 (`volvelle.js:168`).

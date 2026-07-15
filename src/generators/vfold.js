@@ -85,6 +85,19 @@ function drawVFoldWedge(g, { originX, originY, armLength, angle, isColor, tabSiz
     [originX, baseFoldY]
   ], glueStyle);
 
+  // Piece outer boundary around the glue tabs (CUT). The tabs' rim used to be
+  // marked only by the green glue outline, so "검은 실선을 따라 오려주세요"
+  // could never free the piece — the black cut line must trace the whole rim.
+  // (The tabs' inner edges are the valley base-folds above, not cuts.)
+  addPath(g,
+    `M ${leftX} ${topY} L ${tabLeftX} ${topY - tabSize / 2} ` +
+    `L ${originX - 5} ${baseFoldY - tabSize / 2} L ${originX} ${baseFoldY}`,
+    cutStyle);
+  addPath(g,
+    `M ${originX} ${baseFoldY} L ${originX + 5} ${baseFoldY - tabSize / 2} ` +
+    `L ${tabRightX} ${topY - tabSize / 2} L ${rightX} ${topY}`,
+    cutStyle);
+
   // Labels sit INSIDE the glue-tab quads (the only spot where text may print
   // inside the pattern — everything else must stay off the finished card).
   const tabMidY = (topY + baseFoldY) / 2 - tabSize / 4;

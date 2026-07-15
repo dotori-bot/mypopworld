@@ -1,5 +1,5 @@
 import { addPath, addPolygon, getLineStyle, addText, addGroup, createTemplate } from './svgBuilder';
-import { PRINT } from './constants';
+import { PAPER_SIZES, PRINT } from './constants';
 
 /**
  * Generates an SVG group for a Box Popup mechanism
@@ -31,28 +31,20 @@ export const generateBoxPopup = (svg, options = {}) => {
   addPath(g, `M ${cx - hw} ${cy - d} L ${cx - hw} ${cy + d}`, cutStyle);
   addPath(g, `M ${cx + hw} ${cy - d} L ${cx + hw} ${cy + d}`, cutStyle);
 
-  // 2. Spine Fold (Mountain - because the box pops out toward viewer)
+  // 2. Spine Fold (Mountain - because the box pops out toward viewer).
+  // The template's card-spine VALLEY is gapped over this span (see
+  // renderBoxPopup) — the same line can't be printed as both mountain and
+  // valley.
   addPath(g, `M ${cx - hw} ${cy} L ${cx + hw} ${cy}`, mountainStyle);
 
   // 3. Base Folds (Valley - where box attaches to the flat card)
   addPath(g, `M ${cx - hw} ${cy - d} L ${cx + hw} ${cy - d}`, valleyStyle);
   addPath(g, `M ${cx - hw} ${cy + d} L ${cx + hw} ${cy + d}`, valleyStyle);
 
-  // 4. Glue Tabs (Sides)
-  const tabW = 6;
-  addPolygon(g, [
-    [cx - hw, cy - d],
-    [cx - hw - tabW, cy - d + tabW/2],
-    [cx - hw - tabW, cy + d - tabW/2],
-    [cx - hw, cy + d]
-  ], glueStyle);
-
-  addPolygon(g, [
-    [cx + hw, cy - d],
-    [cx + hw + tabW, cy - d + tabW/2],
-    [cx + hw + tabW, cy + d - tabW/2],
-    [cx + hw, cy + d]
-  ], glueStyle);
+  // (No side glue tabs: the classic box popup needs none — panel + spine
+  // mountain + base valleys form the box when the card opens. The tabs
+  // previously drawn here sat OUTSIDE the vertical cut lines, i.e. on the
+  // surrounding card, where gluing does nothing; they only confused users.)
 
   // Title lives in the outer waste margin (above the trim line): the whole
   // page is the card here, so any text inside the trim rect would show on
@@ -71,7 +63,13 @@ export const generateBoxPopup = (svg, options = {}) => {
  */
 export function renderBoxPopup(params = {}) {
   const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
-  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  // Gap the template's spine valley over the box width: that segment is the
+  // box's MOUNTAIN crease (drawn by generateBoxPopup) — one line, one meaning.
+  const w = typeof opts.width === 'number' && Number.isFinite(opts.width) ? opts.width : 40;
+  const cxPage = (PAPER_SIZES[paperSize] || PAPER_SIZES.A4).width / 2;
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode, {
+    spineGaps: [[cxPage - w / 2, cxPage + w / 2]],
+  });
   generateBoxPopup(contentGroup, {
     cx: paper.width / 2,
     cy: spineY,

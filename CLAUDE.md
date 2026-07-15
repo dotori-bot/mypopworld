@@ -28,7 +28,7 @@ npm run preview   # 빌드 결과 로컬 확인
 
 ## Project shape (for quick orientation)
 
-- `src/generators/*.js` — 각 종이공예 메커니즘("공예 공식")의 SVG 생성 로직. 좌표 단위는 전부 mm. `constants.js`에 종이 크기(A4/Letter)와 인쇄 안전 마진, 선 스타일이 정의되어 있다.
+- `src/generators/*.js` — 각 종이공예 메커니즘("공예 공식")의 SVG 생성 로직. 좌표 단위는 전부 mm. `constants.js`에 종이 크기(A4/Letter)와 인쇄 안전 마진, 선 스타일이 정의되어 있다. 선 스타일은 국제 종이공예 표기법을 따른다: 자르기=실선, 골접기(안쪽)=점선, 산접기(바깥)=dash-dot, 풀칠=빗금 채움, SCORE=자리 표시 전용(자르지도 접지도 않음). 흑백 모드에서도 대시 패턴은 동일하다. 모든 페이지 하단 여백에 범례가 자동 인쇄되며(`svgBuilder.addLegend`), 템플릿 척추 골선은 `createTemplate(..., { spine, spineGaps })`로 생략/구간 제외할 수 있다 — **한 선에는 한 의미만**(같은 좌표에 자르기+접기, 산+골 이중 표기 금지).
 - `src/generators/registry.js` — 메커니즘 id → 렌더 함수/기본 파라미터/`paramSchema`(전문가 모드 편집 메타데이터)/`sceneType`('book'|'flat')/`decorationSlots`(장식 이미지 슬롯 크기를 생성기 resolver 지오메트리에서 파생)/조립 설명서를 매핑하는 단일 소스(`MECHANISM_REGISTRY`, `INSTRUCTION_TEXT`). DEV 모드에서 defaultParams와 paramSchema 키 불일치를 콘솔 경고로 잡는다.
 - `src/generators/paramSchemas.js` — 16종 전체의 슬라이더 메타데이터. min/max는 각 생성기의 클램핑 resolver를 극단값으로 "프로브"해 얻으므로 UI 한계·인쇄 클램프·경고(`validation.js`)가 한 소스를 공유한다.
 - `src/generators/pdfExporter.js` — jsPDF + svg2pdf.js로 도안 SVG를 벡터 PDF로 내보낸다. 조립 설명 페이지 텍스트는 registry의 `INSTRUCTION_TEXT`를 쓴다.

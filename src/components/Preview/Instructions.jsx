@@ -804,7 +804,7 @@ export default function Instructions() {
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="130" viewBox="0 0 100 65" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     {/* spine line */}
-                    <path d="M10 33 L90 33" stroke="blue" strokeWidth="1.3" strokeDasharray="4 1 1 1" />
+                    <path d="M10 33 L90 33" stroke="blue" strokeWidth="1.3" strokeDasharray="4 2" />
                     <text x="20" y="30" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">척추</text>
                     {/* front face pivot (above) and slider tab (below), strut tented */}
                     <circle cx="55" cy="18" r="2.2" fill="var(--primary-main)" />
@@ -993,10 +993,10 @@ export default function Instructions() {
                   <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     <path d="M50 8 L24 44 L76 44 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" />
                     {/* Central ridge = mountain (red) */}
-                    <path d="M50 8 L50 44" stroke="red" strokeWidth="2" strokeDasharray="4 2" />
+                    <path d="M50 8 L50 44" stroke="red" strokeWidth="2" strokeDasharray="6 1.5 1.2 1.5" />
                     {/* Two base creases = valley (blue) */}
-                    <path d="M24 44 L50 44" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
-                    <path d="M50 44 L76 44" stroke="blue" strokeWidth="2" strokeDasharray="4 1 1 1" />
+                    <path d="M24 44 L50 44" stroke="blue" strokeWidth="2" strokeDasharray="4 2" />
+                    <path d="M50 44 L76 44" stroke="blue" strokeWidth="2" strokeDasharray="4 2" />
                     <path d="M24 44 L50 44 L50 50 L26 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
                     <path d="M50 44 L76 44 L74 50 L50 50 Z" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
                     <text x="58" y="26" fontSize="6" fill="red">산접기(능선)</text>
@@ -1125,7 +1125,7 @@ export default function Instructions() {
                   <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
                     {/* Unfolded gate card: panel + two doors, two vertical valley hinges */}
                     <rect x="8" y="8" width="60" height="34" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
-                    <path d="M23 8 L23 42 M53 8 L53 42" stroke="blue" strokeWidth="1.5" strokeDasharray="4 1 1 1" />
+                    <path d="M23 8 L23 42 M53 8 L53 42" stroke="blue" strokeWidth="1.5" strokeDasharray="4 2" />
                     <text x="38" y="50" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">게이트 카드 (세로 골접기 2개)</text>
                     {/* Bowtie curtain */}
                     <path d="M78 10 L96 10 L96 28 L78 28 L86 19 Z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
@@ -1295,7 +1295,7 @@ export default function Instructions() {
               <div className="step-badge">4</div>
               <div className="step-content">
                 <h4>중요 — 안내 다리 붙이고 멈춤 핀 끼우기</h4>
-                <p>두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)은 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
+                <p>두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(골접기 선)은 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     <rect x="18" y="20" width="64" height="16" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" /> {/* slider edge */}

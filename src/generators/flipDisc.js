@@ -288,7 +288,9 @@ export const generateFlipDisc = (svg, options = {}) => {
  */
 export function renderFlipDisc(params = {}) {
   const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
-  const { svg, contentGroup } = createTemplate(paperSize, colorMode);
+  // Parts-only sheet (leaves + fixed half glue onto a user-supplied base
+  // card), so no spine fold line is printed.
+  const { svg, contentGroup } = createTemplate(paperSize, colorMode, { spine: false });
   generateFlipDisc(contentGroup, {
     paperSize,
     ...opts,

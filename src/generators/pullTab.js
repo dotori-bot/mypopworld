@@ -128,34 +128,56 @@ export function generatePullTab(rawParams) {
   ];
 
   // ── Guide strips ─────────────────────────────────────────────────
-  // Two narrow strips glued to the back of the card, flanking the slot
+  // Two narrow strips glued to the BACK of the card, flanking the slot. They
+  // are SEPARATE pieces: their cut outlines live in the whitespace area below
+  // (next to the slider), and the card face carries only SCORE placement
+  // targets — drawing the pieces themselves on the face (the old layout) meant
+  // "cut the black lines" punched two extra holes through the card.
   const guideWidth = 4; // mm
-  const guideLen = trackLength + 6; // slightly longer than track
+  const guideLen = round(trackLength + 6); // slightly longer than track
 
   const guideTopY = trackTop - guideWidth - 1;
   const guideBotY = trackBot + 1;
 
   /** @type {string[]} */
-  const guideCuts = [
-    // Top guide strip (separate piece)
+  const guideTargets = [
+    // Placement targets on the card (SCORE = 자리 표시, not cut/fold)
     `M ${round(trackLeft - 3)} ${round(guideTopY)} ` +
-    `L ${round(trackRight + 3)} ${round(guideTopY)} ` +
-    `L ${round(trackRight + 3)} ${round(guideTopY + guideWidth)} ` +
+    `L ${round(trackLeft - 3 + guideLen)} ${round(guideTopY)} ` +
+    `L ${round(trackLeft - 3 + guideLen)} ${round(guideTopY + guideWidth)} ` +
     `L ${round(trackLeft - 3)} ${round(guideTopY + guideWidth)} Z`,
-    // Bottom guide strip (separate piece)
     `M ${round(trackLeft - 3)} ${round(guideBotY)} ` +
-    `L ${round(trackRight + 3)} ${round(guideBotY)} ` +
-    `L ${round(trackRight + 3)} ${round(guideBotY + guideWidth)} ` +
+    `L ${round(trackLeft - 3 + guideLen)} ${round(guideBotY)} ` +
+    `L ${round(trackLeft - 3 + guideLen)} ${round(guideBotY + guideWidth)} ` +
     `L ${round(trackLeft - 3)} ${round(guideBotY + guideWidth)} Z`,
+  ];
+
+  // Loose guide pieces in the lower half, just below the spine — well above
+  // the slider piece (which sits at spineY + cardHeight/2 + 15), so the two
+  // never collide for any clamped parameter set.
+  const guideAreaX = PRINT.MARGIN + 10;
+  const spineYForGuides = paper.height / 2;
+  const guidePieceY1 = round(spineYForGuides + 8);
+  const guidePieceY2 = round(guidePieceY1 + guideWidth + 6);
+
+  /** @type {string[]} */
+  const guideCuts = [
+    `M ${guideAreaX} ${guidePieceY1} L ${round(guideAreaX + guideLen)} ${guidePieceY1} ` +
+    `L ${round(guideAreaX + guideLen)} ${round(guidePieceY1 + guideWidth)} ` +
+    `L ${guideAreaX} ${round(guidePieceY1 + guideWidth)} Z`,
+    `M ${guideAreaX} ${guidePieceY2} L ${round(guideAreaX + guideLen)} ${guidePieceY2} ` +
+    `L ${round(guideAreaX + guideLen)} ${round(guidePieceY2 + guideWidth)} ` +
+    `L ${guideAreaX} ${round(guidePieceY2 + guideWidth)} Z`,
   ];
 
   /** @type {string[]} */
   const guideFolds = [
-    // Fold line down the centre of each guide (for folding over the slider)
-    `M ${round(trackLeft - 3)} ${round(guideTopY + guideWidth / 2)} ` +
-    `L ${round(trackRight + 3)} ${round(guideTopY + guideWidth / 2)}`,
-    `M ${round(trackLeft - 3)} ${round(guideBotY + guideWidth / 2)} ` +
-    `L ${round(trackRight + 3)} ${round(guideBotY + guideWidth / 2)}`,
+    // Fold line down the centre of each guide — the lip folds FORWARD over the
+    // slider's edge (mountain, matching the other lip-over-slider guides).
+    `M ${guideAreaX} ${round(guidePieceY1 + guideWidth / 2)} ` +
+    `L ${round(guideAreaX + guideLen)} ${round(guidePieceY1 + guideWidth / 2)}`,
+    `M ${guideAreaX} ${round(guidePieceY2 + guideWidth / 2)} ` +
+    `L ${round(guideAreaX + guideLen)} ${round(guidePieceY2 + guideWidth / 2)}`,
   ];
 
   // ── Slider piece ─────────────────────────────────────────────────
@@ -228,7 +250,7 @@ export function generatePullTab(rawParams) {
     {
       x: paper.width / 2,
       y: PRINT.MARGIN - 1.5,
-      text: `풀탭 — 슬롯 ${round(trackLength)}×${slotWidth}mm · 이동 거리 ${travel}mm · 슬라이더 ${sw}×${sh}mm (오른쪽 사다리꼴 = 손잡이)`,
+      text: `풀탭 — 슬롯 ${round(trackLength)}×${slotWidth}mm · 이동 거리 ${travel}mm · 슬라이더 ${sw}×${sh}mm (오른쪽 사다리꼴 = 손잡이) · 안내 띠 2개는 아래쪽 부품: 뒷면 점선 자리에 붙이기`,
     },
   ];
 
@@ -239,7 +261,7 @@ export function generatePullTab(rawParams) {
       bounds: { x: sliderAreaX, y: sliderAreaY, w: sw + handleW, h: sh },
     },
     trackSlot: { cuts: trackCuts },
-    guides: { cuts: guideCuts, folds: guideFolds },
+    guides: { cuts: guideCuts, folds: guideFolds, targets: guideTargets },
     stops: { cuts: stopCuts },
     markers,
     computed: { travel, slotWidth },
@@ -261,15 +283,18 @@ export function renderPullTab(params) {
   const trackG = addGroup(contentGroup, 'track-slot', 'track-slot');
   for (const d of result.trackSlot.cuts) addPath(trackG, d, styles.CUT);
 
-  // ── Guide strips ─────────────────────────────────────────────────
+  // ── Guide strips (loose pieces) + their placement targets on the card ────
   const guideG = addGroup(contentGroup, 'guides', 'guides');
-  for (const d of result.guides.cuts)  addPath(guideG, d, styles.CUT);
-  for (const d of result.guides.folds) addPath(guideG, d, styles.MOUNTAIN_FOLD);
+  for (const d of result.guides.cuts)    addPath(guideG, d, styles.CUT);
+  for (const d of result.guides.folds)   addPath(guideG, d, styles.MOUNTAIN_FOLD);
+  for (const d of result.guides.targets) addPath(guideG, d, styles.SCORE);
 
   // ── Slider piece ─────────────────────────────────────────────────
   const sliderG = addGroup(contentGroup, 'slider-piece', 'slider-piece');
   for (const d of result.sliderPiece.cuts)  addPath(sliderG, d, styles.CUT);
-  for (const d of result.sliderPiece.folds) addPath(sliderG, d, styles.VALLEY_FOLD);
+  // Handle crease folds FORWARD (toward the viewer) so the tab stands proud
+  // for gripping — a mountain fold, like every other forward-folding tab.
+  for (const d of result.sliderPiece.folds) addPath(sliderG, d, styles.MOUNTAIN_FOLD);
 
   // ── Stops ────────────────────────────────────────────────────────
   const stopG = addGroup(contentGroup, 'stops', 'stops');

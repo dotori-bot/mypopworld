@@ -367,11 +367,12 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   // grip) is a visible moving part on the finished card.
   addText(g, round(ox + w / 2), round(oy - sc - 1.5), '슬라이더 — 한 조각', 2.4, 'middle');
 
-  // Side handle grip (extends +x), with a fold-free grip (single sheet).
+  // Side handle grip (extends +x) — genuinely fold-free (single coplanar
+  // sheet), so NO fold line at its root: printing one here (the old bug)
+  // invited a crease that only weakens the handle.
   const hx = round(ox + w);
   const hy = round(oy + (h - L.GRIP_H) / 2);
   addRect(g, hx, hy, geo.grip, L.GRIP_H, CUT);
-  addPath(g, `M ${hx} ${hy} L ${hx} ${round(hy + L.GRIP_H)}`, VALLEY);
   addText(g, round(hx + geo.grip / 2), round(hy + L.GRIP_H + 3), '← 손잡이', 2.2, 'middle');
   addText(g, round(ox + w / 2), round(oy + h + sc + 3), `이동 거리 ${geo.travel}mm · 세로 슬롯 ${geo.slotLen}mm`, 2.1, 'middle');
 }
@@ -390,10 +391,13 @@ function drawGuidePiece(g, ox, oy, geo, label, isColor) {
   const h = L.GUIDE_W;
   addRect(g, ox, oy, w, h, CUT);
   // Glue foot along the OUTER band (the lip along the inner band folds over the
-  // slider edge and must stay free).
+  // slider edge and must stay free). The part is glued printed-face-down (paste
+  // on the hatch), so lifting the lip AWAY from the card over the slider is a
+  // MOUNTAIN fold on the printed face — same as the other lip-over-slider
+  // guides (pull-tab, magic-shutter).
   const glueH = round(h - L.GUIDE_LIP);
   addRect(g, round(ox + 0.6), round(oy + 0.6), round(w - 1.2), round(glueH - 0.6), GLUE);
-  addPath(g, `M ${ox} ${round(oy + glueH)} L ${round(ox + w)} ${round(oy + glueH)}`, VALLEY);
+  addPath(g, `M ${ox} ${round(oy + glueH)} L ${round(ox + w)} ${round(oy + glueH)}`, getLineStyle('MOUNTAIN_FOLD', isColor));
   addText(g, round(ox + w / 2), round(oy + h + 3), label, 2, 'middle');
 }
 

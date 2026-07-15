@@ -30,7 +30,7 @@
  * @module generators/accordionPopup
  */
 
-import { CARD_SIZES, PRINT } from './constants.js';
+import { CARD_SIZES, PAPER_SIZES, PRINT } from './constants.js';
 import { clamp, round } from '../utils/math.js';
 import {
   addPath,
@@ -194,7 +194,17 @@ export const generateAccordion = (svg, options = {}) => {
  */
 export function renderAccordion(params = {}) {
   const { paperSize = 'A4', colorMode = 'color', ...opts } = params;
-  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode);
+  // The loose pleat strip is drawn across the page centre, so the template's
+  // card-spine valley would run straight through it (and, for even panel
+  // counts, land exactly on a MOUNTAIN pleat crease — one line marked both
+  // ways). Gap the spine over the strip's width.
+  const geoForGap = resolveAccordionGeometry({
+    a: opts.a, panels: opts.panels, wallHeight: opts.wallHeight, paperSize,
+  });
+  const cxGap = (PAPER_SIZES[paperSize] || PAPER_SIZES.A4).width / 2;
+  const { svg, contentGroup, paper, spineY } = createTemplate(paperSize, colorMode, {
+    spineGaps: [[cxGap - geoForGap.wallHeight / 2, cxGap + geoForGap.wallHeight / 2]],
+  });
   generateAccordion(contentGroup, {
     cx: paper.width / 2,
     cy: spineY,
