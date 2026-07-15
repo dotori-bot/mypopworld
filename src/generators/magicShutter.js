@@ -38,6 +38,28 @@
  *   is no third detent. (Same "closed slot = inherent end stop" idiom as pullTab
  *   / risingSlide, here doing double duty as the pitch-perfect register.)
  *
+ *   The pin's card-front world-x is load-bearing: BOTH stops shift together if it
+ *   is off, so an off-centre pin shows BOTH pictures half-①/half-②. The slot centre
+ *   sits at world-x = sliderRestX + stopSlotCx + u; the fixed pin (width PIN_FOOT)
+ *   bottoms the slot's RIGHT end at u=0 and its LEFT end at u=travel iff
+ *       pinCx = sliderRestX + stopSlotCx + travel/2
+ *   (since stopSlotLen/2 − PIN_FOOT/2 = travel/2). On the bottom leg this is
+ *   part-local pinLocalX = stopSlotCx + travel/2 + GLUE_END (see the convention
+ *   below for why local x maps straight to world-x). [Earlier the pin was drawn at
+ *   the leg's mid-width, i.e. travel/2 too far right — at defaults its foot [+4,+8]
+ *   fell outside the slot [−5,+5] and could not even be threaded. Fixed.]
+ *
+ * ── Assembly convention (which face goes down) ───────────────────────────────
+ *   Every back-mounted part — the SLIDER and BOTH guide legs — is glued/placed
+ *   PRINTED-FACE-DOWN onto the BACK of the card front: the printed glue marks kiss
+ *   the card, and the slider's pictures face the window (so they show through the
+ *   gaps). Flipping the whole card panel face-down to work on its back mirrors x,
+ *   and flipping a part face-down mirrors its x too; the two mirrors CANCEL, so a
+ *   part's printed-local x maps 1:1 to card-front world-x with the part's LEFT edge
+ *   laid on the target's left edge. That is why pinLocalX carries a "+travel/2"
+ *   (not "−travel/2") offset and the picture strips register without a flip. The
+ *   leg is labelled "인쇄면이 카드 뒤로 가게 뒤집어 붙임".
+ *
  * ── The window is never empty (coverage proof) ───────────────────────────────
  *   The slider field must cover the whole window at BOTH stops and everywhere in
  *   between. Window spans [X0, X0+W]. At u=0 the slider (width S_x) starts at
@@ -58,16 +80,30 @@
  *   3. TOP GUIDE + BOTTOM/STOP GUIDE: two strips glued to the card ABOVE and
  *      BELOW the slider's path (glue lands on the frame, never on the slider);
  *      each folds a lip over the slider edge to capture it in Z (pullTab guide
- *      idiom). The bottom guide additionally carries the fixed stop-PIN.
- *   The slider is thus trapped front-to-back (card front + guide lips) and
- *   laterally limited to a one-pitch stroke (stop-slot on the pin). A hard tug on
- *   the grip bottoms the sturdy stop-slot on the pin, not the thin grip neck.
+ *      idiom). The bottom guide additionally carries the fixed stop-PIN, which
+ *      rises from the leg's slider-side edge (front-y pinRootY), threads the
+ *      stop-slot from behind and folds a cap DOWN over the slot front — the pin
+ *      cap is the primary Z-lock at the bottom (the slider cannot lift off it).
+ *   The slider is thus trapped front-to-back (card front + guide lips + pin cap)
+ *   and laterally limited to a one-pitch stroke (stop-slot on the pin). A hard tug
+ *   on the grip bottoms the sturdy stop-slot on the pin, not the thin grip neck.
+ *
+ *   Pin vertical reach (must fully cross the slot). Pin root at front-y
+ *   pinRootY = windowY0 + winH + STOP_ZONE + RET_GAP; folding UP by MOUNT_LEN
+ *   puts the tip at pinTipY = pinRootY − MOUNT_LEN. The slot band is front-y
+ *   [slotTopY, slotBotY] = windowY0 + winH + STOP_ZONE/2 ± stopSlotH/2. MOUNT_LEN
+ *   is sized (see LIMITS) so pinTipY ≤ slotTopY − PIN_CAP, i.e. the pin emerges
+ *   PIN_CAP(≈3.7 mm) past the slot's far edge with room to fold the cap down.
+ *   [Earlier MOUNT_LEN=12 from the leg's FAR edge stopped ~2.7 mm SHORT of the
+ *   slot — the pin never reached it. Fixed by rooting the pin at the slider-side
+ *   edge and lengthening to 18 mm.]
  *
  * ── Flat-foldability ─────────────────────────────────────────────────────────
  *   N/A in the pop-up sense: the whole assembly stays in-plane (< 1 mm thick) at
  *   every handle position, so the folding card closes flat over it trivially. The
- *   only fold is the bottom-guide's small pin tab; there is no mountain/valley
- *   pair to collapse.
+ *   only folds are the guide lips and the bottom-guide's stop-PIN tab (mountain
+ *   root at the leg edge + valley cap at the tip); the pin lies flat behind the
+ *   slider so it adds no bulk, and there is no mountain/valley pair to collapse.
  *
  * ── Sizing (fits A4 AND Letter) ──────────────────────────────────────────────
  *   Front face: y ∈ [MARGIN, spineY], height faceH = card.height − MARGIN
@@ -115,10 +151,19 @@ export const MAGIC_SHUTTER_LIMITS = {
   GRIP_MIN: 16,
   GRIP_MAX: 40,          // exposed handle grip length past the card edge (mm)
   GRIP_H: 16,            // handle grip height (y) — child-grippable (≥ 5 mm floor)
-  PIN_FOOT: 4,           // stop-pin footprint along the stop-slot (mm) → stops
+  PIN_FOOT: 4,           // stop-pin footprint along the stop-slot (x) (mm) → stops
   PIN_ACROSS: 8,         // stop-pin extent across the slot (y) (mm)
-  MOUNT_LEN: 12,         // bottom-guide pin tab fold length — reaches up into the
-                         // slider stop-slot from below the slider bottom (mm)
+  PIN_CAP: 3.5,          // pin tip that emerges past the slot's far edge and folds
+                         // down as a cap so the slider can't lift off (mm, ≥ 3)
+  MOUNT_LEN: 18,         // bottom-guide stop-PIN tab length (mm). The pin rises
+                         // from the leg's slider-side edge (front-y pinRootY =
+                         // windowY0+winH+STOP_ZONE+RET_GAP), threads the stop-slot
+                         // and emerges PIN_CAP past its far edge. Derivation (all
+                         // constants, winH cancels):
+                         //   MOUNT_LEN ≥ (STOP_ZONE/2 + RET_GAP − stopSlotH/2)  ← rise
+                         //             + stopSlotH                              ← slot
+                         //             + PIN_CAP                                ← cap
+                         //   = 5.7 + 8.6 + 3.5 = 17.8 → 18 (cap ends up 3.7 mm).
   FRAME_MIN: 10,         // min frame border L/R around the window (mm)
   TOP_RESERVE: 12,       // sheet top → window top (mm)
   SPINE_PAD: 8,          // stop band bottom → spine (mm)
@@ -197,6 +242,15 @@ function toOdd(n) {
  * @property {number} stopZoneCy    - Stop-slot centre y, slider-local (mm)
  * @property {number} channelH      - Guide channel height = sliderH + LAT_CLEAR (mm)
  * @property {number} guideLen      - Guide strip length in x (mm)
+ * @property {number} pinCx         - Stop-pin centre, card-front world-x = sliderRestX
+ *                                    + stopSlotCx + travel/2 (the two-stop register x;
+ *                                    3D preview draws the pin here) (mm)
+ * @property {number} pinLocalX     - Stop-pin x on the bottom leg, part-local from its
+ *                                    left = stopSlotCx + travel/2 + GLUE_END (mm)
+ * @property {number} slotTopY      - Stop-slot far (window-side) edge, front world-y (mm)
+ * @property {number} slotBotY      - Stop-slot near (spine-side) edge, front world-y (mm)
+ * @property {number} pinRootY      - Pin fold root, front world-y (mm)
+ * @property {number} pinTipY       - Pin unfolded tip, front world-y (mm)
  * @property {number[]} restOffsets - Handle offsets of the two register stops [0, w]
  */
 
@@ -278,6 +332,28 @@ export function resolveMagicShutter(opts = {}) {
   const channelH = round(sliderH + L.LAT_CLEAR, 2);
   const guideLen = round(sliderW + travel + 2 * L.GLUE_END, 2);
 
+  // ── Fixed stop-PIN placement (see file header "Registration" & "Pin reach") ──
+  // pinCx (card-front world-x): the ONLY x at which the closed slot bottoms on the
+  // pin at u=0 (① aligned) AND u=travel (② aligned). Both stops shift together if
+  // the pin is off, so this is load-bearing (the 3D preview draws the pin here too).
+  //   slot right end @u=0     = sliderRestX + stopSlotCx + stopSlotLen/2
+  //   pin right edge          = pinCx + PIN_FOOT/2, and stopSlotLen/2 − PIN_FOOT/2 = travel/2
+  //   ⇒ pinCx = sliderRestX + stopSlotCx + travel/2
+  const pinCx = round(sliderRestX + stopSlotCx + travel / 2, 2);
+  // Part-local x of the pin on the bottom-stop leg. ASSEMBLY CONVENTION: every
+  // back-mounted part (slider + both legs) is placed PRINTED-FACE-DOWN against the
+  // card back (glue marks kiss the card; slider pictures face the window). The
+  // card panel is itself mirrored when flipped face-down, so the two x-mirrors
+  // cancel → a part's printed-local x maps 1:1 to card-front world-x with the
+  // part's LEFT edge on the target's left edge (guideL = sliderRestX − GLUE_END):
+  //   pinLocalX = pinCx − guideL = stopSlotCx + travel/2 + GLUE_END
+  const pinLocalX = round(stopSlotCx + travel / 2 + L.GLUE_END, 2);
+  // Front-face y of the stop-slot band and the pin (fold up, thread, cap down).
+  const slotTopY = round(windowY0 + winH + L.STOP_ZONE / 2 - stopSlotH / 2, 2); // far edge
+  const slotBotY = round(windowY0 + winH + L.STOP_ZONE / 2 + stopSlotH / 2, 2); // near edge
+  const pinRootY = round(windowY0 + winH + L.STOP_ZONE + L.RET_GAP, 2);          // fold root
+  const pinTipY = round(pinRootY - L.MOUNT_LEN, 2);                              // unfolded tip
+
   return {
     paperSize,
     spineY: round(spineY, 2),
@@ -308,6 +384,12 @@ export function resolveMagicShutter(opts = {}) {
     stopZoneCy,
     channelH,
     guideLen,
+    pinCx,
+    pinLocalX,
+    slotTopY,
+    slotBotY,
+    pinRootY,
+    pinTipY,
     restOffsets: [0, round(travel, 2)],
   };
 }
@@ -434,22 +516,38 @@ function drawBottomStopGuide(g, ox, oy, geo, isColor) {
   const CUT = getLineStyle('CUT', isColor);
   const GLUE = getLineStyle('GLUE_TAB', isColor);
   const MOUNT = getLineStyle('MOUNTAIN_FOLD', isColor);
+  const VALLEY = getLineStyle('VALLEY_FOLD', isColor);
 
   const w = geo.guideLen;
   const h = round(L.RET_W + L.RET_LIP);
   addRect(g, ox, oy, w, h, CUT);
-  addRect(g, round(ox + 1), round(oy + L.RET_LIP + 1), round(w - 2), round(L.RET_W - 2), GLUE);
-  addPath(g, `M ${ox} ${round(oy + L.RET_LIP)} L ${round(ox + w)} ${round(oy + L.RET_LIP)}`, MOUNT);
+  // Part drawn slider-side-DOWN: the RET_W GLUE band is the TOP (lands on the frame,
+  // farthest from the slider), the bottom RET_LIP is the slider-side edge whose lip
+  // folds over the slider AND from which the stop-PIN rises. Drawing it this way lets
+  // the (now longer) pin extend DOWNWARD in the sheet, clear of the top guide above.
+  addRect(g, round(ox + 1), round(oy + 1), round(w - 2), round(L.RET_W - 2), GLUE);
+  addPath(g, `M ${ox} ${round(oy + L.RET_W)} L ${round(ox + w)} ${round(oy + L.RET_W)}`, MOUNT);
 
-  // Fixed stop-PIN at centre: a small tab that folds up/forward into the slider
-  // stop-slot. Its footprint (PIN_FOOT wide) sets the two hard register stops.
+  // Fixed stop-PIN. x = pinLocalX from the part's left. Under the printed-face-DOWN
+  // glue convention (see resolver) part-local x maps 1:1 to card-front world-x, so
+  // once the leg's ends sit on the printed target the pin centre lands at world-x
+  // sliderRestX + stopSlotCx + travel/2 — the slot then bottoms on it at u=0 (①) and
+  // u=travel (②). The pin folds UP from the slider-side edge (MOUNTAIN root), rises
+  // behind the slider, threads the stop-slot from behind, and its emergent tip
+  // (VALLEY cap) folds DOWN over the slot front so the slider cannot lift off. The
+  // cap folds down (not up) so nothing intrudes into the picture window above.
   const pinW = round(L.PIN_FOOT);
-  const pinCx = round(ox + w / 2);
-  const pinTop = round(oy + h);
-  addRect(g, round(pinCx - pinW / 2), pinTop, pinW, round(L.MOUNT_LEN), CUT);
-  addPath(g, `M ${round(pinCx - pinW / 2)} ${pinTop} L ${round(pinCx + pinW / 2)} ${pinTop}`, MOUNT);
-  addText(g, round(ox + w / 2), round(oy - 1.5), '아래 안내·멈춤 다리 (아랫면만 풀칠 · 핀=멈춤)', 1.9, 'middle');
-  addText(g, pinCx, round(pinTop + L.MOUNT_LEN + 3), '멈춤 핀 → 슬라이더 슬롯에 끼움', 1.9, 'middle');
+  const pinCx = round(ox + geo.pinLocalX);
+  const pinRoot = round(oy + h);                    // slider-side edge = fold root
+  addRect(g, round(pinCx - pinW / 2), pinRoot, pinW, round(L.MOUNT_LEN), CUT);
+  addPath(g, `M ${round(pinCx - pinW / 2)} ${pinRoot} L ${round(pinCx + pinW / 2)} ${pinRoot}`, MOUNT);
+  const capFoldY = round(pinRoot + L.MOUNT_LEN - L.PIN_CAP);
+  addPath(g, `M ${round(pinCx - pinW / 2)} ${capFoldY} L ${round(pinCx + pinW / 2)} ${capFoldY}`, VALLEY);
+
+  addText(g, round(ox + w / 2), round(oy - 1.5),
+    '아래 안내·멈춤 다리 (윗변 초록만 풀칠 · 인쇄면이 카드 뒤로 가게 뒤집어 붙임)', 1.9, 'middle');
+  addText(g, pinCx, round(pinRoot + L.MOUNT_LEN + 3),
+    '멈춤 핀: 위로 접어 슬롯에 끼우고 끝(파란 골선)을 아래로 접어 고정', 1.9, 'middle');
 }
 
 /**

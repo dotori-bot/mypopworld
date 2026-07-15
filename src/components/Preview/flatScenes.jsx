@@ -1458,9 +1458,8 @@ function buildMagicShutter(params, defaults, paperSize, driveRaw) {
   const sliderTopY = geo.windowY0 - geo.coverPadY;
   const gy0 = (geo.sliderH - geo.gripH) / 2;     // grip top, slider-local
 
-  // Fixed stop-pin: centred between the two register stops (u=0 / u=travel),
-  // i.e. at the slot centre's mid-stroke position — invariant of the pattern.
-  const pinX = geo.sliderRestX + geo.stopSlotCx + geo.travel / 2;
+  // Fixed stop-pin: the resolver's register x (slot bottoms on it at u=0 / u=travel).
+  const pinX = geo.pinCx;
   const slotWorldY = sliderTopY + geo.stopZoneCy;
 
   // Front-face guide rows (same rows the flat pattern prints as glue targets).

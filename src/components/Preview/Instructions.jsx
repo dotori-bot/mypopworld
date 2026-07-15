@@ -1280,7 +1280,7 @@ export default function Instructions() {
               <div className="step-badge">3</div>
               <div className="step-content">
                 <h4>슬라이더 끼우기</h4>
-                <p>슬라이더를 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.</p>
+                <p>슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     <rect x="20" y="12" width="48" height="34" fill="var(--bg-glass)" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" /> {/* slider behind */}
@@ -1295,7 +1295,7 @@ export default function Instructions() {
               <div className="step-badge">4</div>
               <div className="step-content">
                 <h4>중요 — 안내 다리 붙이고 멈춤 핀 끼우기</h4>
-                <p>위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 접어 슬라이더의 멈춤 슬롯에 끼워주세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
+                <p>두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)은 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     <rect x="18" y="20" width="64" height="16" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" /> {/* slider edge */}

@@ -31,6 +31,29 @@
 
 **정합(registration) = 두 개의 물리적 하드 스톱**. 슬라이더 아래 여백(창문 아래 STOP_ZONE)에 가로 **멈춤 슬롯**(길이 `w + PIN_FOOT`)이 있고, 카드에 고정된 **멈춤 핀**(아래 다리의 작은 탭)이 이 슬롯을 관통한다. 슬롯이 양 끝에서 핀에 부딪혀 멈추므로 **쉬는 자리는 u = 0(그림 ①)과 u = w(그림 ②) 딱 둘뿐**이며, 구성상 정확히 한 피치 차이다. 아이는 손잡이를 "딸깍" 걸릴 때까지 밀기만 하면 되고, 세 번째 멈춤이 없으므로 그림이 ①/② 반반으로 어중간하게 쉴 수 없다. (pullTab/risingSlide의 "닫힌 슬롯 = 내재 정지" 관용구가 여기서는 피치-정합 역할까지 겸함.)
 
+**핀 x 위치(정합의 급소)**. 슬롯 중심의 world-x는 `sliderRestX + stopSlotCx + u`. 고정 핀(폭 `PIN_FOOT`)이 u=0에서 슬롯 **오른쪽 끝**을, u=travel에서 슬롯 **왼쪽 끝**을 받치려면
+```
+핀 오른끝 = pinCx + PIN_FOOT/2 = 슬롯 오른끝(u=0) = sliderRestX + stopSlotCx + stopSlotLen/2
+stopSlotLen/2 − PIN_FOOT/2 = travel/2   (stopSlotLen = travel + PIN_FOOT 이므로)
+⇒ pinCx = sliderRestX + stopSlotCx + travel/2
+```
+이 값은 **급소**다 — 핀이 어긋나면 두 스톱이 **함께** 밀려 ①·② 둘 다 반반으로 보인다. (기본 A4: `pinCx = 96 + 54 + 3 = 153`, 슬롯[145,155]·핀[151,155] → u=0에서 오른끝 155 일치, u=6에서 왼끝 151 일치.) 아래 다리에서의 부품-로컬 좌표는 `pinLocalX = stopSlotCx + travel/2 + GLUE_END`(= 기본 63mm). 코드: `resolveMagicShutter()`(`pinCx`, `pinLocalX`), `drawBottomStopGuide()`.
+
+> **과거 버그(수정됨)**: 핀을 다리 정중앙(`ox + guideLen/2`)에 그려 `sliderRestX + stopSlotCx + travel`이 되었다 — 필요값보다 **travel/2 오른쪽**. 기본값에서 u=0일 때 핀 발[+4,+8]이 슬롯[−5,+5] 밖으로 나가 끼울 수조차 없었고, 억지로 끼우면 두 정지점이 u=3·u=9가 되어 ①·② 모두 반반으로 보였다.
+
+**조립 규약(어느 면을 카드에 붙이나)**. 뒷면 부품(슬라이더 + 위/아래 다리 2개)은 모두 **인쇄면이 카드 뒤(안쪽)를 향하게 뒤집어(printed-face-DOWN)** 카드 앞면 **뒤쪽**에 붙인다(풀칠 초록 표시가 카드에 닿고, 슬라이더 그림은 창문 쪽을 향해 틈으로 보임). 카드 패널을 뒤집어 뒷면에서 작업하면 x가 한 번 반전되고, 부품을 뒤집어 붙이면 x가 또 한 번 반전되어 **두 반전이 상쇄** — 부품 인쇄-로컬 x가 카드-앞면 world-x에 1:1로 매핑된다(부품 왼끝을 대상 왼끝 `guideL = sliderRestX − GLUE_END`에 맞춤). 그래서 `pinLocalX`의 오프셋 부호가 `+travel/2`(뒤집힘이면 `−travel/2`가 됨)이고, 그림 조각도 반전 없이 정합된다. 다리 라벨에 "인쇄면이 카드 뒤로 가게 뒤집어 붙임"으로 명시.
+
+**핀 수직 관통(도달 거리)**. 핀 뿌리는 아래 다리의 **슬라이더 쪽 변**(front-y `pinRootY = windowY0 + winH + STOP_ZONE + RET_GAP`)에서 위로 접혀 올라가 슬라이더 뒤를 지나 멈춤 슬롯(front-y `[slotTopY, slotBotY] = windowY0 + winH + STOP_ZONE/2 ± stopSlotH/2`)을 **뒤에서 관통**하고, 슬롯 앞으로 나온 끝(`PIN_CAP` ≈ 3.5mm)을 **아래로 접어 캡**으로 고정한다(슬라이더가 핀에서 들려 빠질 수 없음 — 아래쪽 Z포획의 주역). 필요 길이는 winH와 무관한 상수 합:
+```
+MOUNT_LEN ≥ (STOP_ZONE/2 + RET_GAP − stopSlotH/2)  ← 뿌리→슬롯 근변 상승
+          + stopSlotH                               ← 슬롯 통과
+          + PIN_CAP                                 ← 캡 여유
+          = 5.7 + 8.6 + 3.5 = 17.8 → 18mm 채택 (캡 실측 3.7mm)
+```
+캡은 위가 아니라 **아래로** 접는다 — 위로 접으면 그림 창문 영역을 침범한다. 코드: `resolveMagicShutter()`(`pinRootY`, `pinTipY`, `slotTopY`, `slotBotY`), `drawBottomStopGuide()`.
+
+> **과거 버그(수정됨)**: 핀을 다리의 **먼 변**에서 MOUNT_LEN=12로 접어 올렸는데, tip이 슬롯 근변보다 ~2.7mm 못 미쳐 **핀이 슬롯에 아예 닿지 않았다**. 뿌리를 슬라이더 쪽 변으로 옮기고 18mm로 늘려 해결.
+
 **창문이 절대 비어 보이지 않음(커버리지 증명)**. 창문 `[X0, X0+W]`. offset 0에서 슬라이더(폭 `S_x`) 왼쪽은 `X0 − coverPad`. offset w에서 왼쪽은 `X0 − coverPad + w`. 창문 왼쪽 끝을 계속 덮으려면
 ```
 X0 − coverPad + w ≤ X0   ⇒   coverPad ≥ travel = w
@@ -41,7 +64,7 @@ S_x = W + travel + 2·coverPad = W + 3w + 2·SAFETY_PAD
 ```
 스트로크 전 구간에서 창문 양 끝이 덮여 어떤 손잡이 위치에서도 빈 종이가 비치지 않는다. 코드: `resolveMagicShutter()` (`sliderW`, `coverPad`).
 
-**Flat-foldability**: 팝업 의미의 flat-fold는 N/A — 전 조립이 항상 평면(<1mm)에 있어 접는 카드가 그 위로 문제없이 닫힌다. 유일한 접힘은 아래 다리의 작은 핀 탭뿐, 붕괴시킬 mountain/valley 짝이 없다.
+**Flat-foldability**: 팝업 의미의 flat-fold는 N/A — 전 조립이 항상 평면(<1mm)에 있어 접는 카드가 그 위로 문제없이 닫힌다. 접힘은 안내 다리의 립과 아래 다리의 멈춤 핀 탭(뿌리 산접기 + 끝 캡 골접기)뿐이고, 핀은 슬라이더 뒤에 납작하게 누워 두께를 더하지 않으며, 붕괴시킬 mountain/valley 짝이 없다.
 
 ## 치수(A4·Letter 양쪽 보장)
 
