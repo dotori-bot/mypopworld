@@ -39,7 +39,7 @@ npm run preview   # 빌드 결과 로컬 확인
 - `src/components/Preview/SVGPreview.jsx` — 메커니즘별 도안을 조립해 미리보기/PDF로 만드는 곳. 도안 페이지(동기)와 장식 페이지(비동기, 입력 핑거프린트가 바뀔 때만 Pollinations 이미지 재요청)를 분리한 2개 이펙트 구조.
 - `src/components/Preview/Preview3D.jsx` — CSS 3D 기반 조립 자세 시뮬레이터. 카드를 여닫는 "책형" 메커니즘은 열림 각도 α 슬라이더로(장면 빌더는 `bookScenes.jsx`), 평면형(슬라이더·돌림판 등) 메커니즘은 `flatScenes.jsx`의 전용 드라이브 슬라이더(당기기/밀기/돌리기/넘기기/불기/여닫기)로 구동한다. 다중 조합 카드는 책형 요소들을 spineOffset만큼 이동시켜 α 하나로 동시 구동하고, 평면형 요소는 개별 보기로 전환한다.
 - `src/components/Preview/bookScenes.jsx` — 책형 메커니즘 8종(v-fold, box-popup, parallel-fold, flap-clap, accordion, layered-stage, auto-slide-window, spiral-spring)의 3D 장면 빌더(`BOOK_3D` 세트가 지원 목록).
-- `src/components/Preview/flatScenes.jsx` — 평면형 메커니즘 8종(pull-tab, rising-slide, slide-to-swing, volvelle, flip-disc, straw-rocket, camera-print-pull, gate-curtain)의 구조 충실 3D 장면 빌더(`FLAT_3D`). 부품 배치는 생성기의 resolver 지오메트리를 그대로 쓰고, 종이 한 장당 translateZ 한 층씩 쌓아 카메라를 돌리면 뒷면 구조(손잡이·멈춤 띠·안내 띠·고정 캡)가 실제 조립 순서대로 보인다.
+- `src/components/Preview/flatScenes.jsx` — 평면형 메커니즘 9종(pull-tab, rising-slide, slide-to-swing, volvelle, flip-disc, straw-rocket, camera-print-pull, gate-curtain, magic-shutter)의 구조 충실 3D 장면 빌더(`FLAT_3D`). 부품 배치는 생성기의 resolver 지오메트리를 그대로 쓰고, 종이 한 장당 translateZ 한 층씩 쌓아 카메라를 돌리면 뒷면 구조(손잡이·멈춤 띠·안내 띠·고정 캡)가 실제 조립 순서대로 보인다.
 - `src/components/Preview/Instructions.jsx` — 메커니즘별 화면용 조립 가이드(일러스트 스텝 카드). **registry의 `INSTRUCTION_TEXT`(PDF용 텍스트)와 손으로 동기화**되어 있으므로 조립 설명을 고칠 땐 반드시 두 곳을 함께 수정한다.
 - `docs/mechanisms/*.md` — 메커니즘별 심층 문서(기하학 원리, 과거 버그에서 배운 교훈, 주의사항). 기존 메커니즘을 수정하기 전에 해당 문서를 먼저 읽을 것. 단, 코드보다 뒤처질 수 있으니(예: 3D 프리뷰 지원 범위) 사실 확인은 코드 기준으로 한다.
 
@@ -55,7 +55,7 @@ npm run preview   # 빌드 결과 로컬 확인
 
 ## 종이공예 메커니즘 목록
 
-`src/generators/registry.js`의 `MECHANISM_REGISTRY`에 등록된 전체 메커니즘(16종). id, 생성 파일, 한 줄 설명 순.
+`src/generators/registry.js`의 `MECHANISM_REGISTRY`에 등록된 전체 메커니즘(17종). id, 생성 파일, 한 줄 설명 순.
 
 | id | 생성 파일 | 설명 |
 | --- | --- | --- |
@@ -75,3 +75,4 @@ npm run preview   # 빌드 결과 로컬 확인
 | `flap-clap` | `flapClap.js` | 카드를 여닫으면 위·아래 두 플랩 조각이 마주 부딪히는(박수/입 벌리기) 팝업. |
 | `camera-print-pull` | `cameraPrintPull.js` | 카메라 카드 아래 손잡이를 당기면 뒷면 롤러 구조로 사진이 위쪽 슬롯에서 올라오는 장치. |
 | `gate-curtain` | `gateCurtain.js` | 양쪽 문(게이트폴드)을 열면 문에 스트랩으로 연결된 노란 커튼 두 장이 좌우로 걷히며 가운데 주인공이 드러나는 카드. |
+| `magic-shutter` | `magicShutter.js` | 오른쪽 손잡이를 옆으로 밀면 빗살 창문 뒤 슬라이더가 한 칸 움직여 창문 속 그림이 ①↔②로 통째로 바뀌는 액자 카드. |

@@ -6,6 +6,7 @@ import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
 import { resolveCameraPull, CAMERA_PULL_LIMITS } from '../../generators/cameraPrintPull';
 import { resolveGateCurtain, sGate, curtainOffset, GATE_CURTAIN_LIMITS } from '../../generators/gateCurtain';
+import { resolveMagicShutter, MAGIC_SHUTTER_LIMITS } from '../../generators/magicShutter';
 import { clamp, degToRad, radToDeg } from '../../utils/math';
 
 /**
@@ -50,6 +51,7 @@ export const FLAT_3D = new Set([
   'straw-rocket',
   'camera-print-pull',
   'gate-curtain',
+  'magic-shutter',
 ]);
 
 /** Z separation per physical paper layer, in px (exaggerated for legibility). */
@@ -1415,6 +1417,179 @@ function buildGateCurtain(params, defaults, paperSize, driveRaw) {
   };
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * Magic shutter (매직 셔터) — picket-fence picture swap.
+ *
+ * Physical stack, front → back (see generators/magicShutter.js header):
+ *   card front with the picket-grille window (bars stay, gaps are cut) →
+ *   slider sheet carrying pictures ①/② sliced into interleaved strips (its
+ *   grip pokes out past the card's RIGHT edge) → two guide bridges glued to
+ *   the card back, the lower one carrying the fixed stop-pin that threads the
+ *   slider's stop-slot. The drive maps the handle push over the REAL one-pitch
+ *   stroke: at u=0 the ① strips sit under the gaps, at u=travel the ② strips
+ *   do — the two hard stops of the pin-in-slot register.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildMagicShutter(params, defaults, paperSize, driveRaw) {
+  const slider = {
+    label: '손잡이 밀기 (①↔②)',
+    min: 0, max: 100, step: 1, defaultValue: 0,
+    format: (v) => `${Math.round(v)}%`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const L = MAGIC_SHUTTER_LIMITS;
+  const geo = resolveMagicShutter({
+    paperSize,
+    windowWidth: params.windowWidth ?? defaults.windowWidth,
+    windowHeight: params.windowHeight ?? defaults.windowHeight,
+    pitch: params.pitch ?? defaults.pitch,
+    grip: params.grip ?? defaults.grip,
+  });
+  const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
+
+  // Card face = upper half sheet; local y ∈ [0, spineY] matches sheet mm.
+  const W = paper.width;
+  const H = geo.spineY;
+  const u = (drive / 100) * geo.travel;
+
+  const PX = 330 / (W + geo.gripLen + geo.travel);
+  const px = (mm) => mm * PX;
+
+  const sliderX = geo.sliderRestX + u;           // slider left edge, world x
+  const sliderTopY = geo.windowY0 - geo.coverPadY;
+  const gy0 = (geo.sliderH - geo.gripH) / 2;     // grip top, slider-local
+
+  // Fixed stop-pin: centred between the two register stops (u=0 / u=travel),
+  // i.e. at the slot centre's mid-stroke position — invariant of the pattern.
+  const pinX = geo.sliderRestX + geo.stopSlotCx + geo.travel / 2;
+  const slotWorldY = sliderTopY + geo.stopZoneCy;
+
+  // Front-face guide rows (same rows the flat pattern prints as glue targets).
+  const topGuideY = sliderTopY - L.RET_GAP - L.RET_W;
+  const botGuideY = geo.windowY0 + geo.winH + L.STOP_ZONE + L.RET_GAP;
+  const guideX = geo.sliderRestX - L.GLUE_END;
+
+  // Picture strips on the slider: local column k over the window band.
+  // Odd k = ① (under the gaps at u=0), even k = ② (revealed at u=travel).
+  const strips = [];
+  for (let k = 0; k < geo.cols; k += 1) {
+    const isOne = k % 2 === 1;
+    strips.push(
+      <span
+        key={`strip-${k}`}
+        style={{
+          position: 'absolute',
+          left: px(geo.coverPad + k * geo.pitch),
+          top: px(geo.coverPadY),
+          width: px(geo.pitch),
+          height: px(geo.winH),
+          background: isOne ? 'rgba(245, 158, 11, 0.9)' : 'rgba(59, 130, 246, 0.9)',
+        }}
+      />,
+    );
+  }
+
+  // Card-front pieces: 4 frame bands + the grille bars (even window columns).
+  // The gaps between bars are truly empty, so the slider strips show through.
+  const facePiece = (key, x, y, w, h) => (
+    <div
+      key={key}
+      className="preview3d-flat-card"
+      style={{ left: px(x), top: px(y), width: px(w), height: px(h) }}
+    />
+  );
+  const frame = [
+    facePiece('band-top', 0, 0, W, geo.windowY0),
+    facePiece('band-bot', 0, geo.windowY0 + geo.winH, W, H - geo.windowY0 - geo.winH),
+    facePiece('band-left', 0, geo.windowY0, geo.windowX0, geo.winH),
+    facePiece('band-right', geo.windowX0 + geo.winW, geo.windowY0, W - geo.windowX0 - geo.winW, geo.winH),
+  ];
+  for (let k = 0; k < geo.cols; k += 2) {
+    frame.push(facePiece(`bar-${k}`, geo.windowX0 + k * geo.pitch, geo.windowY0, geo.pitch, geo.winH));
+  }
+
+  const guide = (y, key) => (
+    <div
+      key={key}
+      className="preview3d-flat-retainer"
+      style={{
+        left: px(guideX),
+        top: px(y),
+        width: px(geo.guideLen),
+        height: px(L.RET_W),
+        transform: `translateZ(${-2 * Z_STEP}px)`,
+      }}
+    >
+      <span className="preview3d-flat-glue" style={{ left: 0, width: px(L.GLUE_END) }} />
+      <span className="preview3d-flat-glue" style={{ right: 0, width: px(L.GLUE_END) }} />
+    </div>
+  );
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(W), height: px(H), left: -px(W) / 2, top: -px(H) / 2 }}>
+      {/* ── BACK: guide bridges + fixed stop-pin ── */}
+      {guide(topGuideY, 'guide-top')}
+      {guide(botGuideY, 'guide-bot')}
+      <div
+        className="preview3d-flat-retainer"
+        style={{
+          left: px(pinX - L.PIN_FOOT / 2),
+          top: px(slotWorldY - geo.stopSlotH / 2),
+          width: px(L.PIN_FOOT),
+          height: px(geo.stopSlotH),
+          background: 'rgba(100, 116, 139, 0.95)',
+          transform: `translateZ(${-1.5 * Z_STEP}px)`,
+        }}
+      />
+      <Tag side="back" x={px(guideX + geo.guideLen / 2)} y={px(topGuideY - 5)}>위 안내 다리 (뒷면 · 양 끝만 풀칠)</Tag>
+      <Tag side="back" x={px(guideX + geo.guideLen / 2)} y={px(botGuideY + L.RET_W + 5)}>아래 안내 다리 + 멈춤 핀</Tag>
+      <Tag side="back" x={px(pinX)} y={px(slotWorldY + geo.stopSlotH + 4)}>멈춤 핀 ⇄ 슬롯 (딱 한 칸만 이동)</Tag>
+
+      {/* ── Slider sheet behind the card (grip pokes out the right edge) ── */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(sliderX),
+          top: px(sliderTopY),
+          width: px(geo.sliderW),
+          height: px(geo.sliderH),
+          background: 'rgba(248, 250, 252, 0.95)',
+          transform: `translateZ(${-Z_STEP}px)`,
+        }}
+      >
+        {strips}
+        <div
+          className="preview3d-flat-grip"
+          style={{ left: px(geo.sliderW), top: px(gy0), width: px(geo.gripLen), height: px(geo.gripH) }}
+        />
+        <div
+          className="preview3d-flat-slot"
+          style={{
+            left: px(geo.stopSlotCx - geo.stopSlotLen / 2),
+            top: px(geo.stopZoneCy - geo.stopSlotH / 2),
+            width: px(geo.stopSlotLen),
+            height: px(geo.stopSlotH),
+          }}
+        />
+      </div>
+      <Tag side="back" x={px(sliderX + geo.sliderW / 2)} y={px(sliderTopY - 5)}>슬라이더 (① 노랑 / ② 파랑 줄무늬)</Tag>
+
+      {/* ── FRONT: frame bands + picket grille bars ── */}
+      {frame}
+      <Tag x={px(geo.windowCx)} y={px(geo.windowY0 - 6)}>빗살 창문 (살은 자르지 않음)</Tag>
+      <Tag x={px(sliderX + geo.sliderW + geo.gripLen / 2)} y={px(sliderTopY + gy0 - 6)}>손잡이 ↔ 밀기</Tag>
+    </div>
+  );
+
+  const state =
+    u < geo.travel * 0.25 ? '그림 ① 표시' : u > geo.travel * 0.75 ? '그림 ② 표시' : '전환 중…';
+  return {
+    node,
+    readout: `손잡이 ${u.toFixed(1)} / ${geo.travel}mm · ${state} · 창문 ${geo.winW}×${geo.winH}mm · 세로살 ${geo.cols}칸(살폭 ${geo.pitch}mm)`,
+    slider,
+    value: drive,
+  };
+}
+
 const BUILDERS = {
   'rising-slide': buildRisingSlide,
   'pull-tab': buildPullTab,
@@ -1424,6 +1599,7 @@ const BUILDERS = {
   'straw-rocket': buildStrawRocket,
   'camera-print-pull': buildCameraPrintPull,
   'gate-curtain': buildGateCurtain,
+  'magic-shutter': buildMagicShutter,
 };
 
 /**
