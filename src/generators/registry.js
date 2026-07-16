@@ -21,6 +21,7 @@ import { renderLayeredStage, resolveLayeredStageGeometry } from './layeredStage.
 import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
+import { renderSpinFlap, resolveSpinFlapGeometry } from './spinFlap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
 import { renderGateCurtain, resolveGateCurtain } from './gateCurtain.js';
 import { renderMagicShutter } from './magicShutter.js';
@@ -159,6 +160,27 @@ export const MECHANISM_REGISTRY = {
         { label: '위쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
         { label: '아래쪽 플랩 그림 (지느러미 등)', width: geo.b * 2 * 0.85, height: geo.h * 0.9 },
       ];
+    },
+  },
+  'spin-flap': {
+    sceneType: 'flat',
+    labelKo: '회전 꽃잎 (돌리면 숨은 글자가 나오는 꽃)',
+    render: (params) => renderSpinFlap(params),
+    defaultParams: { R: 38, petalCount: 6 },
+    instructionStyle: 'spin-flap',
+    // One slot for the flower's own front-facing artwork (petals + hub),
+    // sized off the SAME resolver the printable pattern uses — same reasoning
+    // as 'volvelle' overriding the generic 100x100 hint to match its disc.
+    // The hidden message itself is hand-written directly on the printed
+    // sheet (an AI image can't reliably render a chosen phrase), so it is
+    // NOT a decoration slot — the printed guide sector + instructions cover it.
+    decorationSlots: (params) => {
+      const geo = resolveSpinFlapGeometry(params);
+      return [{
+        label: '꽃 앞면 전체 그림 (동그랗게, 완성된 꽃 모습 참고용)',
+        width: geo.flowerDiameter,
+        height: geo.flowerDiameter,
+      }];
     },
   },
   'camera-print-pull': {
@@ -362,6 +384,19 @@ export const INSTRUCTION_TEXT = {
       '카드를 천천히 여닫아 보세요. 도안에 표시된 "탁! 각도" 근처에서 위아래 플랩(지느러미)이 서로 맞닿습니다. 완전히 닫았을 때는 플랩이 아주 살짝 눌리는 정도이니 억지로 세게 누르지 말고 살살 접어주세요.',
     ],
     tips: '이 메커니즘은 다른 팝업과 달리 플랩이 카드가 열리는 각도에 맞춰 저절로 접히는 구조가 아니라, 프롭으로 고정한 각도 그대로 페이지에 실려 움직입니다. 그래서 완전히 딱 닫히기보다 살짝 도톰하게 눌리는 정도가 정상입니다 — 프롭 길이를 정확히 지켜 붙이는 것이 핵심입니다.',
+  },
+  'spin-flap': {
+    title: '회전 꽃잎(숨은 글자 꽃) 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '자르기 전에 먼저! 배경 원판에 점선으로 표시된 "숨은 메시지" 자리에 하고 싶은 짧은 말을 손으로 직접 써주세요 (예: "사랑해", "고마워"). 이 부분은 나중에 꽃잎에 가려졌다가 돌리면 나타나요.',
+      '검은색 실선을 따라 배경 원판, 회전 꽃잎 1장(축 목 포함), 고정 꽃잎 여러 장, 노란 꽃술, 축 캡을 모두 오려주세요. 배경 원판 가운데 작은 동그라미(축 구멍)도 함께 뚫어주세요.',
+      '고정 꽃잎들을 배경 원판 위에 점선으로 표시된 자리(숨은 메시지 자리만 비우고)에 풀칠해 붙여주세요. 이 꽃잎들은 움직이지 않고 그대로 고정됩니다.',
+      '회전 꽃잎의 축 목을 파란 점선을 따라 뒤로 접어 배경 원판 가운데 구멍에 앞에서 뒤로 끼우세요. 뒤로 나온 목에 축 캡을 풀칠해 붙여 고정합니다. 중요: 캡은 목에만 붙이고 배경 원판에는 붙이지 마세요! 붙이면 꽃잎이 돌아가지 않아요.',
+      '회전 꽃잎이 숨은 메시지 자리를 정확히 덮도록 앞쪽 제자리(다른 고정 꽃잎들과 나란히)에 오게 돌려두고, 그 위에 노란 꽃술을 회전 꽃잎의 안쪽(축 부분)에만 풀칠해 붙이세요. 꽃술은 회전 꽃잎과 함께 돌아가야 하니 배경 원판에는 붙지 않게 주의하세요.',
+      '완성! 맨 위 꽃잎 한 장을 손가락으로 잡고 살살 돌려보세요. 다른 꽃잎 위로 스윽 돌아가면서 숨겨져 있던 글자가 짠! 하고 나타납니다. 다시 돌려 제자리로 돌려놓으면 글자가 다시 숨어요.',
+    ],
+    tips: '축 캡은 반드시 "목"에만 붙이고 배경 원판에는 붙지 않아야 자유롭게 돌아갑니다. 회전 꽃잎이 뻑뻑하면 축 구멍을 아주 살짝 더 크게 다듬고, 헐거워서 축이 빠지면 캡을 더 크고 꼼꼼하게 붙여주세요.',
   },
   'camera-print-pull': {
     title: '카메라 인화 손잡이 조립 설명서',

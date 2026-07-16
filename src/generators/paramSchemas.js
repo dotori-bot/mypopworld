@@ -41,6 +41,7 @@ import { FLAP_CLAP_LIMITS, resolveFlapClapGeometry } from './flapClap.js';
 import { CAMERA_PULL_LIMITS, resolveCameraPull } from './cameraPrintPull.js';
 import { GATE_CURTAIN_LIMITS, resolveGateCurtain } from './gateCurtain.js';
 import { MAGIC_SHUTTER_LIMITS, resolveMagicShutter } from './magicShutter.js';
+import { SPIN_FLAP_LIMITS, resolveSpinFlapGeometry } from './spinFlap.js';
 
 const card = (paperSize) => CARD_SIZES[paperSize] || CARD_SIZES.A4;
 const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -374,6 +375,23 @@ export const PARAM_SCHEMAS = {
     {
       key: 'grip', labelKo: '손잡이 길이 (grip)', unit: 'mm', step: 1,
       limits: () => ({ min: MAGIC_SHUTTER_LIMITS.GRIP_MIN, max: MAGIC_SHUTTER_LIMITS.GRIP_MAX }),
+    },
+  ],
+
+  'spin-flap': [
+    {
+      key: 'R', labelKo: '꽃 반지름 (R)', unit: 'mm', step: 1,
+      // More petals → smaller inter-petal gap budget → lower R cap in practice,
+      // but the resolver's own fit clamp against the sheet is what actually
+      // binds; probe it the same way flip-disc probes its packer.
+      limits: (p, paperSize) => ({
+        min: SPIN_FLAP_LIMITS.R_MIN,
+        max: resolveSpinFlapGeometry({ R: 9999, petalCount: p.petalCount, paperSize }).R,
+      }),
+    },
+    {
+      key: 'petalCount', labelKo: '꽃잎 개수 (petalCount)', unit: '개', step: 1,
+      limits: () => ({ min: SPIN_FLAP_LIMITS.PETAL_COUNT_MIN, max: SPIN_FLAP_LIMITS.PETAL_COUNT_MAX }),
     },
   ],
 };

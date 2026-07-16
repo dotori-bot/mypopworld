@@ -1407,6 +1407,109 @@ export default function Instructions() {
           </>
         );
 
+      case 'spin-flap':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>자르기 전에! 숨은 메시지부터 손으로 쓰기</h4>
+                <p>배경 원판 위 점선 부채꼴("숨은 메시지" 자리)에 하고 싶은 짧은 말을 <b>연필이나 색연필로 직접</b> 써주세요. 이 부분은 나중에 꽃잎에 가려졌다가 돌리면 나타나요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="42" cy="30" r="22" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M42 30 L34 10 A22 22 0 0 1 50 10 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="42" y="20" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">사랑해</text>
+                    <path d="M70 40 l14 -14 l4 4 l-14 14 l-6 2 z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="80" y="54" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">먼저 손글씨!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>부품 오리기</h4>
+                <p>배경 원판(가운데 축 구멍 포함), 회전 꽃잎 1장(축 목 포함), 고정 꽃잎 여러 장, 노란 꽃술, 축 캡을 실선대로 모두 오려주세요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 130 60" style={{ width: '100%', maxWidth: '330px', height: 'auto' }}>
+                    <circle cx="22" cy="30" r="20" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <circle cx="22" cy="30" r="3" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="22" y="54" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">배경 원판</text>
+                    <path d="M55 30 Q45 14 55 8 Q65 14 55 30 Z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="53" y="30" width="4" height="8" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="55" y="44" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">회전 꽃잎</text>
+                    <path d="M82 24 Q74 12 82 8 Q90 12 82 24 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <text x="82" y="34" fontSize="3.6" textAnchor="middle" fill="var(--text-secondary)">고정 꽃잎 ×</text>
+                    <circle cx="106" cy="16" r="7" fill="gold" stroke="orange" strokeWidth="1.1" />
+                    <text x="106" y="28" fontSize="3.8" textAnchor="middle" fill="var(--text-secondary)">꽃술</text>
+                    <circle cx="106" cy="46" r="6" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="106" y="56" fontSize="3.6" textAnchor="middle" fill="var(--text-secondary)">축 캡</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>고정 꽃잎 붙이기 (메시지 자리만 비우기)</h4>
+                <p>고정 꽃잎들을 배경 원판의 점선 자리에 풀칠해 붙이세요. <b>숨은 메시지 자리는 비워두고</b>, 그 자리는 나중에 회전 꽃잎이 덮습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="50" cy="32" r="24" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <path d="M50 32 L44 10 A24 24 0 0 1 56 10 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="20" fontSize="3.6" textAnchor="middle" fill="red">비워두기</text>
+                    <path d="M50 32 L70 15 A24 24 0 0 1 74 26 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.1" />
+                    <path d="M50 32 L74 38 A24 24 0 0 1 68 52 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.1" />
+                    <path d="M50 32 L52 56 A24 24 0 0 1 30 53 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.1" />
+                    <path d="M50 32 L26 48 A24 24 0 0 1 27 24 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.1" />
+                    <text x="50" y="58" fontSize="4" textAnchor="middle" fill="green">고정 꽃잎 풀칠</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>⚠️ 회전축 만들기 (캡은 목에만!)</h4>
+                <p>회전 꽃잎의 축 목을 파란 점선을 따라 뒤로 접어 배경 원판 가운데 구멍에 앞→뒤로 끼우세요. 뒤에서 축 캡을 <b>목(종이)에만</b> 붙이세요. 원판에는 붙이지 마세요! 붙이면 꽃잎이 돌아가지 않아요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="46" y="6" width="4" height="48" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="36" y="8" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">배경 원판</text>
+                    <path d="M48 4 Q40 -6 48 -14 Q56 -6 48 4 Z" transform="translate(0,20)" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="45" y="24" width="6" height="10" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.1" />
+                    <text x="30" y="30" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">꽃잎(앞)</text>
+                    <rect x="45" y="34" width="6" height="12" fill="none" stroke="blue" strokeWidth="1" strokeDasharray="2 1" />
+                    <circle cx="48" cy="52" r="7" fill="none" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <text x="66" y="55" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">캡(뒤)</text>
+                    <text x="48" y="60" fontSize="3.4" textAnchor="middle" fill="red">목에만 풀칠!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>돌려서 숨은 글자 확인하기</h4>
+                <p>회전 꽃잎을 다른 고정 꽃잎과 나란히 제자리로 돌려두고, 그 안쪽(축 부분)에만 노란 꽃술을 붙이세요. 완성 후 맨 위 꽃잎을 손가락으로 살살 돌리면 옆 꽃잎 위로 스윽 돌아가며 숨은 글자가 짠! 하고 나타납니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="130" viewBox="0 0 100 65" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <circle cx="42" cy="32" r="24" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.3" />
+                    <path d="M42 32 L36 10 A24 24 0 0 1 48 10 Z" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="42" y="19" fontSize="3.6" textAnchor="middle" fill="var(--primary-main)">사랑해</text>
+                    <path d="M42 32 L64 18 A24 24 0 0 1 66 30 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.1" opacity="0.9" transform="rotate(70 42 32)" />
+                    <circle cx="42" cy="32" r="6" fill="gold" stroke="orange" strokeWidth="1.1" />
+                    <path d="M70 24 Q60 32 70 40" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" strokeDasharray="2 2" />
+                    <path d="M70 40 l-4 -2 l1 4 z" fill="var(--text-secondary)" />
+                    <text x="42" y="60" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">꽃잎을 돌리면 글자가 짠!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       default:
         return <p>설명서가 준비되지 않은 메커니즘입니다.</p>;
     }
