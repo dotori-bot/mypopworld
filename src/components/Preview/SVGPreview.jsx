@@ -296,6 +296,16 @@ export default function SVGPreview() {
   }, [pages, currentPage]);
 
   const handleDownload = async () => {
+    try {
+      await runPdfDownload();
+    } catch (err) {
+      // Surface failures instead of letting the button silently "do nothing".
+      console.error('[SVGPreview] PDF download failed:', err);
+      alert('PDF를 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.');
+    }
+  };
+
+  const runPdfDownload = async () => {
     const { exportAndDownload } = await import('../../generators/pdfExporter.js');
     const svgEls = pageElementsRef.current;
     if (!svgEls || svgEls.length === 0) return;
