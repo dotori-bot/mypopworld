@@ -5,6 +5,9 @@ import { resolveSlideToSwing, SLIDE_SWING_LIMITS } from '../../generators/slideT
 import { resolveVolvelleGeometry } from '../../generators/volvelle';
 import { resolveFlipDiscGeometry, FLIPDISC_CONST } from '../../generators/flipDisc';
 import { resolveSpinFlapGeometry, SPIN_FLAP_LIMITS, petalTipPosition } from '../../generators/spinFlap';
+import { resolveCameraPull, CAMERA_PULL_LIMITS } from '../../generators/cameraPrintPull';
+import { resolveGateCurtain, sGate, curtainOffset, GATE_CURTAIN_LIMITS } from '../../generators/gateCurtain';
+import { resolveMagicShutter, MAGIC_SHUTTER_LIMITS } from '../../generators/magicShutter';
 import { clamp, degToRad, radToDeg } from '../../utils/math';
 
 /**
@@ -48,6 +51,9 @@ export const FLAT_3D = new Set([
   'flip-disc',
   'straw-rocket',
   'spin-flap',
+  'camera-print-pull',
+  'gate-curtain',
+  'magic-shutter',
 ]);
 
 /** Z separation per physical paper layer, in px (exaggerated for legibility). */
@@ -212,6 +218,227 @@ function buildRisingSlide(params, defaults, paperSize, driveRaw) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+ * Camera-print-pull (카메라 인화 손잡이) — the paper pulley.
+ *
+ * Physical stack, front → back (see generators/cameraPrintPull.js header):
+ *   photo (front, top of card) → card face with a photo slot (top) and a tab
+ *   slot (below it) → ONE reversing strip, folded 180° over a roller near the
+ *   top so it lies behind the card as two overlapping plies on the same centre
+ *   column → the PULL tab (front again, hanging out below the tab slot).
+ *   The photo's bottom edge glues to the mount at the strip's photo end; the
+ *   grip is the strip's other end on the front. Pulling the tab DOWN feeds strip
+ *   from the photo-run over the roller into the tab-run, so the photo rises
+ *   UP — a genuine direction reversal (unlike rising-slide's single straight
+ *   slider). The drive still maps 0→100% to "how far pulled" (rise 0→travel)
+ *   with the SAME flange-vs-retainer stop-clamp logic as rising-slide, just
+ *   anchored to this mechanism's own retainer above the photo slot, and with
+ *   the exposed grip growing DOWNWARD as more strip is pulled through.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildCameraPrintPull(params, defaults, paperSize, driveRaw) {
+  const slider = {
+    label: 'PULL 손잡이 당기기',
+    min: 0, max: 100, step: 1, defaultValue: 35,
+    format: (v) => `${Math.round(v)}%`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const L = CAMERA_PULL_LIMITS;
+  const geo = resolveCameraPull({
+    paperSize,
+    riseFraction: params.riseFraction ?? defaults.riseFraction,
+    clearance: params.clearance ?? defaults.clearance,
+    stripWidth: params.stripWidth ?? defaults.stripWidth,
+    grip: params.grip ?? defaults.grip,
+    photoWidth: params.photoWidth ?? defaults.photoWidth,
+  });
+  const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
+
+  // Card face = upper half sheet; its local y ∈ [0, spineY] matches sheet mm.
+  const W = paper.width;
+  const H = geo.spineY;
+
+  // Same retainer glue target the flat pattern prints, just above the photo
+  // slot (see generateCameraPrintPull's `topRetY`).
+  const topRetY = geo.slotTopY - L.RET_W - 1;
+
+  // Effective stop: the stop flange (carried on the photo-run, just above the
+  // mount) meets the retainer's bottom edge — identical retention-catch logic
+  // to rising-slide, anchored to this mechanism's own retainer/slot instead.
+  const tStop = clamp(
+    (geo.slotBotY - L.NECK_H - L.FLANGE_H - (topRetY + L.RET_W)) / geo.travel,
+    0, 1,
+  );
+  const t = (drive / 100) * tStop;
+  const rise = t * geo.travel;
+
+  // photoRun_current = photoRun_rest − rise (the photo-side run shortens as
+  // the mount is drawn up); the tab-run stays the fixed roller→slot span, and
+  // the freed-up strip length reappears as MORE exposed grip below the card.
+  const mountY = geo.slotBotY - rise;          // photo mount fold line, in the slot
+  const photoRunNow = Math.max(1, geo.photoRun - rise);
+  const exposedGrip = geo.grip + rise;
+
+  const sceneBottom = Math.max(H, geo.botSlotY + geo.grip + geo.travel * tStop) + 8;
+  const PX = 300 / sceneBottom;
+  const px = (mm) => mm * PX;
+
+  const retW = geo.channelGap + 2 * L.GLUE_END;
+  // ONE strip, folded 180° over the roller into two overlapping plies on the
+  // card's centre column (the pattern's "flat two-ply U"): the photo ply lies
+  // against the card back (−1·Z), the tab ply returns outside it (−3·Z), and
+  // the roller sits between them (−2·Z) — separated only in z, never in x.
+  const flangeTopY = mountY - L.NECK_H - L.FLANGE_H;
+  const botSlotLen = geo.stripW + geo.slotWidth * 2;
+  const slotWpx = Math.max(3, px(geo.slotWidth));
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(W), height: px(H), left: -px(W) / 2, top: -px(H) / 2 }}>
+      {/* ── BACK, furthest layer: the roller (a rolled tube glued by its two ends only) ── */}
+      <div
+        className="preview3d-flat-roller"
+        style={{
+          left: px(geo.cx - geo.rollerLen / 2),
+          top: px(geo.yRoller - geo.rollerR),
+          width: px(geo.rollerLen),
+          height: px(geo.rollerR * 2),
+          transform: `translateZ(${-2 * Z_STEP}px)`,
+        }}
+      />
+      <Tag side="back" x={px(geo.cx)} y={px(geo.yRoller - geo.rollerR) - 10}>① 롤러(튜브)</Tag>
+
+      {/* ── BACK: the retainer bridge glued just above the photo slot ── */}
+      <div
+        className="preview3d-flat-retainer"
+        style={{
+          left: px(geo.cx - retW / 2),
+          top: px(topRetY),
+          width: px(retW),
+          height: px(L.RET_W),
+          transform: `translateZ(${-4 * Z_STEP}px)`,
+        }}
+      >
+        <span className="preview3d-flat-glue" style={{ left: 0, width: px(L.GLUE_END) }} />
+        <span className="preview3d-flat-glue" style={{ right: 0, width: px(L.GLUE_END) }} />
+      </div>
+      <Tag side="back" x={px(geo.cx)} y={px(topRetY) - 10}>② 멈춤/안내 띠</Tag>
+
+      {/* ── BACK: ONE reversing strip, folded 180° over the roller into two plies ── */}
+      {/* inner ply (against the card): roller → photo mount; shortens as it's pulled */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(geo.cx - geo.stripW / 2),
+          top: px(geo.yRoller),
+          width: px(geo.stripW),
+          height: px(photoRunNow),
+          transform: `translateZ(${-Z_STEP}px)`,
+        }}
+      >
+        <div
+          className="preview3d-flat-flange"
+          style={{
+            left: px(-(geo.flangeW - geo.stripW) / 2),
+            top: px(flangeTopY - geo.yRoller),
+            width: px(geo.flangeW),
+            height: px(L.FLANGE_H),
+          }}
+        />
+      </div>
+      {/* the 180° fold arcing over the roller top */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(geo.cx - geo.stripW / 2),
+          top: px(geo.yRoller - geo.rollerR),
+          width: px(geo.stripW),
+          height: px(geo.rollerR),
+          borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
+          transform: `translateZ(${-2 * Z_STEP - 2}px)`,
+        }}
+      />
+      {/* outer ply: roller → bottom slot (fixed span — the strip slides through it) */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(geo.cx - geo.stripW / 2),
+          top: px(geo.yRoller),
+          width: px(geo.stripW),
+          height: px(geo.tabRun),
+          transform: `translateZ(${-3 * Z_STEP}px)`,
+        }}
+      />
+      <Tag side="back" x={px(geo.cx)} y={px(geo.yRoller + geo.tabRun * 0.72)}>되돌림 띠 (한 장 — 롤러 위로 접혀 두 겹)</Tag>
+
+      {/* ── Card face: photo slot (top) + tab slot (below it) ── */}
+      <div className="preview3d-flat-card" style={{ width: px(W), height: px(H) }}>
+        <div
+          className="preview3d-flat-slot"
+          style={{
+            left: px(geo.cx) - slotWpx / 2,
+            top: px(geo.slotTopY),
+            width: slotWpx,
+            height: px(geo.slotBotY - geo.slotTopY),
+          }}
+        />
+        <div
+          className="preview3d-flat-slot"
+          style={{
+            left: px(geo.cx) - px(botSlotLen) / 2,
+            top: px(geo.botSlotY) - slotWpx / 2,
+            width: px(botSlotLen),
+            height: slotWpx,
+          }}
+        />
+      </div>
+      <Tag x={px(geo.cx + botSlotLen / 2 + 6)} y={px(geo.botSlotY)}>손잡이 슬롯 (앞면)</Tag>
+
+      {/* ── FRONT: the photo, its BOTTOM glued to the mount, riding up the slot ── */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px(geo.cx) - px(geo.photoW) / 2,
+          top: px(mountY - L.NECK_H) - px(geo.photoH),
+          width: px(geo.photoW),
+          height: px(geo.photoH),
+          background: 'linear-gradient(180deg, #ffffff 0%, #ffffff 78%, #cbd5e1 78%, #cbd5e1 100%)',
+          border: '1px solid rgba(100, 116, 139, 0.6)',
+          borderRadius: '3px',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+          transform: `translateZ(${Z_STEP}px)`,
+        }}
+      >
+        {/* Uploaded user drawing as the developing photo (white footer strip
+            below stays visible, like an instant-camera print). */}
+        <span
+          className="preview3d-flat-art"
+          style={{ left: '4%', top: '3%', width: '92%', height: '72%' }}
+        />
+      </div>
+      <Tag x={px(geo.cx)} y={px(mountY - L.NECK_H) - px(geo.photoH) - 10}>사진 (앞면 · 위로 올라감)</Tag>
+
+      {/* ── FRONT: the PULL tab — exposed length grows as it's pulled ── */}
+      <div
+        className="preview3d-flat-grip"
+        style={{
+          left: px(geo.cx) - px(geo.stripW) / 2,
+          top: px(geo.botSlotY),
+          width: px(geo.stripW),
+          height: px(exposedGrip),
+          transform: `translateZ(${Z_STEP}px)`,
+        }}
+      />
+      <Tag x={px(geo.cx)} y={px(geo.botSlotY + exposedGrip) + 10}>PULL 손잡이 (아래로 당김)</Tag>
+    </div>
+  );
+
+  return {
+    node,
+    readout: `사진 상승 ${rise.toFixed(0)} / ${(tStop * geo.travel).toFixed(0)}mm · 롤러 Ø${(geo.rollerR * 2).toFixed(1)}mm`,
+    slider,
+    value: drive,
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
  * Pull tab (풀탭)
  *
  * Stack: handle tab (front, folded through the slot) → card face with the
@@ -328,6 +555,19 @@ function buildPullTab(params, defaults, paperSize, driveRaw) {
         }}
       />
       <Tag x={px(xSlider + sliderW + handleW / 2)} y={px(trackCY + sliderH / 2) + 12}>손잡이 (앞면)</Tag>
+
+      {/* ── FRONT-most: uploaded user drawing glued on the handle tab, riding
+             the slider along the track (invisible until a drawing is set). ── */}
+      <div
+        className="preview3d-flat-art"
+        style={{
+          left: px(xSlider + sliderW + handleW / 2) - px(22) / 2,
+          top: px(trackCY - sliderH / 2) - px(24),
+          width: px(22),
+          height: px(22),
+          transform: `translateZ(${2 * Z_STEP}px)`,
+        }}
+      />
     </div>
   );
 
@@ -576,19 +816,36 @@ function buildVolvelle(params, defaults, paperSize, driveRaw) {
     return `${c} ${k * sigma}deg ${(k + 1) * sigma}deg`;
   }).join(', ');
 
+  // Per-sector artwork tile: when the user uploads a drawing (--user-art) it
+  // shows in every sector at the same radius the cover window exposes, so
+  // spinning the rotor moves the drawing through the window like the real toy.
+  // Sized to the sector chord so neighbouring tiles don't overlap; invisible
+  // (empty transparent div) while no drawing is uploaded.
+  const artR = R * 0.62;
+  const artSize = px(Math.min(R * 0.5, 2 * artR * Math.sin(degToRad(sigma / 2)) * 0.85));
   const numbers = Array.from({ length: sectors }, (_, k) => {
     const a = degToRad(k * sigma + sigma / 2);
+    const cxSector = px(R + artR * Math.sin(a));
+    const cySector = px(R - artR * Math.cos(a));
     return (
-      <span
-        key={`n-${k}`}
-        className="preview3d-flat-volnum"
-        style={{
-          left: px(R + R * 0.62 * Math.sin(a)),
-          top: px(R - R * 0.62 * Math.cos(a)),
-        }}
-      >
-        {k + 1}
-      </span>
+      <React.Fragment key={`n-${k}`}>
+        <span
+          className="preview3d-flat-art"
+          style={{
+            left: cxSector - artSize / 2,
+            top: cySector - artSize / 2,
+            width: artSize,
+            height: artSize,
+            transform: `rotate(${k * sigma + sigma / 2}deg)`,
+          }}
+        />
+        <span
+          className="preview3d-flat-volnum"
+          style={{ left: cxSector, top: cySector }}
+        >
+          {k + 1}
+        </span>
+      </React.Fragment>
     );
   });
 
@@ -746,7 +1003,9 @@ function buildFlipDisc(params, defaults, paperSize, driveRaw) {
           style={{
             width: px(R),
             height: px(R * 2),
-            background: `linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)`,
+            // Uploaded user drawing (if any) becomes the leaf's plate artwork;
+            // otherwise the per-leaf tint gradient as before.
+            background: `var(--user-art, linear-gradient(135deg, ${FLIP_COLORS[i % FLIP_COLORS.length]}, #ffffff)) center / cover no-repeat`,
           }}
         >
           <span className="preview3d-flat-pagenum">{k}</span>
@@ -1063,6 +1322,412 @@ function buildStrawRocket(params, defaults, paperSize, driveRaw) {
   };
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * Gate curtain (커튼 문 카드)
+ *
+ * A gate-fold card driven by its own doors (see generators/gateCurtain.js
+ * header): two doors on VERTICAL hinges at the panel's left/right edges; a
+ * strap (in-line slider-crank, s(α) = d·cosα + √(L² − d²·sin²α)) links each
+ * door to a bowtie curtain that slides HORIZONTALLY on the panel, tucked under
+ * the decorative frame's top/bottom rails. Opening the doors drags the
+ * curtains apart, revealing the character through the frame's diamond window.
+ *
+ * The drive here is the door-opening angle α (0 = closed, 180 = flat open),
+ * exactly the value the printed pattern's kinematics use. Doors rotate about
+ * their hinges toward the viewer like flip-disc leaves; their translateZ is
+ * interpolated with the fold angle (flip-disc's zRight→zLeft trick) so the
+ * closed doors depth-sort ABOVE the curtain+frame stack while the open doors
+ * lie next to the panel plane.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildGateCurtain(params, defaults, paperSize, driveRaw) {
+  const K = GATE_CURTAIN_LIMITS;
+  const slider = {
+    label: '문 열기 (여닫기)',
+    min: 0, max: 180, step: 1, defaultValue: K.ALPHA_REVEAL,
+    format: (v) => `${Math.round(v)}°`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const alpha = clamp(drive, 0, 180);
+
+  const geo = resolveGateCurtain({
+    paperSize,
+    panelWidth: params.panelWidth ?? defaults.panelWidth,
+    revealWidth: params.revealWidth ?? defaults.revealWidth,
+    hingeOffset: params.hingeOffset ?? defaults.hingeOffset,
+  });
+  const { panelW, panelH, doorW, d, L, travel, Wc, Hc, wMin, notchDepth, frameW, frameH, revealW, revealH } = geo;
+
+  const phi = 180 - alpha;                     // door fold angle (0 = flat open)
+  const s = sGate(alpha, d, L);                // strap-attach distance from hinge
+  const off = curtainOffset(alpha, d, L);      // curtain displacement from closed
+  // Strap chord lift off the panel plane: the door-end pivot rides at height
+  // d·sinα, the curtain end stays at 0 → tilt β about the vertical crease.
+  const beta = radToDeg(Math.asin(clamp((d * Math.sin(degToRad(alpha))) / L, -1, 1)));
+
+  const cX = panelW / 2;
+  const pcY = panelH / 2;
+  const PX = 290 / geo.cardW;                  // flat-open total width fills the stage
+  const px = (mm) => mm * PX;
+
+  // Doors closed must sort above panel(0) < curtains(Z_STEP) < frame(2·Z_STEP);
+  // open they sit just off the panel plane. Interpolate with the fold like
+  // flip-disc does (CSS depth-sorts whole planes, not intersections).
+  const zDoor = 1 + (phi / 180) * (3 * Z_STEP - 1);
+
+  const notchFrac = (notchDepth / Wc) * 100;   // chevron pinch, % of curtain width
+  const curtainBg = 'linear-gradient(180deg, rgba(253, 224, 71, 0.95), rgba(245, 158, 11, 0.9))';
+  const doorFace = (side) => (
+    // Stone decoration on the door's OUTER face (visible when the card is
+    // closed or when orbiting behind an open door).
+    <div
+      style={{
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        width: px(K.STONE_W),
+        height: px(K.STONE_H),
+        marginLeft: -px(K.STONE_W) / 2,
+        marginTop: -px(K.STONE_H) / 2,
+        borderRadius: px(10),
+        background: 'linear-gradient(135deg, rgba(148, 163, 184, 0.9), rgba(100, 116, 139, 0.9))',
+        border: '1px solid rgba(71, 85, 105, 0.7)',
+        transform: 'rotateY(180deg) translateZ(1px)',
+        backfaceVisibility: 'visible',
+      }}
+      aria-hidden
+      data-side={side}
+    />
+  );
+
+  // Frame with a real diamond hole (SVG evenodd — CSS clip-path can't cut holes).
+  const fw = px(frameW);
+  const fh = px(frameH);
+  const framePath =
+    `M6 0 H${fw - 6} Q${fw} 0 ${fw} 6 V${fh - 6} Q${fw} ${fh} ${fw - 6} ${fh} H6 Q0 ${fh} 0 ${fh - 6} V6 Q0 0 6 0 Z ` +
+    `M${fw / 2} ${fh / 2 - px(revealH / 2)} L${fw / 2 + px(revealW / 2)} ${fh / 2} L${fw / 2} ${fh / 2 + px(revealH / 2)} L${fw / 2 - px(revealW / 2)} ${fh / 2} Z`;
+
+  const figSize = px(Math.min(revealW, revealH) * 0.72);
+
+  const strap = (side) => {
+    const isR = side === 'R';
+    // Curtain-end attach point (global x), riding with the curtain.
+    const attachX = isR ? cX + K.GAP + off : cX - K.GAP - off;
+    return (
+      <div
+        key={`strap-${side}`}
+        className="preview3d-flat-strip"
+        style={{
+          left: px(isR ? attachX : attachX - L),
+          top: px(pcY - K.STRAP_W / 2),
+          width: px(L),
+          height: px(K.STRAP_W),
+          transformOrigin: isR ? 'left center' : 'right center',
+          transform: `translateZ(${Z_STEP + 4}px) rotateY(${isR ? -beta : beta}deg)`,
+        }}
+      >
+        <span className="preview3d-flat-glue" style={{ left: 0, width: px(K.GLUE_END * 0.8) }} />
+        <span className="preview3d-flat-glue" style={{ right: 0, width: px(K.GLUE_END * 0.8) }} />
+      </div>
+    );
+  };
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(panelW), height: px(panelH), left: -px(panelW) / 2, top: -px(panelH) / 2 }}>
+      {/* ── Fixed BACK PANEL ── */}
+      <div className="preview3d-flat-card" style={{ width: px(panelW), height: px(panelH) }} />
+
+      {/* Character glued flat at panel centre (under the curtains). */}
+      <div
+        className="preview3d-flat-figure"
+        style={{
+          left: px(cX) - figSize / 2,
+          top: px(pcY) - figSize / 2,
+          width: figSize,
+          height: figSize,
+          transform: 'translateZ(2px)',
+        }}
+      />
+      <Tag x={px(cX)} y={px(pcY - revealH / 2) - 10}>① 주인공 그림 (뒷판 가운데)</Tag>
+
+      {/* ── CURTAINS — translate horizontally by curtainOffset(α) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX - K.GAP),
+          top: px(pcY - Hc / 2),
+          width: px(Wc),
+          height: px(Hc),
+          background: curtainBg,
+          border: '1px solid rgba(202, 138, 4, 0.6)',
+          clipPath: `polygon(0% 0%, 100% 0%, ${100 - notchFrac}% 50%, 100% 100%, 0% 100%)`,
+          transform: `translateX(${-px(off)}px) translateZ(${Z_STEP}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX + K.GAP - Wc),
+          top: px(pcY - Hc / 2),
+          width: px(Wc),
+          height: px(Hc),
+          background: curtainBg,
+          border: '1px solid rgba(202, 138, 4, 0.6)',
+          clipPath: `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, ${notchFrac}% 50%)`,
+          transform: `translateX(${px(off)}px) translateZ(${Z_STEP + 2}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      />
+      <Tag x={px(cX)} y={px(pcY + Hc / 2) + 10}>④ 노란 커튼 ×2 — 좌우로 미끄러짐 (뒷판에 붙이지 않음)</Tag>
+
+      {/* ── STRAPS — door pivot ↔ curtain outer edge (tilt β = asin(d·sinα/L)) ── */}
+      {strap('R')}
+      {strap('L')}
+      <Tag x={px(cX + K.GAP + off + L / 2)} y={px(pcY - K.STRAP_W / 2) - 10}>② 지지대 (문↔커튼)</Tag>
+
+      {/* ── FRAME (retainer) — glued top/bottom rails only ── */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px(cX - frameW / 2),
+          top: px(pcY - frameH / 2),
+          width: fw,
+          height: fh,
+          transform: `translateZ(${2 * Z_STEP + 2}px)`,
+          backfaceVisibility: 'visible',
+        }}
+      >
+        <svg width={fw} height={fh} viewBox={`0 0 ${fw} ${fh}`} style={{ display: 'block' }}>
+          <path d={framePath} fillRule="evenodd" fill="rgba(203, 213, 225, 0.92)" stroke="rgba(100, 116, 139, 0.6)" strokeWidth="1" />
+        </svg>
+        <span className="preview3d-flat-glue" style={{ left: 2, right: 2, top: 0, width: 'auto', height: px(K.FRAME_BORDER) * 0.8 }} />
+        <span className="preview3d-flat-glue" style={{ left: 2, right: 2, top: 'auto', bottom: 0, width: 'auto', height: px(K.FRAME_BORDER) * 0.8 }} />
+      </div>
+      <Tag x={px(cX)} y={px(pcY - frameH / 2) - 10}>③ 장식 액자 — 위·아래만 풀칠 (좌·우 열어두기)</Tag>
+
+      {/* ── DOORS — vertical hinges at the panel's side edges ── */}
+      <div
+        className="preview3d-flat-card"
+        style={{
+          left: px(panelW),
+          top: 0,
+          width: px(doorW),
+          height: px(panelH),
+          transformOrigin: 'left center',
+          transform: `translateZ(${zDoor}px) rotateY(${-phi}deg)`,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {doorFace('R')}
+      </div>
+      <div
+        className="preview3d-flat-card"
+        style={{
+          left: -px(doorW),
+          top: 0,
+          width: px(doorW),
+          height: px(panelH),
+          transformOrigin: 'right center',
+          transform: `translateZ(${zDoor}px) rotateY(${phi}deg)`,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {doorFace('L')}
+      </div>
+      <Tag x={px(panelW + doorW / 2)} y={px(panelH) + 10}>오른쪽 문</Tag>
+      <Tag x={-px(doorW / 2)} y={px(panelH) + 10}>왼쪽 문</Tag>
+      <Tag side="back" x={px(panelW + doorW / 2)} y={px(pcY)}>돌 장식 (문 바깥면)</Tag>
+    </div>
+  );
+
+  // Distance from centre to the right curtain's inner-mid edge (the reveal).
+  const revealHalf = doorW - s - wMin;
+  const state =
+    revealHalf < 0
+      ? '주인공 가려짐 (커튼 겹침)'
+      : revealHalf < revealW / 2 - 0.5
+        ? '커튼 걷히는 중'
+        : '다이아몬드 완전 개방';
+  return {
+    node,
+    readout: `문 열림 ${Math.round(alpha)}° · 커튼 이동 ${off.toFixed(1)} / ${travel}mm · ${state}`,
+    slider,
+    value: drive,
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Magic shutter (매직 셔터) — picket-fence picture swap.
+ *
+ * Physical stack, front → back (see generators/magicShutter.js header):
+ *   card front with the picket-grille window (bars stay, gaps are cut) →
+ *   slider sheet carrying pictures ①/② sliced into interleaved strips (its
+ *   grip pokes out past the card's RIGHT edge) → two guide bridges glued to
+ *   the card back, the lower one carrying the fixed stop-pin that threads the
+ *   slider's stop-slot. The drive maps the handle push over the REAL one-pitch
+ *   stroke: at u=0 the ① strips sit under the gaps, at u=travel the ② strips
+ *   do — the two hard stops of the pin-in-slot register.
+ * ──────────────────────────────────────────────────────────────────────────── */
+function buildMagicShutter(params, defaults, paperSize, driveRaw) {
+  const slider = {
+    label: '손잡이 밀기 (①↔②)',
+    min: 0, max: 100, step: 1, defaultValue: 0,
+    format: (v) => `${Math.round(v)}%`,
+  };
+  const drive = driveRaw ?? slider.defaultValue;
+  const L = MAGIC_SHUTTER_LIMITS;
+  const geo = resolveMagicShutter({
+    paperSize,
+    windowWidth: params.windowWidth ?? defaults.windowWidth,
+    windowHeight: params.windowHeight ?? defaults.windowHeight,
+    pitch: params.pitch ?? defaults.pitch,
+    grip: params.grip ?? defaults.grip,
+  });
+  const paper = PAPER_SIZES[paperSize] || PAPER_SIZES.A4;
+
+  // Card face = upper half sheet; local y ∈ [0, spineY] matches sheet mm.
+  const W = paper.width;
+  const H = geo.spineY;
+  const u = (drive / 100) * geo.travel;
+
+  const PX = 330 / (W + geo.gripLen + geo.travel);
+  const px = (mm) => mm * PX;
+
+  const sliderX = geo.sliderRestX + u;           // slider left edge, world x
+  const sliderTopY = geo.windowY0 - geo.coverPadY;
+  const gy0 = (geo.sliderH - geo.gripH) / 2;     // grip top, slider-local
+
+  // Fixed stop-pin: the resolver's register x (slot bottoms on it at u=0 / u=travel).
+  const pinX = geo.pinCx;
+  const slotWorldY = sliderTopY + geo.stopZoneCy;
+
+  // Front-face guide rows (same rows the flat pattern prints as glue targets).
+  const topGuideY = sliderTopY - L.RET_GAP - L.RET_W;
+  const botGuideY = geo.windowY0 + geo.winH + L.STOP_ZONE + L.RET_GAP;
+  const guideX = geo.sliderRestX - L.GLUE_END;
+
+  // Picture strips on the slider: local column k over the window band.
+  // Odd k = ① (under the gaps at u=0), even k = ② (revealed at u=travel).
+  const strips = [];
+  for (let k = 0; k < geo.cols; k += 1) {
+    const isOne = k % 2 === 1;
+    strips.push(
+      <span
+        key={`strip-${k}`}
+        style={{
+          position: 'absolute',
+          left: px(geo.coverPad + k * geo.pitch),
+          top: px(geo.coverPadY),
+          width: px(geo.pitch),
+          height: px(geo.winH),
+          background: isOne ? 'rgba(245, 158, 11, 0.9)' : 'rgba(59, 130, 246, 0.9)',
+        }}
+      />,
+    );
+  }
+
+  // Card-front pieces: 4 frame bands + the grille bars (even window columns).
+  // The gaps between bars are truly empty, so the slider strips show through.
+  const facePiece = (key, x, y, w, h) => (
+    <div
+      key={key}
+      className="preview3d-flat-card"
+      style={{ left: px(x), top: px(y), width: px(w), height: px(h) }}
+    />
+  );
+  const frame = [
+    facePiece('band-top', 0, 0, W, geo.windowY0),
+    facePiece('band-bot', 0, geo.windowY0 + geo.winH, W, H - geo.windowY0 - geo.winH),
+    facePiece('band-left', 0, geo.windowY0, geo.windowX0, geo.winH),
+    facePiece('band-right', geo.windowX0 + geo.winW, geo.windowY0, W - geo.windowX0 - geo.winW, geo.winH),
+  ];
+  for (let k = 0; k < geo.cols; k += 2) {
+    frame.push(facePiece(`bar-${k}`, geo.windowX0 + k * geo.pitch, geo.windowY0, geo.pitch, geo.winH));
+  }
+
+  const guide = (y, key) => (
+    <div
+      key={key}
+      className="preview3d-flat-retainer"
+      style={{
+        left: px(guideX),
+        top: px(y),
+        width: px(geo.guideLen),
+        height: px(L.RET_W),
+        transform: `translateZ(${-2 * Z_STEP}px)`,
+      }}
+    >
+      <span className="preview3d-flat-glue" style={{ left: 0, width: px(L.GLUE_END) }} />
+      <span className="preview3d-flat-glue" style={{ right: 0, width: px(L.GLUE_END) }} />
+    </div>
+  );
+
+  const node = (
+    <div className="preview3d-flat" style={{ width: px(W), height: px(H), left: -px(W) / 2, top: -px(H) / 2 }}>
+      {/* ── BACK: guide bridges + fixed stop-pin ── */}
+      {guide(topGuideY, 'guide-top')}
+      {guide(botGuideY, 'guide-bot')}
+      <div
+        className="preview3d-flat-retainer"
+        style={{
+          left: px(pinX - L.PIN_FOOT / 2),
+          top: px(slotWorldY - geo.stopSlotH / 2),
+          width: px(L.PIN_FOOT),
+          height: px(geo.stopSlotH),
+          background: 'rgba(100, 116, 139, 0.95)',
+          transform: `translateZ(${-1.5 * Z_STEP}px)`,
+        }}
+      />
+      <Tag side="back" x={px(guideX + geo.guideLen / 2)} y={px(topGuideY - 5)}>위 안내 다리 (뒷면 · 양 끝만 풀칠)</Tag>
+      <Tag side="back" x={px(guideX + geo.guideLen / 2)} y={px(botGuideY + L.RET_W + 5)}>아래 안내 다리 + 멈춤 핀</Tag>
+      <Tag side="back" x={px(pinX)} y={px(slotWorldY + geo.stopSlotH + 4)}>멈춤 핀 ⇄ 슬롯 (딱 한 칸만 이동)</Tag>
+
+      {/* ── Slider sheet behind the card (grip pokes out the right edge) ── */}
+      <div
+        className="preview3d-flat-strip"
+        style={{
+          left: px(sliderX),
+          top: px(sliderTopY),
+          width: px(geo.sliderW),
+          height: px(geo.sliderH),
+          background: 'rgba(248, 250, 252, 0.95)',
+          transform: `translateZ(${-Z_STEP}px)`,
+        }}
+      >
+        {strips}
+        <div
+          className="preview3d-flat-grip"
+          style={{ left: px(geo.sliderW), top: px(gy0), width: px(geo.gripLen), height: px(geo.gripH) }}
+        />
+        <div
+          className="preview3d-flat-slot"
+          style={{
+            left: px(geo.stopSlotCx - geo.stopSlotLen / 2),
+            top: px(geo.stopZoneCy - geo.stopSlotH / 2),
+            width: px(geo.stopSlotLen),
+            height: px(geo.stopSlotH),
+          }}
+        />
+      </div>
+      <Tag side="back" x={px(sliderX + geo.sliderW / 2)} y={px(sliderTopY - 5)}>슬라이더 (① 노랑 / ② 파랑 줄무늬)</Tag>
+
+      {/* ── FRONT: frame bands + picket grille bars ── */}
+      {frame}
+      <Tag x={px(geo.windowCx)} y={px(geo.windowY0 - 6)}>빗살 창문 (살은 자르지 않음)</Tag>
+      <Tag x={px(sliderX + geo.sliderW + geo.gripLen / 2)} y={px(sliderTopY + gy0 - 6)}>손잡이 ↔ 밀기</Tag>
+    </div>
+  );
+
+  const state =
+    u < geo.travel * 0.25 ? '그림 ① 표시' : u > geo.travel * 0.75 ? '그림 ② 표시' : '전환 중…';
+  return {
+    node,
+    readout: `손잡이 ${u.toFixed(1)} / ${geo.travel}mm · ${state} · 창문 ${geo.winW}×${geo.winH}mm · 세로살 ${geo.cols}칸(살폭 ${geo.pitch}mm)`,
+    slider,
+    value: drive,
+  };
+}
+
 const BUILDERS = {
   'rising-slide': buildRisingSlide,
   'pull-tab': buildPullTab,
@@ -1071,6 +1736,9 @@ const BUILDERS = {
   'flip-disc': buildFlipDisc,
   'straw-rocket': buildStrawRocket,
   'spin-flap': buildSpinFlap,
+  'camera-print-pull': buildCameraPrintPull,
+  'gate-curtain': buildGateCurtain,
+  'magic-shutter': buildMagicShutter,
 };
 
 /**

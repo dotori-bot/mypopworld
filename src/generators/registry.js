@@ -22,45 +22,57 @@ import { renderAutoSlideWindow } from './autoSlideWindow.js';
 import { renderSlideToSwing } from './slideToSwing.js';
 import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderSpinFlap, resolveSpinFlapGeometry } from './spinFlap.js';
+import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
+import { renderGateCurtain, resolveGateCurtain } from './gateCurtain.js';
+import { renderMagicShutter } from './magicShutter.js';
+import { PARAM_SCHEMAS } from './paramSchemas.js';
+import { getElements } from '../store/cardModel.js';
 
 export const MECHANISM_REGISTRY = {
   'v-fold': {
+    sceneType: 'book',
     labelKo: '브이폴드 (V-Fold)',
     render: (params) => renderVFold(params),
     defaultParams: { armLength: 40, angle: 45, armExtension: null },
     instructionStyle: 'v-fold',
   },
   'box-popup': {
+    sceneType: 'book',
     labelKo: '상자 팝업 (Box Popup)',
     render: (params) => renderBoxPopup(params),
     defaultParams: { width: 40, height: 30 },
     instructionStyle: 'generic',
   },
   'parallel-fold': {
+    sceneType: 'book',
     labelKo: '평행 접기 (계단식 팝업)',
     render: (params) => renderParallelFold(params),
     defaultParams: { width: 80, depth: 30 },
     instructionStyle: 'generic',
   },
   'pull-tab': {
+    sceneType: 'flat',
     labelKo: '풀탭 (당기면 움직이는 장치)',
     render: (params) => renderPullTab(params),
     defaultParams: { sliderWidth: 30, sliderHeight: 15, trackLength: 80 },
     instructionStyle: 'generic',
   },
   'straw-rocket': {
+    sceneType: 'flat',
     labelKo: '빨대 로켓',
     render: (params) => renderStrawRocket(params),
     defaultParams: {},
     instructionStyle: 'straw-rocket',
   },
   'accordion': {
+    sceneType: 'book',
     labelKo: '병풍 팝업 (지그재그 무대)',
     render: (params) => renderAccordion(params),
     defaultParams: { a: 40, panels: 6, wallHeight: 60 },
     instructionStyle: 'accordion',
   },
   'volvelle': {
+    sceneType: 'flat',
     labelKo: '돌림판 (돌리면 그림이 바뀌는 창문)',
     render: (params) => renderVolvelle(params),
     defaultParams: { R: 40, sectors: 6 },
@@ -79,55 +91,62 @@ export const MECHANISM_REGISTRY = {
     },
   },
   'flip-disc': {
+    sceneType: 'flat',
     labelKo: '반쪽 넘김판 (넘기면 그림이 바뀌는 접시)',
     render: (params) => renderFlipDisc(params),
     defaultParams: { R: 42, pages: 4 },
     instructionStyle: 'flip-disc',
   },
   'spiral-spring': {
+    sceneType: 'book',
     labelKo: '달팽이 스프링 (늘어나며 떠오르는 팝업)',
     render: (params) => renderSpiralSpring(params),
     defaultParams: { turns: 4, pitch: 8, decorations: 4 },
     instructionStyle: 'spiral-spring',
   },
   'rising-slide': {
+    sceneType: 'flat',
     labelKo: '빛줄기 상승 슬라이드 (당기면 그림이 위로 올라가는 장치)',
     render: (params) => renderRisingSlide(params),
     defaultParams: { riseFraction: 0.62, sliderWidth: 12, grip: 20 },
     instructionStyle: 'rising-slide',
   },
   'layered-stage': {
-    labelKo: '층층이 무대 (성·마을이 겹겹이 솟는 팝업)',
+    sceneType: 'book',
+    labelKo: '층층이 무대 (케이크처럼 층층이 솟는 팝업)',
     render: (params) => renderLayeredStage(params),
     defaultParams: { layers: 3 },
     instructionStyle: 'layered-stage',
-    // One decoration slot per wall, sized off the SAME geometry the mechanism
+    // One decoration slot per tier, sized off the SAME geometry the mechanism
     // itself renders with (resolveLayeredStageGeometry), so the decoration
-    // image's suggested size always matches the actual printed wall.
+    // image's suggested size always matches the actual printed tier front.
     decorationSlots: (params) => {
       const geo = resolveLayeredStageGeometry(params);
       return geo.layers.map((layer) => ({
-        label: `${layer.index}번 벽 그림 (${layer.index === geo.count ? '제일 안쪽/제일 큰 벽' : layer.index === 1 ? '제일 바깥쪽/제일 작은 벽' : '중간 벽'})`,
-        width: layer.width * 0.75,
-        // *1.5 on height: the decoration needs to generously cover the wall's
-        // standing height, not just its footprint depth.
-        height: layer.height * 1.5,
+        label: `${layer.index}층 앞면 그림 (${layer.index === 1 ? '맨 아래·제일 큰 층' : layer.index === geo.count ? '맨 위·제일 작은 층' : '중간 층'})`,
+        // The art lands on the tier's FRONT panel (w_i × v_i): size it to
+        // cover that face with a little bleed.
+        width: layer.width * 0.85,
+        height: layer.frontHeight * 1.2,
       }));
     },
   },
   'auto-slide-window': {
+    sceneType: 'book',
     labelKo: '열면 바뀌는 액자 카드 (열면 창문 속 그림이 저절로 바뀜)',
     render: (params) => renderAutoSlideWindow(params),
     defaultParams: { pivotArm: 16, strut: 44, windowHeight: 12 },
     instructionStyle: 'auto-slide-window',
   },
   'slide-to-swing': {
+    sceneType: 'flat',
     labelKo: '흔들 장치 (손잡이를 밀면 그림이 좌우로 흔들림)',
     render: (params) => renderSlideToSwing(params),
     defaultParams: { armLength: 34, swingAngle: 35 },
     instructionStyle: 'slide-to-swing',
   },
   'flap-clap': {
+    sceneType: 'book',
     labelKo: '통통 플랩 (카드를 열고 닫으면 두 조각이 마주 부딪힘)',
     render: (params) => renderFlapClap(params),
     defaultParams: { offset: 18, flapLength: 22, halfWidth: 18, delta: 110 },
@@ -144,6 +163,7 @@ export const MECHANISM_REGISTRY = {
     },
   },
   'spin-flap': {
+    sceneType: 'flat',
     labelKo: '회전 꽃잎 (돌리면 숨은 글자가 나오는 꽃)',
     render: (params) => renderSpinFlap(params),
     defaultParams: { R: 38, petalCount: 6 },
@@ -163,7 +183,63 @@ export const MECHANISM_REGISTRY = {
       }];
     },
   },
+  'camera-print-pull': {
+    sceneType: 'flat',
+    labelKo: '카메라 인화 손잡이 (아래로 당기면 사진이 위로 올라오는 장치)',
+    render: (params) => renderCameraPrintPull(params),
+    defaultParams: { riseFraction: 0.5, clearance: 0.9, stripWidth: 14, grip: 24, photoWidth: 46 },
+    instructionStyle: 'camera-print-pull',
+    // One decoration slot (the photo), sized off the SAME geometry the
+    // mechanism itself renders with (resolveCameraPull), so the decoration
+    // image's suggested size always matches the actual printed photo cutout.
+    decorationSlots: (params) => {
+      const geo = resolveCameraPull(params);
+      return [{ label: '인화 사진 (인물 사진, 세로로 길게)', width: geo.photoW, height: geo.photoH }];
+    },
+  },
+  'gate-curtain': {
+    sceneType: 'flat',
+    labelKo: '커튼 문 카드 (문을 열면 커튼이 걷히는 카드)',
+    render: (params) => renderGateCurtain(params),
+    defaultParams: { panelWidth: 90, revealWidth: 44, hingeOffset: 16 },
+    instructionStyle: 'gate-curtain',
+    // Slot sizes come from the SAME resolver the printed pattern uses, so the
+    // character image always matches the diamond reveal window and the stone
+    // decorations match the loose stone pieces.
+    decorationSlots: (params) => {
+      const geo = resolveGateCurtain(params);
+      return [
+        { label: '가운데 주인공 그림 (다이아몬드 창에 꽉 차게)', width: geo.revealW, height: geo.revealH },
+        { label: '왼쪽 문 바깥 장식 (돌 등)', width: 30, height: 40 },
+        { label: '오른쪽 문 바깥 장식 (돌 등)', width: 30, height: 40 },
+      ];
+    },
+  },
+  'magic-shutter': {
+    sceneType: 'flat',
+    labelKo: '매직 셔터 (손잡이를 옆으로 밀면 창문 그림이 바뀌는 액자)',
+    render: (params) => renderMagicShutter(params),
+    defaultParams: { windowWidth: 96, windowHeight: 60, pitch: 6, grip: 24 },
+    instructionStyle: 'magic-shutter',
+  },
 };
+
+// Attach each mechanism's editable-parameter metadata (see paramSchemas.js).
+// Kept in a separate module purely for file size; the registry entry is still
+// the single lookup point (`getMechanism(id).paramSchema`).
+for (const [id, mech] of Object.entries(MECHANISM_REGISTRY)) {
+  mech.paramSchema = PARAM_SCHEMAS[id] || [];
+  if (import.meta.env?.DEV) {
+    const defaultKeys = new Set(Object.keys(mech.defaultParams));
+    const schemaKeys = new Set(mech.paramSchema.map((f) => f.key));
+    for (const k of defaultKeys) {
+      if (!schemaKeys.has(k)) console.warn(`[registry] '${id}' defaultParams.${k} has no paramSchema entry`);
+    }
+    for (const k of schemaKeys) {
+      if (!defaultKeys.has(k)) console.warn(`[registry] '${id}' paramSchema key '${k}' not in defaultParams`);
+    }
+  }
+}
 
 /**
  * Plain-text assembly instruction content, keyed by `instructionStyle`.
@@ -262,15 +338,15 @@ export const INSTRUCTION_TEXT = {
     title: '층층이 무대 조립 설명서',
     materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
     steps: [
-      '완성 모습: 카드를 120도쯤 열면 벽이 여러 장(보통 3장, 많으면 4장) 서로 다른 깊이에서 층층이 솟아올라요. 번호가 작을수록 작고 낮은 벽(맨 앞/척추에서 가장 가까움), 번호가 클수록 크고 높은 벽(맨 안쪽/척추에서 가장 멂)입니다 — 성벽 뒤로 안쪽 탑이 솟은 모습을 떠올리면 됩니다.',
-      '검은색 실선을 따라 벽마다(1번부터 가장 큰 번호까지) 테두리를 모두 오려주세요. 벽의 세로 양옆에 붙은 초록색 네모(풀칠 자리/날개)는 자르지 말고 남겨둡니다. 벽 바깥쪽(먼 쪽) 가로선만 오리고, 척추(가운데 접는 선) 쪽 가로선은 자르지 마세요 — 그 선으로 벽이 카드에 붙어 섭니다.',
-      '빨간 점선(척추 쪽, 산접기)은 볼록하게, 파란 점선(바깥 쪽, 골접기)은 오목하게 접어 벽을 세워주세요. 각 벽은 높이와 깊이가 같아서(높이=깊이), 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접힙니다.',
-      '아주 중요 — 조립 순서는 반드시 뒤에서 앞으로입니다. 예를 들어 벽이 3장이면 3번 → 2번 → 1번 순서로 세워 붙이세요. 앞 벽을 먼저 붙이면 그 뒤에 가려서 손이 뒤쪽 벽까지 닿지 않기 때문입니다. 순서를 거꾸로 하면 카드를 닫을 때 뒤 벽이 접힌 자리를 벗어나 카드 밖으로 삐져나옵니다.',
-      '벽을 세울 때마다 좌우의 초록색 날개(풀칠 탭)를 벽 몸통에서 멀어지는 바깥쪽으로 접어, 카드 바닥면에 풀칠하거나 양면테이프로 붙여 고정하세요.',
-      '장식 그림 붙이기 — 이 도안은 2번째 페이지부터 벽 개수만큼 장식 그림이 따로따로 나옵니다. 각 장식 페이지에 적힌 번호(예: "1번 벽 그림", "2번 벽 그림"…)를 확인해서, 가위로 오린 뒤 같은 번호의 벽 앞면에 붙여주세요.',
-      '카드를 닫아 확인하세요. 모든 층이 카드 바깥 자르는 선 안쪽으로 납작하게 접혀 들어가야 정상입니다. 열면 성벽·탑이 층층이 서로 다른 깊이로 솟아오릅니다.',
+      '완성 모습: 케이크처럼 생긴 층(보통 3층, 많으면 4층)이 카드 양면 사이에 다리처럼 걸쳐 붙어 있어서, 카드를 열고 닫는 동작만으로 층층이 솟아오르고 다시 납작해집니다. 90도쯤 열었을 때 가장 반듯한 상자 모양이 됩니다. 1층이 맨 아래(제일 크고), 층수가 올라갈수록 작아집니다.',
+      '검은색 실선을 따라 층 조각(긴 띠)을 모두 오려주세요. 띠 하나는 위에서부터 [뒤 날개(초록) → 윗면 → 앞면 → 아래 날개(초록)] 순서로 되어 있습니다. 초록색 날개는 자르지 말고 띠에 붙여 둡니다. (카드에 구멍이 나는 게 싫으면, 띠를 색지에 대고 그려서 오려도 좋아요.)',
+      '각 띠를 접어주세요: 초록 날개 두 곳의 파란 점선은 골접기(뒤로, 오목하게), 가운데 빨간 점선(윗면과 앞면 사이)은 산접기(앞으로, 볼록하게). 접고 나면 ㄱ자 상자 모양이 됩니다.',
+      '아주 중요 — 조립 순서는 반드시 아래층(1층)부터 위로입니다. 1층의 아래 날개를 바닥 면의 ㉠ 선에(날개는 척추 쪽으로 향하게), 뒤 날개를 뒷벽 면의 ① 선에(날개는 위쪽으로 향하게) 붙이세요. 이때 카드를 90도쯤 세워 두고 붙이면 자리 잡기가 쉽습니다.',
+      '2층부터는 아래 날개를 바로 아래층 윗면에 인쇄된 ㉡ 선에(날개는 뒷벽 쪽으로 향하게), 뒤 날개를 뒷벽 면의 같은 번호(②, ③…) 선에 붙입니다. 층마다 같은 방법을 반복하면 케이크가 쌓입니다.',
+      '장식 그림 붙이기 — 이 도안은 2번째 페이지부터 층 개수만큼 장식 그림이 따로따로 나옵니다. 각 장식 페이지에 적힌 번호(예: "1층 앞면 그림", "2층 앞면 그림"…)를 확인해서, 가위로 오린 뒤 같은 번호 층의 앞면에 붙여주세요.',
+      '카드를 천천히 닫아 확인하세요. 모든 층이 카드 안쪽으로 납작하게 접혀 들어가야 정상입니다(활짝 180도로 펼쳐도 납작해져요). 다시 90도쯤 열면 케이크·성이 층층이 우뚝 섭니다.',
     ],
-    tips: '뒤에서 앞 순서로 붙이는 것이 핵심입니다. 뒤 층일수록 더 높고(성의 안쪽 탑처럼) 더 깊은 곳에 섭니다. 닫았을 때 어느 한 벽이라도 카드 밖으로 나오면, 그 층 벽이 너무 깊은 것이니 조금 낮은(=얕은) 벽으로 다시 만들어 주세요.',
+    tips: '아래층부터 위로 붙이는 것과, 날개의 접는 선을 인쇄된 풀칠선에 정확히 맞추는 것이 핵심입니다. 카드를 닫을 때 걸리는 층이 있으면 그 층의 날개가 선에서 비뚤게 붙은 것이니 떼어 다시 붙여 주세요. 층이 비스듬히 기울면 좌우 폭 가운데가 척추 가운데와 맞는지 확인하세요.',
   },
   'auto-slide-window': {
     title: '열면 바뀌는 액자 카드 조립 설명서',
@@ -322,6 +398,43 @@ export const INSTRUCTION_TEXT = {
     ],
     tips: '축 캡은 반드시 "목"에만 붙이고 배경 원판에는 붙지 않아야 자유롭게 돌아갑니다. 회전 꽃잎이 뻑뻑하면 축 구멍을 아주 살짝 더 크게 다듬고, 헐거워서 축이 빠지면 캡을 더 크고 꼼꼼하게 붙여주세요.',
   },
+  'camera-print-pull': {
+    title: '카메라 인화 손잡이 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 앞면 카드의 세로 슬롯(사진 나오는 곳)과 아래쪽 슬롯(손잡이 나오는 곳), 그리고 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 모두 오려주세요. 앞면 카드에는 카메라 그림을 자유롭게 그리거나 색칠해 꾸며 주세요.',
+      "가장 긴 네모(① 롤러)를 둥글게 말아서 풀칠 자리에 붙여 튜브로 만들어주세요. 이 롤러를 앞면 카드 맨 위 뒷면에 다리처럼 얹고, 양 끝 초록색 부분만 붙이세요. 가운데는 절대 붙이지 마세요 — 그래야 가운데가 붕 뜬 채로 남아서, 되돌림 띠가 그 위로 180도 넘어갈 수 있어요.",
+      '되돌림 띠를 롤러 위에 걸쳐 걸어주세요. 한쪽 끝은 사진을 붙이는 자리(마운트)이고, 반대쪽 끝은 손잡이(PULL)입니다. 마운트 끝에 사진을 붙이고, 손잡이 끝은 아래쪽 슬롯을 통해 앞면으로 빼내주세요. 사진 슬롯 바로 위 뒷면에는 ② 멈춤/안내 띠를 다리처럼 얹어 양 끝 초록색만 붙이세요(가운데는 붙이지 마세요 — 띠가 그 아래로 지나가야 해요). 중요: 되돌림 띠는 마운트 끝과 손잡이 끝, 두 곳 말고는 어디에도 붙이지 마세요! 중간을 붙이면 롤러를 넘어가지 못해요.',
+      '카드 아래로 나온 "PULL ↓" 손잡이를 잡고 아래로 당기면, 띠가 롤러를 넘어가면서 사진이 위쪽 슬롯 밖으로 쑤욱 올라옵니다. 끝까지 당기면 사진 뒤의 멈춤 날개가 ② 멈춤 띠에 걸려 더 이상 빠지지 않아요. 사진을 다시 손으로 살살 눌러 내리면 손잡이가 도로 올라가며 처음 모습으로 돌아갑니다.',
+    ],
+    tips: '핵심은 롤러(①)와 멈춤/안내 띠(②) 모두 "양 끝만" 붙이고 가운데는 절대 붙이지 않는 것입니다 — 가운데가 붙으면 롤러가 헛돌지 못하고 띠도 못 지나갑니다. 너무 뻑뻑하면 롤러를 조금 더 느슨하게(가운데를 더 띄워) 붙이고, 사진이 쑥 빠질 것 같으면 ② 멈춤 띠가 사진 슬롯에 정확히 붙어 있는지 확인하세요.',
+  },
+  'gate-curtain': {
+    title: '커튼 문 카드 조립 설명서',
+    materials: '가위, 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은 실선을 따라 오려주세요: 게이트 카드 1장(가운데 뒷판 + 좌·우 문, 파란 세로 점선 2개가 문 접는 선), 노란 커튼 2장, 장식 액자 1장(가운데 다이아몬드 창도 오려냄), 지지대(스트랩) 2개, 문 돌 장식 2개.',
+      '좌·우 문을 파란 세로 점선(골접기)으로 안쪽으로 접었다 펴서 경첩을 만들어 주세요. 두 문을 닫으면 자유단이 가운데서 딱 맞닿습니다.',
+      '① 주인공 그림을 뒷판 가운데(표시된 자리)에 얇게 붙입니다. 그 위로 커튼이 미끄러지니 두껍지 않게 붙여주세요.',
+      '④ 커튼 2장을 주인공 위에 좌·우에서 겹쳐 놓습니다(닫힘 상태에서 가운데서 살짝 겹쳐 주인공을 가림). 커튼 바깥 끝의 초록 풀칠 자리에는 나중에 지지대만 붙일 것이고, 커튼을 뒷판에는 절대 붙이지 마세요 — 커튼은 미끄러져야 합니다.',
+      '③ 장식 액자를 커튼 위에 덮고 위·아래 변(초록)만 뒷판에 붙입니다. 좌·우는 절대 붙이지 마세요 — 그래야 커튼이 액자 밑 좌우로 빠져나갑니다. 액자가 커튼을 눌러 뒷판에 납작하게 잡아 줍니다.',
+      "② 가장 중요 — 지지대 붙이기: 스트랩 한끝을 문 안쪽 'Ⓡ/Ⓛ 지지대 자리'(경첩에서 조금 안쪽)에, 다른 끝을 같은 쪽 커튼 바깥 끝에 붙입니다. 두 접힘선이 반드시 문 경첩(세로선)과 나란해야 합니다. 비뚤면 열 때 뻑뻑하거나 걸립니다. 오른쪽·왼쪽 모두 대칭으로 붙여주세요.",
+      '문 바깥면에 돌 장식을 붙이면 완성. 두 문을 함께 열면 커튼이 좌우로 걷히며 주인공 둘레에 노란 다이아몬드가 열리고, 닫으면 커튼이 저절로 다시 모여 주인공을 덮습니다.',
+    ],
+    tips: '핵심은 두 가지입니다. (1) 장식 액자는 위·아래만 풀칠 — 좌·우를 붙이면 커튼이 못 움직입니다. (2) 지지대 두 접힘선을 문 경첩과 나란히, 좌우 대칭으로 붙이기. 너무 뻑뻑하면 액자 위·아래 풀칠을 아주 살짝만 하고, 열어도 주인공이 반쯤 가리면 지지대를 커튼 바깥 끝에 더 정확히 다시 붙여 주세요. 닫을 때는 종이가 살짝 도톰하니 억지로 세게 누르지 말고 살살 접으세요.',
+  },
+  'magic-shutter': {
+    title: '매직 셔터 조립 설명서',
+    materials: '가위 또는 칼(어른과 함께), 풀 또는 양면테이프, 색연필(선택)',
+    steps: [
+      '검은색 실선을 따라 오려주세요: ① 앞면 카드의 창문 안 세로 틈(길쭉한 구멍)들 — 중요: 틈 사이의 세로살(빗살)은 절대 자르지 마세요! 살은 위아래가 액자에 붙어 있어야 합니다. ② 오른쪽에 손잡이가 달린 큰 슬라이더 판(가운데 가로로 길쭉한 멈춤 슬롯도 오려냄), ③ 위 안내 다리 띠 1개, ④ 멈춤 핀이 달린 아래 안내 다리 띠 1개.',
+      '슬라이더 판의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.',
+      '슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.',
+      '중요(안내·멈춤 다리): 두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 접는 선의 립(날개)을 슬라이더 쪽으로 접어 덮어주세요 — 립은 슬라이더에 붙이면 안 됩니다! 아래 안내 다리도 같은 방법으로 슬라이더 아래쪽에 붙이되, 가운데 멈춤 핀을 산접기로 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)을 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.',
+      '손잡이를 왼쪽 끝까지 밀면 그림 ①, 오른쪽 끝까지 당기면 그림 ②가 짠! 하고 나타납니다. 끝까지 밀어 핀에 딱 걸리는 자리가 그림이 정확히 맞는 자리예요.',
+    ],
+    tips: '핵심은 세 가지입니다. (1) 창문의 세로살은 자르지 않기 — 틈만 오려냅니다. (2) 안내 다리는 카드에만 풀칠하고 슬라이더에는 절대 붙이지 않기 — 붙이면 안 움직여요. (3) 멈춤 핀을 슬롯에 꼭 끼우기 — 핀이 없으면 그림이 어중간한 자리에 멈춰 반반씩 보입니다. 너무 뻑뻑하면 안내 다리 립을 살짝 느슨하게 접어 주세요.',
+  },
 };
 
 /**
@@ -344,9 +457,25 @@ export function getMechanism(id) {
  * @returns {object | null}
  */
 export function buildMechanismParams(cardParams, paperSize, colorMode) {
-  const mech = getMechanism(cardParams?.mechanism);
+  const els = getElements(cardParams);
+  if (els.length === 0) return null;
+  return buildElementParams(els[0], paperSize, colorMode, cardParams.theme);
+}
+
+/**
+ * Element-level variant of buildMechanismParams for multi-mechanism (v2)
+ * cards: one call per element. buildMechanismParams delegates here with the
+ * first element, so v1 single-mechanism behavior is unchanged.
+ * @param {{ mechanism?: string, params?: object }} element
+ * @param {'A4'|'LETTER'} paperSize
+ * @param {'color'|'bw'} colorMode
+ * @param {string} [theme]
+ * @returns {object | null}
+ */
+export function buildElementParams(element, paperSize, colorMode, theme) {
+  const mech = getMechanism(element?.mechanism);
   if (!mech) return null;
-  return { ...mech.defaultParams, ...cardParams.params, paperSize, colorMode, theme: cardParams.theme };
+  return { ...mech.defaultParams, ...element.params, paperSize, colorMode, theme };
 }
 
 /**
@@ -366,11 +495,21 @@ export function buildMechanismParams(cardParams, paperSize, colorMode) {
  * @returns {Array<{ label: string, width: number, height: number }>}
  */
 export function getDecorationSlots(cardParams, paperSize, colorMode) {
-  const mech = getMechanism(cardParams?.mechanism);
+  return getElements(cardParams).flatMap((el) =>
+    getElementDecorationSlots(el, paperSize, colorMode, cardParams?.theme),
+  );
+}
+
+/**
+ * Decoration slots for ONE element (multi-mechanism cards concatenate these
+ * per element via getDecorationSlots).
+ */
+export function getElementDecorationSlots(element, paperSize, colorMode, theme) {
+  const mech = getMechanism(element?.mechanism);
   if (mech && typeof mech.decorationSlots === 'function') {
-    const params = buildMechanismParams(cardParams, paperSize, colorMode);
+    const params = buildElementParams(element, paperSize, colorMode, theme);
     const slots = mech.decorationSlots(params);
     if (Array.isArray(slots) && slots.length > 0) return slots;
   }
-  return [{ label: cardParams?.theme, width: 100, height: 100 }];
+  return [{ label: theme, width: 100, height: 100 }];
 }

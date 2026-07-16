@@ -85,8 +85,11 @@ function drawVFoldWedge(g, { originX, originY, armLength, angle, isColor, tabSiz
     [originX, baseFoldY]
   ], glueStyle);
 
-  addText(g, leftX - 10, topY - 5, '풀칠', 2.5);
-  addText(g, rightX + 2, topY - 5, '풀칠', 2.5);
+  // Labels sit INSIDE the glue-tab quads (the only spot where text may print
+  // inside the pattern — everything else must stay off the finished card).
+  const tabMidY = (topY + baseFoldY) / 2 - tabSize / 4;
+  addText(g, (leftX + originX) / 2 - tabSize / 2, tabMidY, '풀칠', 2.2, 'middle');
+  addText(g, (rightX + originX) / 2 + tabSize / 2, tabMidY, '풀칠', 2.2, 'middle');
 
   return { leftX, rightX, topY };
 }

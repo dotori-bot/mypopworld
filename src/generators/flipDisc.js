@@ -215,7 +215,6 @@ export const generateFlipDisc = (svg, options = {}) => {
 
   const g = addGroup(svg, 'flipdisc-group');
   const cutStyle = getLineStyle('CUT', isColor);
-  const scoreStyle = getLineStyle('SCORE', isColor);
   const glueStyle = getLineStyle('GLUE_TAB', isColor);
   const valleyStyle = getLineStyle('VALLEY_FOLD', isColor);
 
@@ -248,8 +247,9 @@ export const generateFlipDisc = (svg, options = {}) => {
     addPath(g, fixedHalfOutline(dcx, dcy, R), cutStyle);
     // Hinge / glue strip along the straight (right) edge — where the flip-page
     // tab spine is bound. Drawn just INSIDE the diameter so it stays on paper.
+    // The glue strip's right boundary IS the piece's straight cut edge — no
+    // extra score line there (it would double-register on the cut line).
     addRect(g, round(dcx - tab), round(dcy - R), tab, round(2 * R), glueStyle);
-    addPath(g, `M ${dcx} ${round(dcy - R)} L ${dcx} ${round(dcy + R)}`, scoreStyle);
     addText(g, round(dcx - tab / 2), round(dcy + 1), '경첩', 2.5, 'middle');
     addText(g, round(dcx - R / 2), labelY, '고정 반쪽 (배경)', 3, 'middle');
   }
@@ -264,9 +264,10 @@ export const generateFlipDisc = (svg, options = {}) => {
     // Glue only the tab (this is the binding). Never the disc face.
     addRect(g, round(dcx - tab), round(dcy - R), tab, round(2 * R), glueStyle);
     addText(g, round(dcx - tab / 2), round(dcy + 1), '풀칠', 2.2, 'middle');
-    // Page label at the disc centre (kid draws art here).
+    // Page label BELOW the disc (in the sheet waste) — the disc face is the
+    // kid's drawing surface and must stay free of printed text.
     const label = CIRCLED[k] || String(k + 1);
-    addText(g, round(dcx + R * 0.45), round(dcy + 1), `${label} 그림`, 3, 'middle');
+    addText(g, round(dcx + R / 2), labelY, `${label} 그림`, 3, 'middle');
   }
 
   // Title (inside the reserved top band)

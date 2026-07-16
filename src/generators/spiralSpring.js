@@ -279,34 +279,31 @@ export const generateSpiralSpring = (svg, options = {}) => {
   addRect(g, round(hubX - tabHalf), round(tgtY - tab / 2), round(tabHalf * 2), tab, scoreStyle);
   addText(g, hubX, round(tgtY + 1), '②붙이기', 2.2, 'middle');
 
-  // 6. Decoration attachment markers along the coil (numbered dots) + a legend
-  //    to the right documenting the hard max-radius (overflow) cap per point.
+  // 6. Decoration attachment markers along the coil (numbered dots). The
+  //    circled number sits right at its dot, where the glued-on decoration
+  //    will cover it — the only text allowed on the coil itself.
   const span = w * turns;
-  const legendX = round(hubX + rOuter + 4);
-  let legendY = round(rimTopY + 4);
-  addText(g, legendX, legendY, '장식 붙이는 곳(최대 반지름):', 2.6, 'start');
   for (const d of decos) {
     const r = r0 + span * d.f;
     const angleDeg = (d.f - 1) * 360 * turns;
     const p = polarToCartesian(hubX, hubY, r, angleDeg);
-    // marker dot
     addPath(g, circlePath(round(p.x), round(p.y), 1.8), cutStyle);
     addText(g, round(p.x), round(p.y - 3), CIRCLED[d.n - 1], 3, 'middle');
-    // legend line
-    legendY = round(legendY + 5);
-    addText(
-      g,
-      legendX,
-      legendY,
-      `${CIRCLED[d.n - 1]} 높이 ${d.height}mm · 최대 R ${d.maxRadius}mm`,
-      2.4,
-      'start',
-    );
   }
 
-  // 7. Title.
-  const titleY = Math.max(round(tgtY - tab), PRINT.MARGIN + 3);
-  addText(g, hubX, titleY, '달팽이 스프링 팝업 (Spiral Spring)', 3, 'middle');
+  // 7. Title + decoration size legend, on one line in the outer waste margin —
+  //    the page is the card, so free text may not sit inside the trim rect.
+  const legendLine = decos
+    .map((d) => `${CIRCLED[d.n - 1]} R≤${d.maxRadius}mm`)
+    .join(' · ');
+  addText(
+    g,
+    hubX,
+    PRINT.MARGIN - 1.5,
+    `달팽이 스프링 팝업 (Spiral Spring) — 장식 붙이는 곳 최대 반지름: ${legendLine}`,
+    2.4,
+    'middle',
+  );
 
   return g;
 };

@@ -181,8 +181,9 @@ export const generateVolvelle = (svg, options = {}) => {
   for (let k = 0; k < sectors; k++) {
     const edge = polarToCartesian(P.rotor.x, P.rotor.y, R, k * sigma);
     addPath(g, `M ${round(P.rotor.x)} ${round(P.rotor.y)} L ${round(edge.x)} ${round(edge.y)}`, cutStyle);
-    // sector number, kid-friendly, at mid radius of the sector centre
-    const mid = polarToCartesian(P.rotor.x, P.rotor.y, R * 0.6, k * sigma + sigma / 2);
+    // sector number, kid-friendly — just OUTSIDE the rim at the sector's
+    // mid-angle (sheet waste), so the rotor's drawing face stays print-free
+    const mid = polarToCartesian(P.rotor.x, P.rotor.y, R + 3, k * sigma + sigma / 2);
     addText(g, round(mid.x), round(mid.y + 1), String(k + 1), 3, 'middle');
   }
   // centre reference mark (no fastener hole — capture is by rim only)

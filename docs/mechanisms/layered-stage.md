@@ -2,77 +2,76 @@
 
 ## 개요
 
-사용자가 보는 효과는 "카드를 약 120° 열면 벽(성벽·건물 실루엣) 여러 장이 서로 다른 깊이에서 층층이 솟아오르는" 다층 극장식 팝업이다. 성벽 뒤로 안쪽 탑이 우뚝 솟은 장면을 떠올리면 된다. `registry.js`의 `labelKo`는 `'층층이 무대 (성·마을이 겹겹이 솟는 팝업)'`, `instructionStyle`은 `'layered-stage'`, `defaultParams`는 `{ layers: 3 }`이다. `layers`는 벽 개수 N(2~4). 이 메커니즘은 **`decorationSlots(params)`를 정의하는 몇 안 되는 메커니즘 중 하나**로, 벽마다 별도 장식 슬롯을 만든다(아래 "활용" 참고). 구조적으로는 `boxPopup.js`의 단일 상자 라이저를 N개로 일반화하고, 누적 깊이 관리는 `parallelFold.js`의 계단식에서 가져왔다.
+카드를 여닫는 동작만으로 케이크·성처럼 생긴 층 상자들이 층층이 솟아오르는 **다층 상자 스택(케이크 카드)** 팝업. 각 층이 별도의 종이 띠로 되어 **카드 양면 사이에 다리처럼 걸쳐 붙기** 때문에 카드가 곧 구동 장치다: 90°쯤 열면 반듯한 층 케이크가 서고, 닫으면(그리고 180°로 활짝 펼치면) 납작하게 접힌다. `registry.js`의 `labelKo`는 `'층층이 무대 (케이크처럼 층층이 솟는 팝업)'`, `defaultParams`는 `{ layers: 3 }`(2~4층). **`decorationSlots(params)`를 정의하는 몇 안 되는 메커니즘 중 하나**로, 층마다 앞면에 붙일 장식 슬롯을 만든다.
+
+> **재설계 이력**: 원래 구현은 "한쪽 면에만 힌지된 벽 + 옆 탭을 바닥에 풀칠"하는 구조였는데, 이는 (1) far 절단선과 골접기선이 같은 좌표에 이중 등록(이 저장소의 반복 버그 클래스), (2) 벽이 카드 여닫기와 연동되지 않음, (3) 탭을 붙이면 평탄 접기가 불가능 — 세 가지 결함으로 실제로 작동하지 않았다. 사용자 제공 실물 사진(케이크 카드)을 기준으로 현재의 양면 브리지 구조로 전면 재설계됐다.
 
 ## 작동 방식
 
-### 층별 단위 (box-riser, d_i = h_i)
+### 층별 띠 (tier strip)
 
-각 층 i는 카드에 near(가까운 쪽) crease로 붙고 far(먼 쪽) + 양옆이 잘려 자유로운 서 있는 벽이다. box-popup의 평면 접힘 규칙을 층마다 적용한다:
-
-```
-d_i = h_i            (평면 접힘, 층별)
-```
-
-`d_i`는 카드 면 위 깊이 footprint, `h_i`는 벽 높이. `d_i = h_i`이면 카드를 닫을 때 벽이 자기 깊이 밴드 `[a_{i-1}, a_i]` 안으로 정확히 납작하게 접혀 far 가장자리가 near crease에 딱 내려앉고 이웃 밴드를 침범하지 않는다. **near crease = 산접기(MOUNTAIN, 뷰어 쪽으로 팝업)**, **far crease = 골접기(VALLEY, 벽 상단이 접혀 내려감)**. 모든 산접기가 같은 층 안에서 골접기와 짝을 이루므로 각 층이 독립적으로 평면화된다.
-
-### 중첩 / 누적 깊이
+층 i (아래→위, 1..N)는 폭 w_i(척추 방향)의 직사각 띠 하나:
 
 ```
-a_0 = 0,   a_i = a_{i-1} + d_i = Σ_{j≤i} d_j      (누적 깊이)
+[뒤 풀칠날개 g] –골– [윗면 t_i] –산(crest)– [앞면 v_i] –골– [아래 풀칠날개 g]
 ```
 
-층 i의 near crease가 `a_{i-1}`, far crease가 `a_i`. 1층의 near crease는 척추 그 자체다. 깊이는 바깥으로 갈수록 비감소(`d_1 ≤ … ≤ d_N`)라 깊을수록 뒤·높음(성 안쪽 탑), 폭은 비증가(`w_1 ≥ … ≥ w_N`)라 앞 벽이 뒤 벽 실루엣을 가리지 않는다.
+부착 (u_f = 바닥 면 방향, u_b = 뒷벽 면 방향, 사잇각 = 카드 열림각 α):
 
-### 하드 제약: 닫으면 아무것도 카드 밖으로 안 나감 (증명된 포획 경계)
+- 뒤 날개 → **뒷벽 면**의 높이 `h_i = Σ_{j≤i} v_j` 골접기선 (날개는 위로).
+- 층 1 아래 날개 → **바닥 면**의 척추에서 t_1 지점 (날개는 척추 쪽 안으로).
+- 층 i≥2 아래 날개 → **층 i−1 윗면**의 뒤 접기선에서 t_i 지점 (날개는 뒷벽 쪽 안으로).
 
-닫으면 각 층 벽이 자기 밴드 `[a_{i-1}, a_i]`로 접히고, 이 밴드들은 척추에서 바깥으로 `[0, a_N]`을 빈틈없이 타일링한다. 가장 깊은 배경 층 N이 가장 멀리 뻗으므로 카드 바깥 절단선을 넘을 위험은 N층이 대표한다. 모든 층이 만족해야 하는 부등식:
+### 평행사변형 성질 (핵심 불변식)
+
+층 1의 링크(척추→바닥앵커 t_1→crest→뒷벽앵커 h_1→척추)는 마주보는 변이 (t_1, v_1)인 **평행사변형**이라, 모든 α에서 윗면 ∥ 바닥, 앞면 ∥ 뒷벽. 층 i≥2는 뒷벽과 (바닥에 평행하게 움직이는) 아래층 윗면 사이에서 같은 평행사변형을 반복 → 귀납적으로:
 
 ```
-a_i = Σ_{j≤i} d_j ≤ S_max        (i=N에서 구속)
-S_max = CARD_SIZES[paper].height / 2 − PRINT.MARGIN
+crest_i = t_i·u_f + h_i·u_b        (모든 α에서)
 ```
 
-`d_j > 0`이라 `a_i`가 순증가 → `a_N ≤ S_max`이면 전부 만족(**증명된 포획 경계**). 코드(`resolveLayeredStageGeometry`, `layeredStage.js:171`)는 누적합에 대해 클램프한다:
+α=0과 α=180 모두에서 평행사변형이 퇴화해 전체가 납작해지고, **α=90°에서 최대 입체**(crest 높이 = h_i·sin α). 1 자유도 — 카드가 열리면 저절로 선다. (u_f,u_b) 좌표에서 각 패널의 footprint가 α와 무관하고 사상이 α∈(0,180)에서 단사이므로, 층간 접촉은 설계된 접착점 (t_{i+1}, h_i) 한 점뿐 — 관통·충돌 없음 (deep-reasoner 독립 검증 완료).
 
-- `sMax = card.height/2 − PRINT.MARGIN`, `budget = DEPTH_SAFETY(0.92)·sMax` (`layeredStage.js:175`)
-- 층마다 `avail = budget − acc`; `avail < DEPTH_MIN(8)`이면 **남은 층을 버린다**(`layeredStage.js:197`) → 과대/쓰레기 입력은 벽이 지면 밖으로 나가는 대신 층 수가 줄거나 짧아짐.
-- `depth = clamp(spec.depth, DEPTH_MIN, avail)`, `width = clamp(spec.width, WIDTH_MIN(30), maxWidth)`.
-- `maxWidth = card.width − 2·MARGIN − 2·TAB_W` (`layeredStage.js:177`).
+### 수납 경계 (닫아도 카드 밖으로 안 나감)
 
-기본 깊이 표(오름차순, `DEFAULT_DEPTHS`, `layeredStage.js:116`): N=2 `[22,30]`(Σ52), N=3 `[14,19,24]`(Σ57), N=4 `[10,13,16,19]`(Σ58). 모두 Letter budget 59.66mm 미만이라 Letter 가장자리를 ≥1.6mm 여유로 통과(A4는 ≥5.7mm). 기본 폭은 `WIDTH_FRONT(100)`에서 `WIDTH_STEP(16)`씩 감소.
+크리스가 전부 척추와 평행해 자명하게 평탄접기된다. 닫힘 상태에서 층 i 재료의 척추로부터 최대 도달거리는 crest 접힘 위치:
 
-### 도면 배치와 접기선
+```
+reach_i = h_i + t_i ≤ budget = DEPTH_SAFETY(0.92)·(card.height/2 − PRINT.MARGIN)
+```
 
-`generateLayeredStage` (`layeredStage.js:284`): parallelFold처럼 척추 위/아래로 미러링해 각 층이 상·하 반쪽을 그린다. 가장 깊은 층부터 그려(`ordered`, `layeredStage.js:310`) 앞 벽이 위에 겹치게 한다. 층/면(sign −1 위, +1 아래)마다:
+`reach_{i+1} − reach_i = v_{i+1} − (t_i − t_{i+1})`로 **일반적으로 비단조** → 리졸버는 특정 층이 아니라 **전 층**을 클램프한다(`resolveLayeredStageGeometry`): h를 누적하며 `t_i ≤ min(prevT − T_GAP, budget − h − FRONT_MIN)`, `v_i ≤ budget − h − t_i`, 더 못 들어가면 남은 층을 버린다. Letter가 빡빡(budget 59.66mm); 기본값 표의 최악 층은 **N=2의 2층(reach 56, 여유 3.66mm)** — 최상층이 최대라는 보장이 없음에 유의.
 
-- **자르기**(CUT): 양옆 세로 2줄 + far 가로 1줄. near 가로는 붙어 있어야 하므로 자르지 않음 (`layeredStage.js:324-326`).
-- **접기**: near = 산접기, far = 골접기 (`layeredStage.js:329-330`).
-- **풀칠 탭**: 좌우 사다리꼴이 x 바깥으로 접혀 카드 바닥에 붙음, 폭 `TAB_W(6)`mm(5mm 그립 바닥 위). 탭은 x로만 뻗고 깊이 s로는 안 뻗어(`layeredStage.js:333-346`), 밴드가 disjoint하므로 뒤 층 탭이 앞 층 벽과 충돌 불가.
-- 건물 파사드(문·창·박공)는 SCORE 안내선일 뿐 절단선·crease를 건드리지 않아 접힘에 무영향 (`drawFacade`, `layeredStage.js:237`).
+기본값(`DEFAULT_TIERS`): N=2 v[24,18]/t[26,14], N=3 v[18,14,12]/t[26,18,11], N=4 v[14,11,10,9]/t[24,18,13,9] — 전 세트 Letter 통과, t 엄격 감소, v ≥ FRONT_MIN(8).
+
+경계 불변식 (검증 완료):
+- `TOP_MIN(9) > FLAP(7)`: 아래 날개(안쪽으로 접힘)가 자기 상자 footprint 안에 들어감, reach에서 crest가 뒷날개보다 지배.
+- `FRONT_MIN(8) > FLAP(7)`: 연속 층 뒷날개가 뒷벽에서 겹치지 않음 (층 i 날개 [h_i, h_i+g]가 층 i+1 크리스 h_i+v_{i+1} 아래서 끝남).
+- `T_GAP(2)`: t 엄격 감소 → 접착점이 아래층 윗면 내부에 위치. N=4 기본값의 t_4=9는 TOP_MIN과 등호 — TOP_MIN을 올리면 N=4 기본값이 클램프에 걸린다.
+
+### 도면 배치 (한 페이지)
+
+`generateLayeredStage`: 윗 반쪽(뒷벽 면)에 뒷날개 풀칠선 ①..Ⓝ(SCORE)와 **1층 띠**, 척추 아래(바닥 면)에 1층 아래날개 풀칠선 ㉠과 **2..N층 띠**(한 줄에 최대 2장 flow 배치). 각 띠는 4변 모두 절단(완전 분리 부품), 내부 크리스는 골–산–골, 날개는 GLUE 스타일. **위층의 아래날개 풀칠선(㉡)은 아래층 띠의 윗면 패널 위에 인쇄**되어 접착 위치 오차가 누적되지 않게 한다. 앞면 패널은 의도적으로 비워 둔다 — 장식은 별도 장식 페이지를 오려 붙이는 방식(decorationSlots)이고, 도안의 회색 SCORE 선은 "풀칠 위치" 한 가지 의미만 갖게 유지한다. (과거에 있던 `drawFacade` 문·창문·지붕 장식 스코어는 지붕 박공선이 산접기 크리스와 겹쳐 접는선을 오독하게 만들어 제거됐다.)
 
 ## 활용
 
-- **decorationSlots (이 메커니즘의 특징)** — `registry.js:93`. `resolveLayeredStageGeometry(params)`로 **렌더링과 동일한 기하**를 구해 `geo.layers.map(...)`으로 벽마다 슬롯 하나씩 만든다:
-  - `label`: `` `${index}번 벽 그림 (...)` `` — 1번은 "제일 바깥쪽/제일 작은 벽", `count`번은 "제일 안쪽/제일 큰 벽", 나머지 "중간 벽".
-  - `width = layer.width * 0.75`, `height = layer.height * 1.5`(장식이 벽 footprint 깊이가 아니라 기립 **높이**를 넉넉히 덮게 1.5배).
-  - 렌더러와 같은 `resolveLayeredStageGeometry`를 공유하므로 장식 이미지 제안 크기가 실제 인쇄된 벽과 항상 일치한다. (커밋 `a93a7a0`의 직접 결과.)
-- **SVGPreview.jsx**: `getDecorationSlots`(`registry.js:279`)가 위 슬롯 배열을 반환 → 도안 1페이지 + **벽 개수만큼 장식 페이지**(각 슬롯당 1장, ai-image·freehand 모드 모두). `cardParams.decorationVariants?.[i]`가 있으면 벽별로 다른 테마(예: 노아의 방주 카드의 서로 다른 동물)를 프롬프트에 쓰고, 없으면 슬롯 `label`을 붙여 페이지가 최소한 구별되게 한다(`SVGPreview.jsx:94-96`). 슬롯이 없는 다른 메커니즘은 단일 100×100mm 슬롯으로 폴백해 무회귀.
-- **Preview3D.jsx**: 미지원(`SUPPORTED_3D`에 없음). 다만 `Instructions.jsx`의 `case 'layered-stage'` 첫 패널이 "완성 모습"을 위에서 본 아이소메트릭 정적 일러스트로 대체 제공한다. 실제 인터랙티브 3D 포즈는 미래 과제.
-- 조립 안내는 `INSTRUCTION_TEXT['layered-stage']`(PDF)와 `Instructions.jsx`의 `case 'layered-stage'`(화면, 7단계 일러스트)에 손으로 동기화.
+- **decorationSlots** — `registry.js`. `resolveLayeredStageGeometry`로 렌더링과 동일한 기하를 구해 층마다 슬롯 하나(`width: w·0.85, height: v·1.2` — 장식이 앞면 패널을 덮는다). 라벨: 1층 = "맨 아래·제일 큰 층", N층 = "맨 위·제일 작은 층".
+- **SVGPreview.jsx**: 도안 1페이지 + 층 개수만큼 장식 페이지. `decorationVariants[i]`가 있으면 층별 다른 테마.
+- **Preview3D / bookScenes.jsx**: `BOOK_3D` 지원. 평행사변형 성질 덕에 포즈가 닫힌식: 스택 전체를 **오른쪽 페이지(바닥)** 의 직접 자식으로 두고, 바닥 로컬좌표에서 `u_f=+x̂`, `u_b=(cosα,0,sinα)`로 앞면 = `translate3d(...) rotateY(−α)`, 윗면 = 순수 `translate3d`(바닥과 항상 평행이므로 회전 불필요). 뒤 모서리는 수학적으로 왼쪽 페이지(뒷벽) 위에 자동 착지. 중첩 체인 불필요.
+- 조립 안내: `INSTRUCTION_TEXT['layered-stage']`(PDF)와 `Instructions.jsx`의 `case 'layered-stage'`(화면 7패널)에 손 동기화 — **조립 순서는 아래층(1)부터 위로** (위층 아래날개가 아래층 윗면에 붙으므로).
 
 ## 이전 작업에서 배운 교훈
 
-- **커밋 `673649d`** ("... with proven containment bound"): 도입부터 "가장 깊은 층의 누적 깊이가 `card.height/2 − PRINT.MARGIN`을 절대 넘지 않는다"는 증명된 경계로 설계됐다. 밴드가 순증가·disjoint 타일링이라 `a_N ≤ S_max` 하나로 전체 포획이 보장된다. 과대/쓰레기 입력은 벽이 카드 밖으로 삐져나오는 대신 층이 줄거나 짧아진다(누적합에 대한 클램프, `avail < DEPTH_MIN`이면 중단).
-- **커밋 `a93a7a0`** ("multi-slot decoration architecture; overhaul instructions"): 실제 배포에서 나온 피드백 3가지 — (1) 조립 안내가 너무 추상적이었고, (2) 벽이 여러 장인데 장식 이미지는 **딱 1장만** 생성됐으며, (3) 평면 도안에서 완성 3D를 상상할 수 없었다. 해결로 `decorationSlots(params)`를 도입해 벽당 슬롯을 만들고(`getDecorationSlots`는 무회귀 폴백), SVGPreview가 슬롯당 페이지를 생성하며, chat이 `decorationVariants`로 벽별 테마를 공급하고, Instructions에 아이소메트릭 완성도 + 뒤→앞 조립 순서 다이어그램을 추가했다.
-- **조립 순서(뒤→앞)가 물리적으로 필수**: 앞 벽을 먼저 붙이면 그 뒤에 가려 손이 뒤 벽에 닿지 않는다. 순서를 뒤집으면 닫을 때 뒤 벽이 접힌 자리를 벗어나 카드 밖으로 나온다. `INSTRUCTION_TEXT`의 4단계(가장 중요)와 `Instructions.jsx`의 순서 다이어그램이 이 실패를 막는다.
-- **탭은 x로만, 깊이로 안 뻗음**: 뒤 층 탭이 앞 층 벽과 밴드가 겹치지 않게 한 설계 결정. 탭이 깊이 방향으로 번지면 이 불변식이 깨진다.
+- **3D 프리뷰 90° 뒤틀림 버그 (재설계 전 구버전)**: v-fold의 `rotate3d(−sin γ, 0, ∓cos γ, γ)` 조합을 재사용했더니 벽이 도안과 90° 뒤틀려("누운 플랫폼") 보였다. 그 축은 능선이 척추를 따라 세로로 뻗는 v-fold 팔 전용이다. **척추와 평행한 접기선을 가진 패널의 회전은 반드시 순수 `rotateY`** — box-popup 3D의 rotate3d는 "잘 보이게 하기 위한" 의도적 양식화이므로 베끼면 안 된다.
+- **구버전 구조 자체가 작동 불능이었다**: 시뮬레이션만 보고 "도안과 일치하니 맞다"고 판단하면 안 된다. 실물 사진과 대조하고, "카드 여닫기가 무엇으로 이 부품을 구동하는가?"(양면 연결 없으면 구동 없음), "풀칠하고 나서도 평탄 접기가 되는가?"를 반드시 물을 것.
+- **CUT과 FOLD를 같은 좌표에 이중 등록하는 버그 클래스** (box-popup `be0a85b`, parallel-fold `b1367c1`, 구 layered-stage): 새 크리스/절단선을 추가할 때마다 교차 검사.
+- **재설계 검증 절차**: 평행사변형 성질·평탄접기·수납 경계·충돌 없음을 deep-reasoner가 (a,b) 사각좌표 footprint 단사성 논증으로 독립 검증했다. 새 제약을 추가하면 같은 방식(α-무관 footprint + 단사 사상)으로 다시 확인하면 된다.
 
 ## 앞으로 작업 시 주의사항
 
-- **`decorationSlots`는 반드시 `resolveLayeredStageGeometry`를 재사용**하라. 슬롯 크기를 독자적으로 계산하면 장식 페이지와 실제 인쇄 벽이 어긋난다(커밋 `a93a7a0`가 고친 바로 그 종류의 드리프트). 렌더러 기하가 바뀌면 슬롯도 자동으로 따라오게 유지할 것.
-- 층별 깊이 제어를 손대면 **`d_i = h_i` 불변식**을 깨지 마라. 이게 깨지면 벽이 자기 밴드로 납작하게 접히지 않아 평면 접힘이 무너진다.
-- 클램프는 개별 깊이가 아니라 **누적합 `acc`**에 대해 걸린다(`avail = budget − acc`). 새 로직을 넣을 때 이 누적 예산 감산을 유지해야 `a_N ≤ S_max` 포획 경계가 보장된다.
-- `S_max`·`maxWidth`는 **Letter가 A4보다 빡빡**하다(카드 높이 139.7 vs 148.5). 기본값은 Letter 기준으로 통과하도록 잡혀 있으니 기본 깊이/폭 표를 바꾸면 Letter budget 59.66mm와 폭 상한을 다시 확인하라 — "A4만 맞는" 값은 미완성이다.
-- 조립 안내가 `registry.js`(PDF 텍스트)와 `Instructions.jsx`(화면 7단계 일러스트) 두 곳에 손으로 동기화되어 있다. 특히 후자는 아이소메트릭 완성도·순서 다이어그램 등 SVG가 많아 드리프트 위험이 크다. 한쪽만 고치지 말 것.
-- Preview3D 미지원 상태다. 3D를 추가한다면 이미 존재하는 parallelFold의 중첩 계단(preserve-3d + DOM 자식) 구성이 층층이 무대의 누적 깊이 구조와 위상이 같아 참고점이 된다.
+- **평행사변형 불변식을 깨지 마라**: 앞면 높이 v_i = h_i − h_{i−1}, 아래 부착거리 = t_i. 이 등식이 깨지면 윗면/앞면이 페이지와 평행하지 않게 되고 평탄 접기가 무너진다.
+- 클램프는 **누적 h에 대한 reach_i = h_i + t_i ≤ budget**으로, **전 층**에 대해 건다. reach는 비단조이므로 "최상층만 검사"로 최적화하지 말 것.
+- `TOP_MIN > FLAP`, `FRONT_MIN > FLAP`, `T_GAP > 0` 세 불변식은 날개 겹침/충돌 방지의 전제다. 상수를 조정할 때 함께 확인하라. 특히 `TOP_MIN`을 올리면 N=4 기본값(t_4=9)이 걸린다.
+- Letter가 A4보다 빡빡하다(budget 59.66 vs 63.71). 기본값 표를 바꾸면 Letter reach와 시트 패킹(띠 2장 가로 flow가 인쇄폭 안에 드는지)을 다시 확인하라.
+- `layerSpec`은 레거시 키(`depth`→`topDepth`, `height`→`frontHeight`)를 흡수한다. 새 키로만 문서화하되 흡수 로직을 지우지 말 것.
+- 조립 안내가 `registry.js`(PDF 텍스트)와 `Instructions.jsx`(화면 패널) 두 곳에 손 동기화되어 있다. 구조가 바뀌었으므로 옛 문구("뒤에서 앞으로", "옆 날개를 바깥으로")가 되살아나지 않게 주의 — 현재 올바른 순서는 **아래층부터 위로**, 날개는 **뒤=위로/아래=안쪽으로**.

@@ -1,6 +1,8 @@
 import React from 'react';
 import useCardStore from '../../store/useCardStore';
 import { getMechanism } from '../../generators/registry';
+import { getElements } from '../../store/cardModel';
+import { CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { Scissors, Palette, Tent, HelpCircle } from 'lucide-react';
 
 export default function Instructions() {
@@ -14,8 +16,10 @@ export default function Instructions() {
     );
   }
 
-  const renderSteps = () => {
-    const instructionStyle = getMechanism(cardParams.mechanism)?.instructionStyle;
+  const elements = getElements(cardParams);
+
+  const renderSteps = (element) => {
+    const instructionStyle = getMechanism(element.mechanism)?.instructionStyle;
 
     switch (instructionStyle) {
       case 'straw-rocket':
@@ -448,6 +452,104 @@ export default function Instructions() {
           </>
         );
 
+      case 'camera-print-pull':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>슬롯·띠·롤러 오리기</h4>
+                <p>앞면 카드의 세로 슬롯(사진 나오는 곳)과 아래쪽 슬롯(손잡이 나오는 곳), 되돌림 띠, 롤러(튜브) 조각, 멈춤/안내 띠를 실선대로 오려주세요. 앞면 카드에는 카메라 그림을 자유롭게 그리거나 색칠해 꾸며 주세요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="130" viewBox="0 0 120 65" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* camera card with vertical photo slot + horizontal tab slot */}
+                    <rect x="10" y="6" width="36" height="52" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <circle cx="28" cy="36" r="9" fill="none" stroke="var(--text-primary)" strokeWidth="1" strokeDasharray="4 2" />
+                    <rect x="25" y="12" width="4" height="16" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="16" y="50" width="24" height="4" fill="var(--bg-app)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* reversing strip */}
+                    <rect x="58" y="10" width="40" height="9" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="78" y="8" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">되돌림 띠</text>
+                    {/* roller tube (rolled) */}
+                    <ellipse cx="66" cy="34" rx="4" ry="9" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="66" y="25" width="26" height="18" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <ellipse cx="92" cy="34" rx="4" ry="9" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="79" y="49" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">① 롤러</text>
+                    {/* retainer strip */}
+                    <rect x="60" y="54" width="30" height="6" fill="rgba(0,170,0,0.15)" stroke="green" strokeWidth="1" />
+                    <text x="75" y="63" fontSize="4.5" textAnchor="middle" fill="green">② 멈춤/안내 띠</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>⚠️ 롤러 말아서 양 끝만 붙이기</h4>
+                <p>가장 긴 네모(<b>① 롤러</b>)를 둥글게 말아 튜브로 만든 뒤, 카드 맨 위 뒷면에 다리처럼 얹고 <b>양 끝 초록색만</b> 붙이세요. 가운데는 절대 붙이지 마세요 — 가운데가 붕 뜬 채로 남아야 되돌림 띠가 그 위로 180도 넘어갈 수 있어요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="120" viewBox="0 0 100 60" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* Isometric rolled tube, same convention as the straw-rocket tube */}
+                    <ellipse cx="50" cy="15" rx="16" ry="5" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M34 15 L34 30 A16 5 0 0 0 66 30 L66 15 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <ellipse cx="50" cy="30" rx="16" ry="5" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    {/* glue ends only, centre arches free */}
+                    <rect x="30" y="38" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <rect x="60" y="38" width="10" height="6" fill="rgba(0,170,0,0.25)" stroke="green" strokeWidth="1" />
+                    <path d="M40 41 L60 41" stroke="green" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">양 끝만 붙이기 (가운데 X)</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>띠 걸고 사진·멈춤 띠 붙이기</h4>
+                <p>되돌림 띠를 롤러 위에 걸쳐주세요. 한쪽 끝(마운트)에 <b>사진</b>을 붙이고, 반대쪽 끝(손잡이)은 아래쪽 슬롯을 통해 앞면으로 빼냅니다. 사진 슬롯 바로 위 뒷면에는 <b>② 멈춤/안내 띠</b>를 양 끝만 붙이세요. 중요: 되돌림 띠는 사진 쪽 끝과 손잡이 쪽 끝, 이 두 곳 말고는 어디에도 붙이지 마세요!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="140" viewBox="0 0 100 70" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* roller at top, strip wraps down both sides */}
+                    <rect x="35" y="4" width="30" height="8" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="50" y="2" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">① 롤러</text>
+                    <path d="M40 12 L40 40" stroke="var(--primary-main)" strokeWidth="3" />
+                    <path d="M60 12 L60 30" stroke="var(--primary-main)" strokeWidth="3" />
+                    {/* photo at mount end */}
+                    <rect x="50" y="30" width="20" height="24" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <path d="M50 48 L70 48" stroke="var(--text-secondary)" strokeWidth="1" />
+                    <text x="60" y="60" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">사진</text>
+                    {/* retainer above photo */}
+                    <rect x="48" y="26" width="24" height="4" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1" />
+                    <text x="20" y="28" fontSize="4.2" textAnchor="middle" fill="green">② 멈춤 띠</text>
+                    {/* handle tab at bottom */}
+                    <rect x="35" y="40" width="10" height="18" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <text x="40" y="65" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">PULL 손잡이</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>아래로 당기면 사진이 위로!</h4>
+                <p>카드 아래로 나온 "PULL ↓" 손잡이를 잡고 아래로 당기면, 띠가 롤러를 넘어가면서 사진이 위쪽 슬롯 밖으로 쑤욱 올라옵니다. 끝까지 당기면 멈춤 띠에 걸려 멈추고, 사진을 살살 눌러 내리면(손잡이가 도로 위로 올라가며) 다시 처음 모습으로 돌아갑니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="28" y="8" width="44" height="60" rx="4" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    {/* photo risen near the top slot */}
+                    <rect x="38" y="12" width="24" height="20" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.2" />
+                    <path d="M50 26 l0 -10 M46 20 l4 -4 l4 4" stroke="red" strokeWidth="1.3" fill="none" />
+                    {/* pull tab hanging well below the card, pulled down */}
+                    <rect x="46" y="68" width="8" height="16" fill="var(--primary-main)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M50 68 l0 10 M47 74 l3 4 l3 -4" stroke="red" strokeWidth="1.3" fill="none" />
+                    <text x="50" y="94" fontSize="5" textAnchor="middle" fill="red">아래로 당기면 사진이 위로!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
       case 'layered-stage':
         return (
           <>
@@ -457,44 +559,34 @@ export default function Instructions() {
               </div>
               <div className="step-content">
                 <h4>완성하면 이런 모습이에요!</h4>
-                <p>카드를 <b>120도쯤</b> 열면, 벽 3개(또는 4개)가 서로 다른 깊이에서 층층이 솟아올라요. 제일 낮고 넓은 벽이 맨 앞(1번), 제일 높고 좁은 벽이 맨 안쪽(제일 큰 번호)에 서 있어요 — 성벽 뒤로 안쪽 탑이 우뚝 솟은 것처럼요.</p>
+                <p>케이크처럼 생긴 층(보통 3층)이 <b>카드 양면 사이에 다리처럼 걸쳐</b> 붙어 있어요. 그래서 카드를 <b>여닫는 동작만으로</b> 층들이 저절로 솟아오르고, 닫으면 납작해져요. <b>90도쯤 열었을 때</b> 가장 반듯한 상자 모양이 됩니다. 1층이 맨 아래(제일 큼), 위로 갈수록 작아져요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                  <svg width="220" height="140" viewBox="0 0 160 100" style={{ width: '100%', maxWidth: '340px', height: 'auto' }}>
-                    {/* Opened card, viewed from above at ~120°: a diamond with the
-                        spine running from the near vertex (front) to the far
-                        vertex (back). */}
-                    <path d="M12 78 L80 96 L148 78 L80 4 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <path d="M80 96 L80 4" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" />
-                    <text x="98" y="14" fontSize="5" fill="var(--text-secondary)">척추(spine)</text>
-                    {/* Opening-angle callout at the front vertex. */}
-                    <path d="M62 84 A 22 22 0 0 1 98 84" fill="none" stroke="var(--text-secondary)" strokeWidth="0.8" strokeDasharray="2 2" />
-                    <text x="80" y="80" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">≈120°</text>
-
-                    {/* Wall 1 (front): shortest + widest. Iso-box = front face +
-                        top cap + right sliver, offset by (dx,dy) to fake depth,
-                        same trick as the straw-rocket cylinder illustration. */}
-                    <path d="M35 78 L35 90 L125 90 L125 78 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
-                    <path d="M35 78 L41 75 L131 75 L125 78 Z" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.85" />
-                    <path d="M125 78 L131 75 L131 87 L125 90 Z" fill="var(--primary-main)" stroke="var(--primary-main)" strokeWidth="1" opacity="0.5" />
-                    <circle cx="30" cy="84" r="6" fill="var(--primary-main)" />
-                    <text x="30" y="86.5" fontSize="6" textAnchor="middle" fill="#fff">1</text>
-
-                    {/* Wall 2 (middle): taller + narrower, sits further back. */}
-                    <path d="M48 42 L48 64 L112 64 L112 42 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <path d="M48 42 L54 39 L118 39 L112 42 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" opacity="0.85" />
-                    <path d="M112 42 L118 39 L118 61 L112 64 Z" fill="rgba(0,0,0,0.08)" stroke="var(--text-primary)" strokeWidth="1" opacity="0.6" />
-                    <circle cx="42" cy="56" r="6" fill="var(--text-primary)" />
-                    <text x="42" y="58.5" fontSize="6" textAnchor="middle" fill="#fff">2</text>
-
-                    {/* Wall 3 (back): tallest + narrowest — the "inner tower". */}
-                    <path d="M60 4 L60 34 L100 34 L100 4 Z" fill="gold" stroke="orange" strokeWidth="1" />
-                    <path d="M60 4 L66 1 L106 1 L100 4 Z" fill="gold" stroke="orange" strokeWidth="1" opacity="0.9" />
-                    <path d="M100 4 L106 1 L106 31 L100 34 Z" fill="orange" stroke="orange" strokeWidth="1" opacity="0.6" />
-                    <circle cx="54" cy="20" r="6" fill="orange" />
-                    <text x="54" y="22.5" fontSize="6" textAnchor="middle" fill="#fff">3</text>
-
-                    <text x="80" y="98" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">앞(낮고 넓은 벽)</text>
-                    <text x="80" y="2.5" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">뒤(높고 좁은 벽)</text>
+                  <svg width="220" height="150" viewBox="0 0 150 100" style={{ width: '100%', maxWidth: '340px', height: 'auto' }}>
+                    {/* Side view (cross-section) of the card opened to 90°:
+                        floor page horizontal, backdrop page vertical, three
+                        nested tier boxes stepping up against the corner. */}
+                    <path d="M30 90 L140 90" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M30 90 L30 6" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <text x="120" y="97" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">바닥 면</text>
+                    <text x="22" y="16" fontSize="5" textAnchor="middle" fill="var(--text-secondary)" transform="rotate(-90 22 16)">뒷벽 면</text>
+                    <circle cx="30" cy="90" r="2" fill="var(--text-secondary)" />
+                    <text x="38" y="97" fontSize="4.5" fill="var(--text-secondary)">척추</text>
+                    {/* Tier 1 (bottom, biggest): front at x=82, top at y=54 */}
+                    <path d="M82 90 L82 54 L30 54" fill="none" stroke="var(--primary-main)" strokeWidth="2.5" />
+                    <circle cx="88" cy="72" r="6" fill="var(--primary-main)" />
+                    <text x="88" y="74.5" fontSize="6" textAnchor="middle" fill="#fff">1</text>
+                    {/* Tier 2 standing on tier 1's top panel */}
+                    <path d="M66 54 L66 28 L30 28" fill="none" stroke="var(--text-primary)" strokeWidth="2.5" />
+                    <circle cx="73" cy="41" r="6" fill="var(--text-primary)" />
+                    <text x="73" y="43.5" fontSize="6" textAnchor="middle" fill="#fff">2</text>
+                    {/* Tier 3 (top, smallest) */}
+                    <path d="M50 28 L50 10 L30 10" fill="none" stroke="orange" strokeWidth="2.5" />
+                    <circle cx="57" cy="19" r="6" fill="orange" />
+                    <text x="57" y="21.5" fontSize="6" textAnchor="middle" fill="#fff">3</text>
+                    {/* opening-drive arrows */}
+                    <path d="M120 66 A 42 42 0 0 1 96 30" fill="none" stroke="red" strokeWidth="1" strokeDasharray="3 2" />
+                    <path d="M96 30 l6 0 l-3 6 z" fill="red" />
+                    <text x="122" y="46" fontSize="4.5" fill="red">여닫으면 저절로!</text>
                   </svg>
                 </div>
               </div>
@@ -502,21 +594,23 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">1</div>
               <div className="step-content">
-                <h4>벽 오리기 — 크기가 다른 벽이 여러 장 나와요</h4>
-                <p>이 도안은 벽이 여러 장(보통 3장, 많으면 4장)이에요. <b>번호가 작을수록 작고 낮은 벽(맨 앞/척추에서 가장 가까움)</b>, <b>번호가 클수록 크고 높은 벽(맨 안쪽/척추에서 가장 멂)</b>이에요. 검은색 실선을 따라 벽마다 테두리를 모두 오려주세요. 벽 세로 양옆의 초록색 날개(풀칠 자리)는 자르지 말고 남깁니다. 벽의 <b>바깥쪽(먼 쪽) 가로선만</b> 오리고, 척추 쪽 가로선은 그대로 두어야 벽이 카드에 붙어 섭니다.</p>
+                <h4>층 조각(띠) 오리기</h4>
+                <p>검은색 실선을 따라 층 조각(긴 띠)을 모두 오려주세요. 띠 하나는 위에서부터 <b>[뒤 날개(초록) → 윗면 → 앞면 → 아래 날개(초록)]</b> 순서예요. 초록색 날개는 자르지 말고 띠에 붙여 둡니다. (카드에 구멍 나는 게 싫으면 띠를 색지에 대고 그려 오려도 좋아요.)</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
-                    {/* nested bands: 3 walls of increasing depth from a spine line */}
-                    <path d="M10 52 L110 52" stroke="blue" strokeWidth="1.5" strokeDasharray="4 1 1 1" />
-                    <text x="60" y="58" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">척추(가운데 접는 선)</text>
-                    <rect x="30" y="38" width="60" height="14" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
-                    <text x="60" y="47" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">1번(작음)</text>
-                    <rect x="38" y="24" width="44" height="14" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
-                    <text x="60" y="33" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">2번</text>
-                    <rect x="46" y="12" width="28" height="12" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" strokeDasharray="4 2" />
-                    <text x="60" y="20" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">3번(큼)</text>
-                    <rect x="26" y="40" width="4" height="10" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
-                    <rect x="90" y="40" width="4" height="10" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="1" />
+                  <svg width="200" height="130" viewBox="0 0 120 66" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    <rect x="25" y="4" width="70" height="58" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="25" y="4" width="70" height="8" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="0.8" />
+                    <text x="60" y="10" fontSize="4.5" textAnchor="middle" fill="green">뒤 날개 (풀칠)</text>
+                    <path d="M25 12 L95 12" stroke="blue" strokeWidth="1.2" strokeDasharray="3 2" />
+                    <text x="60" y="22" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">윗면</text>
+                    <path d="M25 30 L95 30" stroke="red" strokeWidth="1.2" strokeDasharray="4 1 1 1" />
+                    <text x="60" y="43" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">앞면 (그림 붙는 곳)</text>
+                    <path d="M25 54 L95 54" stroke="blue" strokeWidth="1.2" strokeDasharray="3 2" />
+                    <rect x="25" y="54" width="70" height="8" fill="rgba(0,170,0,0.18)" stroke="green" strokeWidth="0.8" />
+                    <text x="60" y="60" fontSize="4.5" textAnchor="middle" fill="green">아래 날개 (풀칠)</text>
+                    <text x="108" y="13.5" fontSize="4" fill="blue">골접기</text>
+                    <text x="108" y="31.5" fontSize="4" fill="red">산접기</text>
+                    <text x="108" y="55.5" fontSize="4" fill="blue">골접기</text>
                   </svg>
                 </div>
               </div>
@@ -524,27 +618,20 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">2</div>
               <div className="step-content">
-                <h4>접어서 벽 세우기 (높이=깊이)</h4>
-                <p>빨간 점선(척추 쪽)은 <b>산접기</b>(볼록하게), 파란 점선(바깥 쪽)은 <b>골접기</b>(오목하게) 하여 벽을 세웁니다. 각 벽은 <b>높이와 깊이가 같아서</b> 카드를 닫으면 자기 칸 안으로 정확히 납작하게 접혀요.</p>
-                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '16px' }}>
-                  <svg width="120" height="80" viewBox="0 0 60 40" style={{ width: '42%', maxWidth: '150px', height: 'auto' }}>
-                    <path d="M10 30 L30 10 L50 30" fill="none" stroke="red" strokeWidth="2" strokeDasharray="5 5" />
-                    <text x="30" y="38" fontSize="9" textAnchor="middle" fill="var(--text-primary)">산접기(척추 쪽)</text>
-                  </svg>
-                  <svg width="120" height="80" viewBox="0 0 60 40" style={{ width: '42%', maxWidth: '150px', height: 'auto' }}>
-                    <path d="M10 10 L30 30 L50 10" fill="none" stroke="blue" strokeWidth="2" strokeDasharray="5 5" />
-                    <text x="30" y="38" fontSize="9" textAnchor="middle" fill="var(--text-primary)">골접기(바깥 쪽)</text>
-                  </svg>
-                </div>
+                <h4>ㄱ자로 접기</h4>
+                <p>초록 날개 두 곳의 파란 점선은 <b>골접기</b>(뒤로, 오목하게), 가운데 빨간 점선(윗면과 앞면 사이)은 <b>산접기</b>(앞으로, 볼록하게) 하세요. 접고 나면 띠가 <b>ㄱ자 상자 모양</b>이 됩니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                  <svg width="200" height="120" viewBox="0 0 120 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
-                    {/* side view: three walls standing at increasing depth */}
-                    <path d="M10 50 L110 50" stroke="var(--text-primary)" strokeWidth="1.5" />
-                    <path d="M35 50 L35 30" stroke="var(--primary-main)" strokeWidth="3" />
-                    <path d="M60 50 L60 22" stroke="var(--primary-main)" strokeWidth="3" />
-                    <path d="M85 50 L85 14" stroke="var(--primary-main)" strokeWidth="3" />
-                    <path d="M33 50 l2 -4 M33 50 l2 4" stroke="red" strokeWidth="1" fill="none" />
-                    <text x="60" y="58" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">앞(낮음) → 뒤(높음)</text>
+                  <svg width="200" height="100" viewBox="0 0 120 50" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    {/* folded strip, side view: flap / top / front / flap */}
+                    <path d="M20 14 L20 6" stroke="green" strokeWidth="2.5" />
+                    <path d="M20 14 L78 14" stroke="var(--primary-main)" strokeWidth="2.5" />
+                    <path d="M78 14 L78 44" stroke="var(--primary-main)" strokeWidth="2.5" />
+                    <path d="M78 44 L64 44" stroke="green" strokeWidth="2.5" />
+                    <text x="14" y="11" fontSize="4.5" fill="green">뒤 날개</text>
+                    <text x="49" y="10" fontSize="5" textAnchor="middle" fill="var(--text-secondary)">윗면</text>
+                    <text x="86" y="30" fontSize="5" fill="var(--text-secondary)">앞면</text>
+                    <text x="63" y="49.5" fontSize="4.5" fill="green">아래 날개(안쪽으로)</text>
+                    <circle cx="78" cy="14" r="2.4" fill="none" stroke="red" strokeWidth="1" />
                   </svg>
                 </div>
               </div>
@@ -552,22 +639,20 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">3</div>
               <div className="step-content">
-                <h4>⚠️ 조립 순서: 반드시 뒤에서 앞으로!</h4>
-                <p>가장 뒤(제일 크고 높은 번호) 벽을 <b>가장 먼저</b> 세워 붙이고, 그다음 순서대로 앞쪽 벽을 붙여, 척추에 가장 가까운 <b>1번 벽을 맨 마지막</b>에 붙이세요. 왜냐하면 앞 벽부터 붙이면 그 뒤에 가려서 <b>손이 뒤쪽 벽까지 닿지 않기 때문</b>이에요. 순서를 거꾸로 하면 카드를 닫을 때 뒤 벽이 접힌 자리를 벗어나 <b>카드 밖으로 삐져나옵니다.</b></p>
+                <h4>⚠️ 조립 순서: 반드시 아래층(1층)부터 위로!</h4>
+                <p><b>1층(제일 큰 띠)을 가장 먼저</b> 붙이고, 그 위에 2층, 3층 순서로 쌓으세요. 위층의 아래 날개는 <b>바로 아래층의 윗면에</b> 붙기 때문에, 아래층이 먼저 서 있어야 다음 층을 붙일 수 있어요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="220" height="90" viewBox="0 0 140 46" style={{ width: '100%', maxWidth: '340px', height: 'auto' }}>
-                    {/* Explicit glue-order sequence: back-numbered wall first,
-                        arrows leading toward the front (spine-nearest) wall. */}
-                    <circle cx="20" cy="23" r="14" fill="gold" stroke="orange" strokeWidth="1.5" />
-                    <text x="20" y="28" fontSize="13" textAnchor="middle" fill="var(--text-primary)">3</text>
+                    <circle cx="20" cy="23" r="14" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" />
+                    <text x="20" y="28" fontSize="13" textAnchor="middle" fill="var(--text-primary)">1</text>
                     <path d="M38 23 L58 23 M52 17 l6 6 l-6 6" stroke="var(--text-primary)" strokeWidth="2" fill="none" />
                     <circle cx="70" cy="23" r="12" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
                     <text x="70" y="28" fontSize="12" textAnchor="middle" fill="var(--text-primary)">2</text>
                     <path d="M86 23 L104 23 M98 18 l6 5 l-6 5" stroke="var(--text-primary)" strokeWidth="2" fill="none" />
-                    <circle cx="118" cy="23" r="10" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.5" />
-                    <text x="118" y="27" fontSize="10" textAnchor="middle" fill="var(--text-primary)">1</text>
-                    <text x="20" y="43" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">①먼저(맨 뒤)</text>
-                    <text x="118" y="43" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">마지막(맨 앞)</text>
+                    <circle cx="118" cy="23" r="10" fill="gold" stroke="orange" strokeWidth="1.5" />
+                    <text x="118" y="27" fontSize="10" textAnchor="middle" fill="var(--text-primary)">3</text>
+                    <text x="20" y="43" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">①먼저(맨 아래·큼)</text>
+                    <text x="118" y="43" fontSize="5.5" textAnchor="middle" fill="var(--text-secondary)">마지막(맨 위·작음)</text>
                   </svg>
                 </div>
               </div>
@@ -575,19 +660,25 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">4</div>
               <div className="step-content">
-                <h4>풀칠 날개는 옆으로, 바깥쪽으로 접어서 붙이기</h4>
-                <p>벽을 세울 때마다 벽 좌우에 붙은 초록색 날개(풀칠 탭)를 벽 몸통에서 <b>멀어지는 바깥쪽</b>으로 접으세요. 접은 날개가 카드 바닥면에 납작하게 닿으면, 거기에 풀칠하거나 양면테이프를 붙여 카드에 고정합니다.</p>
+                <h4>날개를 풀칠선에 맞춰 붙이기</h4>
+                <p>카드를 90도쯤 세워 두고 붙이면 쉬워요. <b>1층</b>: 아래 날개를 바닥 면의 <b>㉠ 선</b>에(날개는 척추 쪽으로), 뒤 날개를 뒷벽 면의 <b>① 선</b>에(날개는 위쪽으로) 붙이세요. <b>2층부터</b>: 아래 날개를 <b>아래층 윗면에 인쇄된 ㉡ 선</b>에(날개는 뒷벽 쪽으로), 뒤 날개를 뒷벽 면의 <b>같은 번호(②, ③…) 선</b>에 붙이세요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    <rect x="35" y="10" width="30" height="30" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1.3" />
-                    <text x="50" y="28" fontSize="5" textAnchor="middle" fill="var(--text-primary)">벽</text>
-                    <path d="M35 14 L25 18 L25 36 L35 32 Z" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1.1" />
-                    <path d="M65 14 L75 18 L75 36 L65 32 Z" fill="rgba(0,170,0,0.2)" stroke="green" strokeWidth="1.1" />
-                    <path d="M28 22 q-6 3 0 6" fill="none" stroke="green" strokeWidth="1" />
-                    <path d="M22 25 l2 -3 l2 3 z" fill="green" />
-                    <path d="M72 22 q6 3 0 6" fill="none" stroke="green" strokeWidth="1" />
-                    <path d="M78 25 l-2 -3 l-2 3 z" fill="green" />
-                    <text x="50" y="48" fontSize="4.5" textAnchor="middle" fill="green">양옆 날개를 바깥으로 접어 바닥에 풀칠</text>
+                  <svg width="220" height="140" viewBox="0 0 150 94" style={{ width: '100%', maxWidth: '340px', height: 'auto' }}>
+                    <path d="M30 84 L140 84" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M30 84 L30 6" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    {/* tier 1 attached: bottom flap inward at ㉠, rear flap up at ① */}
+                    <path d="M82 84 L82 50 L30 50" fill="none" stroke="var(--primary-main)" strokeWidth="2.5" />
+                    <path d="M82 84 L70 84" stroke="green" strokeWidth="3" />
+                    <text x="76" y="91" fontSize="5" textAnchor="middle" fill="green">㉠</text>
+                    <path d="M30 50 L30 40" stroke="green" strokeWidth="3" />
+                    <text x="24" y="44" fontSize="5" textAnchor="middle" fill="green">①</text>
+                    {/* tier 2's bottom flap landing on tier 1's top panel at ㉡ */}
+                    <path d="M64 50 L64 26 L30 26" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeDasharray="4 2" />
+                    <path d="M64 50 L54 50" stroke="green" strokeWidth="3" />
+                    <text x="58" y="57" fontSize="5" textAnchor="middle" fill="green">㉡</text>
+                    <path d="M30 26 L30 17" stroke="green" strokeWidth="3" />
+                    <text x="24" y="21" fontSize="5" textAnchor="middle" fill="green">②</text>
+                    <text x="106" y="40" fontSize="4.5" fill="var(--text-secondary)">2층은 1층 윗면 위에!</text>
                   </svg>
                 </div>
               </div>
@@ -595,8 +686,8 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">5</div>
               <div className="step-content">
-                <h4>장식 그림 붙이기 — 이번엔 여러 장 나와요!</h4>
-                <p>이 도안은 벽마다 어울리는 그림이 필요해서, 2번째 페이지부터 <b>벽 개수만큼 장식 그림이 따로따로</b> 나옵니다. 각 장식 페이지에 적힌 번호(예: "1번 벽 그림", "2번 벽 그림"…)를 확인해서, 가위로 오린 뒤 <b>같은 번호의 벽 앞면</b>에 풀칠해 붙이세요.</p>
+                <h4>장식 그림 붙이기 — 층마다 한 장씩 나와요!</h4>
+                <p>이 도안은 층마다 어울리는 그림이 필요해서, 2번째 페이지부터 <b>층 개수만큼 장식 그림이 따로따로</b> 나옵니다. 각 장식 페이지에 적힌 번호(예: "1층 앞면 그림", "2층 앞면 그림"…)를 확인해서, 가위로 오린 뒤 <b>같은 번호 층의 앞면</b>에 풀칠해 붙이세요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="100" viewBox="0 0 120 50" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
                     <rect x="8" y="8" width="26" height="34" rx="2" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
@@ -605,9 +696,9 @@ export default function Instructions() {
                     <text x="55" y="27" fontSize="8" textAnchor="middle" fill="var(--text-secondary)">2</text>
                     <rect x="76" y="8" width="26" height="34" rx="2" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.2" />
                     <text x="89" y="27" fontSize="8" textAnchor="middle" fill="var(--text-secondary)">3</text>
-                    <text x="21" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">1번 벽 그림</text>
-                    <text x="55" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">2번 벽 그림</text>
-                    <text x="89" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">3번 벽 그림</text>
+                    <text x="21" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">1층 앞면 그림</text>
+                    <text x="55" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">2층 앞면 그림</text>
+                    <text x="89" y="4" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">3층 앞면 그림</text>
                   </svg>
                 </div>
               </div>
@@ -615,15 +706,21 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">6</div>
               <div className="step-content">
-                <h4>닫아서 확인하고 열어보기</h4>
-                <p>카드를 닫아 <b>모든 벽이 카드 바깥 선 안쪽으로 납작하게</b> 접혀 들어가는지 확인하세요. 열면 성벽과 탑이 층층이 서로 다른 깊이로 솟아오릅니다.</p>
+                <h4>천천히 여닫아 확인하기</h4>
+                <p>카드를 천천히 닫아 <b>모든 층이 카드 안쪽으로 납작하게</b> 접혀 들어가는지 확인하세요. 신기하게도 <b>활짝(180도) 펼쳐도 납작해지고</b>, 90도쯤 열었을 때 케이크가 가장 반듯하게 우뚝 섭니다. 걸리는 층이 있으면 그 층 날개를 떼어 풀칠선에 다시 맞춰 붙여 주세요.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                  <svg width="200" height="150" viewBox="0 0 100 75" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
-                    <path d="M18 62 L50 74 L82 62 L50 10 Z" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <rect x="40" y="30" width="20" height="30" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
-                    <rect x="34" y="40" width="32" height="22" fill="rgba(0,0,0,0.05)" stroke="var(--text-primary)" strokeWidth="1" />
-                    <rect x="46" y="20" width="8" height="18" fill="gold" stroke="orange" strokeWidth="1" />
-                    <path d="M46 20 l0 -4 M50 20 l0 -6 M54 20 l0 -4" stroke="orange" strokeWidth="1" />
+                  <svg width="220" height="110" viewBox="0 0 150 60" style={{ width: '100%', maxWidth: '340px', height: 'auto' }}>
+                    {/* closed → 90° → flat sequence */}
+                    <path d="M10 46 L34 46 M10 46 L10 44 L34 44" stroke="var(--text-primary)" strokeWidth="1.5" fill="none" />
+                    <text x="22" y="55" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">닫으면 납작</text>
+                    <path d="M42 30 l8 0 M46 26 l4 4 l-4 4" stroke="var(--text-secondary)" strokeWidth="1" fill="none" />
+                    <path d="M60 46 L88 46 M60 46 L60 18" stroke="var(--text-primary)" strokeWidth="1.5" fill="none" />
+                    <path d="M78 46 L78 34 L60 34 M72 34 L72 26 L60 26" stroke="var(--primary-main)" strokeWidth="1.6" fill="none" />
+                    <text x="74" y="55" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">90°에서 우뚝!</text>
+                    <path d="M96 30 l8 0 M100 26 l4 4 l-4 4" stroke="var(--text-secondary)" strokeWidth="1" fill="none" />
+                    <path d="M112 46 L144 46" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M116 44 L140 44" stroke="var(--primary-main)" strokeWidth="1.2" />
+                    <text x="128" y="55" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">180°도 납작</text>
                   </svg>
                 </div>
               </div>
@@ -942,7 +1039,7 @@ export default function Instructions() {
                 </div>
               </div>
             </div>
-            {cardParams.params?.armExtension && (
+            {element.params?.armExtension && (
               <div className="instruction-step card">
                 <div className="step-badge">4</div>
                 <div className="step-content">
@@ -1009,6 +1106,229 @@ export default function Instructions() {
                     <path d="M20 35 L50 60 L80 35" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
                     <path d="M45 32 L50 25 L55 32" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
                     <path d="M45 38 L50 45 L55 38" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
+      case 'gate-curtain':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>오리기</h4>
+                <p>검은 실선을 따라 오려주세요: 게이트 카드 1장(가운데 뒷판 + 좌·우 문), 노란 커튼 2장, 장식 액자 1장(가운데 다이아몬드 창도 오려냄), 지지대(스트랩) 2개, 문 돌 장식 2개.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* Unfolded gate card: panel + two doors, two vertical valley hinges */}
+                    <rect x="8" y="8" width="60" height="34" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M23 8 L23 42 M53 8 L53 42" stroke="blue" strokeWidth="1.5" strokeDasharray="4 1 1 1" />
+                    <text x="38" y="50" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">게이트 카드 (세로 골접기 2개)</text>
+                    {/* Bowtie curtain */}
+                    <path d="M78 10 L96 10 L96 28 L78 28 L86 19 Z" fill="var(--primary-light)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="87" y="35" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">커튼 ×2</text>
+                    {/* Frame with diamond */}
+                    <rect x="76" y="40" width="22" height="16" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <path d="M87 43 L93 48 L87 53 L81 48 Z" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <text x="87" y="59" fontSize="4" textAnchor="middle" fill="var(--text-secondary)">액자</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>문 접기</h4>
+                <p>좌·우 문을 파란 세로 점선(골접기)으로 안쪽으로 접었다 펴서 경첩을 만들어 주세요. 두 문을 닫으면 자유단이 가운데서 딱 맞닿습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <text x="50" y="7" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">위에서 내려다본 모습</text>
+                    <path d="M25 40 L75 40" stroke="var(--text-primary)" strokeWidth="2" /> {/* panel */}
+                    <path d="M25 40 L38 18" stroke="var(--primary-main)" strokeWidth="2" /> {/* left door */}
+                    <path d="M75 40 L62 18" stroke="var(--primary-main)" strokeWidth="2" /> {/* right door */}
+                    <path d="M38 18 Q50 10 62 18" fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x="50" y="50" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">뒷판은 고정, 두 문이 안쪽으로 접혀 닫힘</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>주인공 붙이고 커튼 올리기</h4>
+                <p>① 주인공 그림을 뒷판 가운데(표시된 자리)에 얇게 붙입니다. ④ 커튼 2장을 그 위에 좌·우에서 겹쳐 놓으세요(가운데서 살짝 겹쳐 주인공을 가림). 커튼은 뒷판에 절대 붙이지 마세요 — 미끄러져야 합니다!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="20" y="8" width="60" height="40" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <circle cx="50" cy="28" r="8" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <path d="M24 12 L52 12 L52 44 L24 44 L36 28 Z" fill="gold" fillOpacity="0.55" stroke="orange" strokeWidth="1" />
+                    <path d="M76 12 L48 12 L48 44 L76 44 L64 28 Z" fill="gold" fillOpacity="0.55" stroke="orange" strokeWidth="1" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">커튼 두 장이 가운데서 겹쳐 주인공을 가림</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>액자 덮기 — 위·아래만 풀칠!</h4>
+                <p>③ 장식 액자를 커튼 위에 덮고 위·아래 변(초록)만 뒷판에 붙입니다. 좌·우는 절대 붙이지 마세요 — 그래야 커튼이 액자 밑 좌우로 빠져나갑니다. 액자가 커튼을 눌러 납작하게 잡아 줍니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="28" y="8" width="44" height="40" rx="3" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <path d="M50 16 L62 28 L50 40 L38 28 Z" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="30" y="9" width="40" height="5" fill="rgba(0,170,0,0.3)" stroke="green" strokeWidth="0.7" strokeDasharray="1 2" />
+                    <rect x="30" y="42" width="40" height="5" fill="rgba(0,170,0,0.3)" stroke="green" strokeWidth="0.7" strokeDasharray="1 2" />
+                    <path d="M24 28 L14 28 M76 28 L86 28" stroke="orange" strokeWidth="2" />
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">위·아래만 풀칠 — 좌·우는 커튼 길</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>가장 중요 — 지지대 붙이기</h4>
+                <p>② 스트랩 한끝을 문 안쪽 Ⓡ/Ⓛ 자리(경첩에서 조금 안쪽)에, 다른 끝을 같은 쪽 커튼 바깥 끝에 붙입니다. 두 접힘선이 반드시 문 경첩(세로선)과 나란해야 합니다. 오른쪽·왼쪽 모두 대칭으로!</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <text x="50" y="7" fontSize="4.2" textAnchor="middle" fill="var(--text-secondary)">위에서 내려다본 모습 (오른쪽 문)</text>
+                    <path d="M15 40 L70 40" stroke="var(--text-primary)" strokeWidth="2" /> {/* panel */}
+                    <path d="M70 40 L58 20" stroke="var(--primary-main)" strokeWidth="2" /> {/* door ajar */}
+                    <circle cx="62" cy="27" r="1.6" fill="var(--primary-main)" />
+                    <path d="M62 27 L40 40" stroke="green" strokeWidth="2" /> {/* strap */}
+                    <circle cx="40" cy="40" r="1.6" fill="green" />
+                    <text x="66" y="24" fontSize="4.5" fill="var(--text-primary)">문 피벗</text>
+                    <text x="38" y="47" fontSize="4.5" fill="green">커튼 끝</text>
+                    <path d="M40 36 L28 36" stroke="orange" strokeWidth="1.5" markerEnd="none" />
+                    <text x="33" y="33" fontSize="4.5" textAnchor="middle" fill="orange">커튼이 끌려감</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">6</div>
+              <div className="step-content">
+                <h4>돌 장식 붙이고 열어보기!</h4>
+                <p>문 바깥면에 돌 장식을 붙이면 완성. 두 문을 함께 열면 커튼이 좌우로 걷히며 주인공 둘레에 노란 다이아몬드가 열리고, 닫으면 커튼이 저절로 다시 모여 주인공을 덮습니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    <rect x="5" y="12" width="24" height="36" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* left door open */}
+                    <rect x="81" y="12" width="24" height="36" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* right door open */}
+                    <rect x="29" y="12" width="52" height="36" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* panel */}
+                    <path d="M55 16 L72 30 L55 44 L38 30 Z" fill="gold" fillOpacity="0.6" stroke="orange" strokeWidth="1" /> {/* yellow diamond */}
+                    <circle cx="55" cy="30" r="7" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" /> {/* character */}
+                    <text x="55" y="56" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">문을 열면 커튼이 걷히고 주인공 등장!</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+
+      case 'magic-shutter':
+        return (
+          <>
+            <div className="instruction-step card">
+              <div className="step-badge">1</div>
+              <div className="step-content">
+                <h4>오리기 — 세로살은 자르지 마세요!</h4>
+                <p>검은색 실선을 따라 오려주세요: 앞면 카드 창문 안의 세로 틈(길쭉한 구멍)들, 오른쪽 손잡이가 달린 큰 슬라이더 판(가운데 가로 멈춤 슬롯도 오려냄), 위 안내 다리 1개, 멈춤 핀이 달린 아래 안내 다리 1개. 중요: 창문의 틈 사이 세로살(빗살)은 위아래가 액자에 붙은 채 남겨둡니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* Frame with picket grille: cut gaps (dark) between bars */}
+                    <rect x="8" y="8" width="56" height="40" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    <rect x="16" y="14" width="40" height="28" fill="none" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="21" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="31" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="41" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <rect x="51" y="14" width="5" height="28" fill="rgba(15,23,42,0.7)" />
+                    <text x="36" y="54" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">틈만 오려냄 (살은 그대로)</text>
+                    {/* Slider with grip */}
+                    <rect x="72" y="12" width="26" height="22" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" />
+                    <rect x="98" y="19" width="8" height="8" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" />
+                    <rect x="80" y="28" width="10" height="3" fill="rgba(15,23,42,0.7)" />
+                    <text x="86" y="42" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">슬라이더 + 손잡이</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">2</div>
+              <div className="step-content">
+                <h4>①/② 칸에 두 그림 나눠 그리기</h4>
+                <p>슬라이더의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="14" y="10" width="72" height="30" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
+                    {[0, 1, 2, 3, 4, 5].map((k) => (
+                      <rect key={k} x={20 + k * 10} y="10" width="10" height="30" fill={k % 2 === 0 ? 'rgba(245,158,11,0.5)' : 'rgba(59,130,246,0.45)'} stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    ))}
+                    <text x="25" y="28" fontSize="5" textAnchor="middle">①</text>
+                    <text x="35" y="28" fontSize="5" textAnchor="middle">②</text>
+                    <text x="45" y="28" fontSize="5" textAnchor="middle">①</text>
+                    <text x="55" y="28" fontSize="5" textAnchor="middle">②</text>
+                    <text x="50" y="49" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">①과 ②를 번갈아 그리기</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">3</div>
+              <div className="step-content">
+                <h4>슬라이더 끼우기</h4>
+                <p>슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="20" y="12" width="48" height="34" fill="var(--bg-glass)" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 2" /> {/* slider behind */}
+                    <rect x="10" y="8" width="60" height="42" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" /> {/* card front */}
+                    <rect x="68" y="24" width="14" height="10" fill="var(--primary-light)" stroke="var(--primary-main)" strokeWidth="1" /> {/* grip out the right */}
+                    <text x="75" y="42" fontSize="4.5" textAnchor="middle" fill="var(--primary-main)">손잡이는 오른쪽 밖으로</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">4</div>
+              <div className="step-content">
+                <h4>중요 — 안내 다리 붙이고 멈춤 핀 끼우기</h4>
+                <p>두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 립(날개)은 슬라이더 쪽으로 접어 덮기만 하세요 — 슬라이더에 붙이면 안 돼요! 아래 안내 다리도 같은 방법으로 붙이되, 가운데 멈춤 핀을 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)은 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
+                    <rect x="18" y="20" width="64" height="16" fill="var(--bg-glass)" stroke="var(--text-primary)" strokeWidth="1" /> {/* slider edge */}
+                    <rect x="12" y="10" width="76" height="6" fill="rgba(226,232,240,0.9)" stroke="var(--text-secondary)" strokeWidth="0.8" /> {/* top guide */}
+                    <rect x="12" y="10" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="80" y="10" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="12" y="40" width="76" height="6" fill="rgba(226,232,240,0.9)" stroke="var(--text-secondary)" strokeWidth="0.8" /> {/* bottom guide */}
+                    <rect x="12" y="40" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="80" y="40" width="8" height="6" fill="rgba(34,197,94,0.5)" />
+                    <rect x="44" y="27" width="12" height="4" fill="rgba(15,23,42,0.7)" /> {/* stop slot */}
+                    <rect x="48" y="27" width="3" height="13" fill="var(--primary-main)" /> {/* pin */}
+                    <text x="50" y="53" fontSize="4.5" textAnchor="middle" fill="green">초록(양 끝)만 풀칠 · 핀은 슬롯에 끼우기</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="instruction-step card">
+              <div className="step-badge">5</div>
+              <div className="step-content">
+                <h4>밀어보기 — 짠!</h4>
+                <p>손잡이를 왼쪽 끝까지 밀면 그림 ①, 오른쪽 끝까지 당기면 그림 ②가 짠! 하고 나타납니다. 끝까지 밀어 핀에 딱 걸리는 자리가 그림이 정확히 맞는 자리예요.</p>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <svg width="220" height="110" viewBox="0 0 110 55" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
+                    {/* State ① */}
+                    <rect x="6" y="10" width="40" height="30" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="12" y="16" width="28" height="18" fill="rgba(245,158,11,0.55)" stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    <text x="26" y="48" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">← 끝까지 밀면 그림 ①</text>
+                    {/* Arrow */}
+                    <path d="M50 25 L60 25 M57 22 L60 25 L57 28" fill="none" stroke="var(--primary-main)" strokeWidth="1.5" />
+                    {/* State ② */}
+                    <rect x="64" y="10" width="40" height="30" rx="2" fill="none" stroke="var(--text-primary)" strokeWidth="1.2" />
+                    <rect x="70" y="16" width="28" height="18" fill="rgba(59,130,246,0.5)" stroke="var(--text-secondary)" strokeWidth="0.5" />
+                    <text x="84" y="48" fontSize="4.5" textAnchor="middle" fill="var(--text-secondary)">끝까지 당기면 그림 ② →</text>
                   </svg>
                 </div>
               </div>
@@ -1199,7 +1519,21 @@ export default function Instructions() {
     <div className="preview-content" style={{ overflowY: 'auto', padding: 'var(--space-xl)' }}>
       <h3 style={{ marginBottom: 'var(--space-lg)' }}>{cardParams.theme} - 조립 설명서</h3>
       <div className="instructions-container" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-        {renderSteps()}
+        {elements.map((element, i) => (
+          <React.Fragment key={element.id || i}>
+            {elements.length > 1 && (
+              <h4 style={{ margin: 'var(--space-md) 0 0' }}>
+                {CIRCLED_NUMBERS[i] || i + 1} {getMechanism(element.mechanism)?.labelKo || element.mechanism}
+              </h4>
+            )}
+            {renderSteps(element)}
+          </React.Fragment>
+        ))}
+        {elements.length > 1 && (
+          <p style={{ color: 'var(--text-secondary)' }}>
+            여러 부품을 조합할 때는 2D 도안의 마지막 페이지(조립 배치도)에 표시된 위치에 각 번호 부품을 붙이세요.
+          </p>
+        )}
       </div>
     </div>
   );
