@@ -238,8 +238,42 @@ export async function exportAndDownload(svgPages, options, instructions, languag
     addInstructionPage(doc, instructions, language, paperSize);
   }
 
-  // Trigger download
-  doc.save(filename);
+  // Trigger download.
+  //
+  // NB: we deliberately do NOT use jsPDF's `doc.save()`. Internally that
+  // creates a *detached* <a download> and dispatches a click on it. Chromium
+  // tolerates a detached anchor, but Firefox (and some other browsers) ignore
+  // the click on an anchor that isn't connected to the document — so the
+  // button appears to "do nothing" and no file is downloaded. Instead we grab
+  // the Blob and download it ourselves via an anchor we actually attach to the
+  // DOM (the same pattern the SVG export uses), which works across browsers.
+  const pdfBlob = doc.output('blob');
+  triggerBlobDownload(pdfBlob, filename);
+}
+
+/**
+ * Reliably trigger a browser download for a Blob across browsers.
+ * The anchor is appended to the document before clicking (Firefox requires a
+ * connected anchor) and cleaned up afterwards.
+ *
+ * @param {Blob} blob
+ * @param {string} filename
+ */
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  // Defer cleanup so the browser has committed the download before the object
+  // URL is revoked / the anchor is removed.
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
 }
 
 // ─── Internal: resolve jsPDF dependency ─────────────────────────────
