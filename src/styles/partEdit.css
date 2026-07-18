@@ -1,0 +1,157 @@
+/* 🔧 부분 편집 오버레이 — .svg-paper 위에 절대배치되는 스패너 마커/팝오버 */
+
+.pe-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* 마커/팝오버만 클릭 받게 */
+  z-index: 5;
+}
+
+.pe-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.pe-wrench {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--primary-main, #6c8cff);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  animation: pe-pulse 2.4s ease-in-out infinite;
+  transition: transform 0.12s ease;
+}
+
+.pe-wrench:hover { transform: scale(1.12); }
+.pe-wrench.is-open { background: #334155; animation: none; }
+
+@keyframes pe-pulse {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(108, 140, 255, 0.5); }
+  50% { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 0 0 6px rgba(108, 140, 255, 0); }
+}
+
+.pe-popover {
+  position: absolute;
+  top: 50%;
+  width: 240px;
+  max-width: 62vw;
+  transform: translateY(-50%);
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #1e293b);
+  border: 1px solid var(--border-glass, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  padding: 12px;
+  z-index: 6;
+}
+
+.pe-popover.to-right { left: 34px; }
+.pe-popover.to-left { right: 34px; }
+
+.pe-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.pe-close {
+  display: flex;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 6px;
+}
+.pe-close:hover { background: var(--bg-glass, rgba(0, 0, 0, 0.05)); }
+
+.pe-hint {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.pe-control { margin-bottom: 12px; }
+
+.pe-control-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 6px;
+}
+
+.pe-control-value { color: var(--text-secondary, #64748b); font-variant-numeric: tabular-nums; }
+
+.pe-range { width: 100%; }
+
+.pe-enum { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.pe-enum-btn {
+  flex: 1 1 auto;
+  min-width: 92px;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-secondary, #555);
+  cursor: pointer;
+}
+.pe-enum-btn:hover { border-color: var(--primary-main, #6c8cff); }
+.pe-enum-btn.is-active {
+  border-color: var(--primary-main, #6c8cff);
+  background: var(--primary-light, rgba(108, 140, 255, 0.15));
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
+}
+
+.pe-discuss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-main, #6c8cff);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pe-discuss:hover { filter: brightness(1.05); }
+
+/* 프리뷰 상단의 부분 편집 토글 버튼 */
+.part-edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-glass, #ddd);
+  border-radius: 999px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-secondary, #555);
+  font-size: 13px;
+  cursor: pointer;
+}
+.part-edit-toggle.is-active {
+  border-color: var(--primary-main, #6c8cff);
+  background: var(--primary-light, rgba(108, 140, 255, 0.15));
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
+}

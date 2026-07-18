@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useCardStore from '../../store/useCardStore';
 import { SendHorizonal, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -6,8 +6,19 @@ import remarkGfm from 'remark-gfm';
 import '../../styles/chat.css';
 
 export default function ChatWindow() {
-  const { messages, addMessage, isTyping, setTyping, setCardParams } = useCardStore();
+  const { messages, addMessage, isTyping, setTyping, setCardParams, chatDraft, setChatDraft } = useCardStore();
   const [input, setInput] = useState('');
+  const inputRef = useRef(null);
+
+  // A wrench "채팅으로 바꾸기" click queues a scoped question here; pull it into
+  // the input box (don't auto-send, so the user can tweak it), then clear it.
+  useEffect(() => {
+    if (chatDraft) {
+      setInput(chatDraft);
+      setChatDraft('');
+      inputRef.current?.focus();
+    }
+  }, [chatDraft, setChatDraft]);
 
   const sendMessage = async (text) => {
     if (!text.trim() || isTyping) return;
@@ -168,6 +179,7 @@ export default function ChatWindow() {
       <div className="chat-input-area">
         <div className="chat-input-wrapper">
           <input
+            ref={inputRef}
             type="text"
             className="chat-input"
             value={input}
