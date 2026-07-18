@@ -24,7 +24,7 @@ import { renderFlapClap, resolveFlapClapGeometry } from './flapClap.js';
 import { renderSpinFlap, resolveSpinFlapGeometry } from './spinFlap.js';
 import { renderCameraPrintPull, resolveCameraPull } from './cameraPrintPull.js';
 import { renderGateCurtain, resolveGateCurtain } from './gateCurtain.js';
-import { renderMagicShutter } from './magicShutter.js';
+import { renderMagicShutter, resolveMagicShutter } from './magicShutter.js';
 import { PARAM_SCHEMAS } from './paramSchemas.js';
 import { getElements } from '../store/cardModel.js';
 
@@ -219,8 +219,21 @@ export const MECHANISM_REGISTRY = {
     sceneType: 'flat',
     labelKo: '매직 셔터 (손잡이를 옆으로 밀면 창문 그림이 바뀌는 액자)',
     render: (params) => renderMagicShutter(params),
-    defaultParams: { windowWidth: 96, windowHeight: 60, pitch: 6, grip: 24 },
+    defaultParams: { windowWidth: 96, windowHeight: 60, pitch: 6, grip: 24, windowShape: 'rect', revealStyle: 'grille' },
     instructionStyle: 'magic-shutter',
+    // In 'swap' mode the two pictures are full-window panels, so hand the AI /
+    // "직접 그리기" guide two slots sized to the real aperture. In 'grille' mode
+    // the pictures are hand-sliced into interleaved strips on the slider, so the
+    // default single-slot hint is kept (a single AI image can't be pre-sliced).
+    decorationSlots: (params) => {
+      const geo = resolveMagicShutter(params);
+      if (geo.revealStyle !== 'swap') return null;
+      const shapeNote = geo.windowShape === 'ellipse' ? '(원/타원 창에 꽉 차게)' : '(창에 꽉 차게)';
+      return [
+        { label: `창문 그림 ① ${shapeNote}`, width: geo.winW, height: geo.winH },
+        { label: `창문 그림 ② ${shapeNote}`, width: geo.winW, height: geo.winH },
+      ];
+    },
   },
 };
 
@@ -427,8 +440,9 @@ export const INSTRUCTION_TEXT = {
     title: '매직 셔터 조립 설명서',
     materials: '가위 또는 칼(어른과 함께), 풀 또는 양면테이프, 색연필(선택)',
     steps: [
-      '검은색 실선을 따라 오려주세요: ① 앞면 카드의 창문 안 세로 틈(길쭉한 구멍)들 — 중요: 틈 사이의 세로살(빗살)은 절대 자르지 마세요! 살은 위아래가 액자에 붙어 있어야 합니다. ② 오른쪽에 손잡이가 달린 큰 슬라이더 판(가운데 가로로 길쭉한 멈춤 슬롯도 오려냄), ③ 위 안내 다리 띠 1개, ④ 멈춤 핀이 달린 아래 안내 다리 띠 1개.',
-      '슬라이더 판의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.',
+      '먼저 도안의 창문 종류를 확인하세요. [빗살형]이면 창문 안에 세로 틈(길쭉한 구멍)들이 있고, [통째 전환형]이면 창문이 한 개의 큰 구멍(사각형 또는 원/타원)입니다.',
+      '검은색 실선을 따라 오려주세요: ① 앞면 카드의 창문 — 빗살형은 세로 틈들만 오리고 틈 사이의 세로살(빗살)은 절대 자르지 마세요(살은 위아래가 액자에 붙어 있어야 함)! 통째 전환형은 창문 모양(사각/원/타원)대로 한 개의 큰 구멍을 오려냅니다(창살 무늬는 원하면 장식으로 직접 그리세요 — 자르지 않음). ② 오른쪽에 손잡이가 달린 큰 슬라이더 판(가운데 가로로 길쭉한 멈춤 슬롯도 오려냄), ③ 위 안내 다리 띠 1개, ④ 멈춤 핀이 달린 아래 안내 다리 띠 1개.',
+      '슬라이더 판에 그림을 채워주세요. [빗살형]: ① 표시 칸들(한 칸 건너 하나씩)에 첫 번째 그림 조각을, ② 표시 칸들에 두 번째 그림 조각을 번갈아 그립니다. [통째 전환형]: ①·② 두 칸(각각 창문 크기)에 첫/두 번째 그림 전체를 각각 그립니다. 손잡이를 창 폭만큼 밀면 그림 전체가 통째로 바뀝니다.',
       '슬라이더를 그림 그린 면이 창문 쪽을 향하게 앞면 카드 뒤에 대고, 손잡이를 카드 오른쪽 밖으로 빼내세요. 창문 전체가 슬라이더로 덮이는지 확인합니다.',
       '중요(안내·멈춤 다리): 두 안내 다리는 인쇄면이 카드 뒤로 가게 뒤집어, 점선 표시 자리에 맞춰 붙입니다. 위 안내 다리를 슬라이더 위쪽에 다리처럼 얹어 풀칠 면(초록)만 카드에 붙이고, 접는 선의 립(날개)을 슬라이더 쪽으로 접어 덮어주세요 — 립은 슬라이더에 붙이면 안 됩니다! 아래 안내 다리도 같은 방법으로 슬라이더 아래쪽에 붙이되, 가운데 멈춤 핀을 산접기로 위로 접어 슬라이더의 멈춤 슬롯에 뒤에서 끼우고, 앞으로 나온 핀 끝(파란 골선)을 아래로 접어 고정하세요. 이 핀이 슬롯 양 끝에 걸려 손잡이가 딱 한 칸만 움직입니다.',
       '손잡이를 왼쪽 끝까지 밀면 그림 ①, 오른쪽 끝까지 당기면 그림 ②가 짠! 하고 나타납니다. 끝까지 밀어 핀에 딱 걸리는 자리가 그림이 정확히 맞는 자리예요.',

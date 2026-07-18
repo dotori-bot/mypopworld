@@ -1235,8 +1235,8 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">1</div>
               <div className="step-content">
-                <h4>오리기 — 세로살은 자르지 마세요!</h4>
-                <p>검은색 실선을 따라 오려주세요: 앞면 카드 창문 안의 세로 틈(길쭉한 구멍)들, 오른쪽 손잡이가 달린 큰 슬라이더 판(가운데 가로 멈춤 슬롯도 오려냄), 위 안내 다리 1개, 멈춤 핀이 달린 아래 안내 다리 1개. 중요: 창문의 틈 사이 세로살(빗살)은 위아래가 액자에 붙은 채 남겨둡니다.</p>
+                <h4>오리기 — 창문 종류부터 확인!</h4>
+                <p><b>[빗살형]</b> 창문 안의 세로 틈(길쭉한 구멍)들만 오리고, 틈 사이의 세로살(빗살)은 위아래가 액자에 붙은 채 <b>절대 자르지 마세요</b>. <b>[통째 전환형]</b> 창문은 한 개의 큰 구멍(사각형 또는 원/타원) — 그 모양대로 오려냅니다(창살 무늬는 원하면 장식으로 직접 그리세요, 자르지 않음). 그다음 오른쪽 손잡이가 달린 큰 슬라이더 판(가운데 가로 멈춤 슬롯도 오려냄), 위 안내 다리 1개, 멈춤 핀이 달린 아래 안내 다리 1개를 오립니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="220" height="120" viewBox="0 0 110 60" style={{ width: '100%', maxWidth: '320px', height: 'auto' }}>
                     {/* Frame with picket grille: cut gaps (dark) between bars */}
@@ -1259,8 +1259,8 @@ export default function Instructions() {
             <div className="instruction-step card">
               <div className="step-badge">2</div>
               <div className="step-content">
-                <h4>①/② 칸에 두 그림 나눠 그리기</h4>
-                <p>슬라이더의 세로 칸에 그림을 채워주세요. ① 표시 칸들(한 칸 건너 하나씩)에는 첫 번째 그림 조각을, ② 표시 칸들에는 두 번째 그림 조각을 번갈아 그립니다. 칸 순서만 지키면 창문에서 두 그림이 각각 온전하게 보여요.</p>
+                <h4>슬라이더에 두 그림 그리기</h4>
+                <p><b>[빗살형]</b> 세로 칸에 ① 표시 칸(한 칸 건너 하나씩)엔 첫 번째 그림 조각을, ② 표시 칸엔 두 번째 그림 조각을 번갈아 그립니다(창의 절반씩 보임). <b>[통째 전환형]</b> ①·② 두 칸(각각 창문 크기)에 첫/두 번째 그림 <b>전체</b>를 각각 그립니다 — 손잡이를 창 폭만큼 밀면 그림 전체가 통째로 바뀝니다.</p>
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <svg width="200" height="110" viewBox="0 0 100 55" style={{ width: '100%', maxWidth: '300px', height: 'auto' }}>
                     <rect x="14" y="10" width="72" height="30" fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />

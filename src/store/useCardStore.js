@@ -24,6 +24,10 @@ const useCardStore = create((set) => ({
   // Chat
   messages: [],
   isTyping: false,
+  // A pre-filled chat message queued by the "🔧 부분 편집 → 채팅으로 바꾸기"
+  // flow. ChatWindow consumes it into its input box (and clears it). Lets the
+  // preview's wrench markers start a scoped conversation about one part.
+  chatDraft: '',
   
   // Card parameters (set by AI)
   cardParams: null,
@@ -46,6 +50,7 @@ const useCardStore = create((set) => ({
       userArt: art,
       decorationMode: !art && s.decorationMode === 'user-image' ? 'freehand' : s.decorationMode,
     })),
+  setChatDraft: (t) => set({ chatDraft: t }),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setTyping: (v) => set({ isTyping: v }),
   setCardParams: (p) => set({ cardParams: p }),

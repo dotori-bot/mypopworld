@@ -353,23 +353,38 @@ export const PARAM_SCHEMAS = {
 
   'magic-shutter': [
     {
+      key: 'revealStyle', labelKo: '전환 방식 (revealStyle)', type: 'enum',
+      options: [
+        { value: 'grille', labelKo: '빗살형 (창의 절반만 보임 · 짧은 밀기)' },
+        { value: 'swap', labelKo: '통째 전환형 (창 전체가 바뀜 · 창 폭만큼 밀기)' },
+      ],
+    },
+    {
+      key: 'windowShape', labelKo: '창 모양 (windowShape)', type: 'enum',
+      options: [
+        { value: 'rect', labelKo: '사각형' },
+        { value: 'ellipse', labelKo: '원 / 타원' },
+      ],
+    },
+    {
       key: 'windowWidth', labelKo: '창문 폭 (windowWidth)', unit: 'mm', step: 1,
-      // Realized winW snaps to an odd column count × pitch; probe both ends of
-      // the fit clamp (whitespace must also hold slider + grip).
+      // Realized winW snaps (grille: odd cols × pitch; swap: fit-clamped whole
+      // width). Probe both ends of the fit clamp for the CURRENT reveal style
+      // (whitespace must also hold slider + grip).
       limits: (p, paperSize) => ({
-        min: Math.ceil(resolveMagicShutter({ paperSize, windowWidth: 0, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip }).winW),
-        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: 9999, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip }).winW),
+        min: Math.ceil(resolveMagicShutter({ paperSize, windowWidth: 0, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip, revealStyle: p.revealStyle, windowShape: p.windowShape }).winW),
+        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: 9999, windowHeight: p.windowHeight, pitch: p.pitch, grip: p.grip, revealStyle: p.revealStyle, windowShape: p.windowShape }).winW),
       }),
     },
     {
       key: 'windowHeight', labelKo: '창문 높이 (windowHeight)', unit: 'mm', step: 1,
       limits: (p, paperSize) => ({
         min: MAGIC_SHUTTER_LIMITS.WIN_H_MIN,
-        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: p.windowWidth, windowHeight: 9999, pitch: p.pitch, grip: p.grip }).winH),
+        max: Math.floor(resolveMagicShutter({ paperSize, windowWidth: p.windowWidth, windowHeight: 9999, pitch: p.pitch, grip: p.grip, revealStyle: p.revealStyle, windowShape: p.windowShape }).winH),
       }),
     },
     {
-      key: 'pitch', labelKo: '세로살 폭 = 손잡이 이동 거리 (pitch)', unit: 'mm', step: 1,
+      key: 'pitch', labelKo: '세로살 폭 = 손잡이 이동 거리 (pitch, 빗살형만)', unit: 'mm', step: 1,
       limits: () => ({ min: MAGIC_SHUTTER_LIMITS.PITCH_MIN, max: MAGIC_SHUTTER_LIMITS.PITCH_MAX }),
     },
     {

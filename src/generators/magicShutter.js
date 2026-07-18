@@ -178,6 +178,7 @@ export const MAGIC_SHUTTER_LIMITS = {
   STOP_BRIDGE_W: 12,     // bottom stop-guide band height on the face (mm)
   OUTER_PAD: 4,          // whitespace outer pad (mm)
   COLS_MIN: 5,           // minimum grille columns (odd) → ≥ 2 see-through gaps
+  SWAP_MARGIN: 3,        // swap mode: outer x-pad on each side of the 2-panel slider (mm)
   // Whitespace (lower-half) vertical layout spacings — single-sourced so the
   // resolver's whiteHeightLimit clamp and generate()'s part placement agree.
   WS_TOP_OFF: 7,         // spine → slider top (mm)
@@ -211,9 +212,42 @@ function toOdd(n) {
   return i % 2 === 0 ? i - 1 : i;
 }
 
+/** Normalize the window-shape option to a supported value. */
+function normShape(s) {
+  return s === 'ellipse' ? 'ellipse' : 'rect';
+}
+
+/** Normalize the reveal-style option to a supported value. */
+function normStyle(s) {
+  return s === 'swap' ? 'swap' : 'grille';
+}
+
+/** SVG path for an axis-aligned ellipse (two half-arcs), centre (cx,cy). */
+function ellipsePath(cx, cy, rx, ry) {
+  const x0 = round(cx - rx), x1 = round(cx + rx), cyr = round(cy);
+  return (
+    `M ${x0} ${cyr} ` +
+    `A ${round(rx)} ${round(ry)} 0 1 0 ${x1} ${cyr} ` +
+    `A ${round(rx)} ${round(ry)} 0 1 0 ${x0} ${cyr} Z`
+  );
+}
+
+/** Ellipse half-height (y) at a given x, or 0 if x is outside the ellipse. */
+function ellipseHalfH(x, cx, rx, ry) {
+  const t = (x - cx) / rx;
+  if (Math.abs(t) >= 1) return 0;
+  return ry * Math.sqrt(1 - t * t);
+}
+
 /**
  * @typedef {Object} MagicShutterGeometry
  * @property {'A4'|'LETTER'} paperSize
+ * @property {'rect'|'ellipse'} windowShape - Aperture/frame outline shape
+ * @property {'grille'|'swap'} revealStyle  - 'grille' (picket-fence, shows ½) or
+ *                                    'swap' (single aperture, whole picture swaps)
+ * @property {number} panel1X0      - swap: slider-local left of full-window panel ① (mm)
+ * @property {number} panel2X0      - swap: slider-local left of full-window panel ② (mm)
+ * @property {number} guideL        - Guide bridge left edge, card-front world-x (mm)
  * @property {number} spineY        - Spine y on the sheet (mm)
  * @property {number} faceW         - Printable front-face width (mm)
  * @property {number} faceH         - Printable front-face height from spine (mm)
@@ -260,7 +294,8 @@ function toOdd(n) {
  * safe for the extreme probes (9999 / 0 / NaN / undefined) paramSchemas.js uses.
  *
  * @param {{ paperSize?:'A4'|'LETTER', windowWidth?:number, windowHeight?:number,
- *           pitch?:number, grip?:number }} [opts]
+ *           pitch?:number, grip?:number, windowShape?:'rect'|'ellipse',
+ *           revealStyle?:'grille'|'swap' }} [opts]
  * @returns {MagicShutterGeometry}
  */
 export function resolveMagicShutter(opts = {}) {
@@ -276,26 +311,12 @@ export function resolveMagicShutter(opts = {}) {
   const whitespaceH = paper.height - spineY - PRINT.MARGIN;
 
   // ── User params (all clamped, NaN-safe) ─────────────────────────────────────
+  const windowShape = normShape(opts.windowShape);
+  const revealStyle = normStyle(opts.revealStyle);
   const w = clamp(numOr(opts.pitch, 6), L.PITCH_MIN, L.PITCH_MAX);
   const gripLen = clamp(numOr(opts.grip, 24), L.GRIP_MIN, L.GRIP_MAX);
-  const travel = w;
-  const coverPad = w + L.SAFETY_PAD;                        // > travel (coverage proof)
 
-  // ── Window WIDTH → odd column count ─────────────────────────────────────────
-  const winWtarget = clamp(numOr(opts.windowWidth, 96), L.WIN_W_MIN, L.WIN_W_MAX);
-  const frontWidthLimit = faceW - 2 * L.FRAME_MIN;
-  // whitespace must hold: OUTER + S_x + gripLen + OUTER, with S_x = W + 3w + 2·SAFETY.
-  const whiteWidthLimit =
-    whitespaceW - 2 * L.OUTER_PAD - (3 * w + 2 * L.SAFETY_PAD) - gripLen - 1;
-  const wCap = Math.max(L.COLS_MIN * w, Math.min(winWtarget, frontWidthLimit, whiteWidthLimit));
-  let cols = toOdd(Math.round(winWtarget / w));
-  cols = Math.max(L.COLS_MIN, cols);
-  while (cols > L.COLS_MIN && cols * w > wCap) cols -= 2;   // shrink to fit (stay odd)
-  const winW = round(cols * w, 2);
-  const gaps = (cols - 1) / 2;
-  const bars = (cols + 1) / 2;
-
-  // ── Window HEIGHT ───────────────────────────────────────────────────────────
+  // ── Window HEIGHT (identical for both reveal styles) ────────────────────────
   const winHtarget = clamp(numOr(opts.windowHeight, 60), L.WIN_H_MIN, L.WIN_H_MAX);
   // Front face must reserve: top guide band (within TOP_RESERVE) + window + the
   // slider's below-window STOP_ZONE extent + gap + bottom guide band + spine pad.
@@ -308,46 +329,92 @@ export function resolveMagicShutter(opts = {}) {
     Math.max(L.WIN_H_MIN, Math.min(L.WIN_H_MAX, frontHeightLimit, whiteHeightLimit)),
   );
 
-  // ── Front-face placement ────────────────────────────────────────────────────
-  // Window is RIGHT-biased (right frame border = FRAME_MIN) so that, in assembly,
-  // the slider's grip pokes out past the card's right edge — the reel's signature
-  // protruding "Pull" handle. Left frame border ≥ FRAME_MIN for every clamped winW
-  // (proof: winW ≤ faceW − 2·FRAME_MIN ⇒ windowX0 ≥ MARGIN + FRAME_MIN).
-  const windowX0 = round(paper.width - PRINT.MARGIN - L.FRAME_MIN - (cols * w), 2);
+  const winWtarget = clamp(numOr(opts.windowWidth, 96), L.WIN_W_MIN, L.WIN_W_MAX);
+  const frontWidthLimit = faceW - 2 * L.FRAME_MIN;
+
+  // ── WIDTH + slider layout — the two reveal styles diverge here ───────────────
+  let travel, coverPad, winW, cols, gaps, bars, sliderW, sliderRestX, stopSlotCx, guideL;
+  let panel1X0 = 0, panel2X0 = 0; // slider-local left of each full-window panel (swap)
+
+  if (revealStyle === 'swap') {
+    // Single aperture; the slider carries TWO full-window panels (① then ②) laid
+    // side by side, and the handle throw is a WHOLE window width, so picture ①
+    // slides entirely out and ② entirely in ("창 전체가 통째로 바뀜").
+    const m = L.SWAP_MARGIN;
+    // Front fit: sliderRestX = windowX0 − m − winW ≥ MARGIN (window right-biased)
+    //   ⇒ 2·winW ≤ faceW − FRAME_MIN − m
+    const frontWidthLimitSwap = (faceW - L.FRAME_MIN - m) / 2;
+    // Whitespace fit: 2·OUTER + sliderW(=2winW+2m) + gripLen + 1 ≤ whitespaceW
+    const whiteWidthLimitSwap =
+      (whitespaceW - 2 * L.OUTER_PAD - 2 * m - gripLen - 1) / 2;
+    winW = round(clamp(
+      winWtarget,
+      L.WIN_W_MIN,
+      Math.max(L.WIN_W_MIN, Math.min(L.WIN_W_MAX, frontWidthLimit, frontWidthLimitSwap, whiteWidthLimitSwap)),
+    ), 2);
+    travel = round(winW, 2);
+    coverPad = m;
+    cols = 1; gaps = 1; bars = 0;
+    sliderW = round(2 * winW + 2 * m, 2);
+    // slider-local: [m .. m+winW] = panel ② (revealed at u=travel),
+    //               [m+winW .. m+2winW] = panel ① (shown at rest u=0).
+    panel2X0 = round(m, 2);
+    panel1X0 = round(m + winW, 2);
+    sliderRestX = round((paper.width - PRINT.MARGIN - L.FRAME_MIN - winW) - m - winW, 2);
+    stopSlotCx = round(m + 1.5 * winW, 2);           // window-centre in slider-local
+    guideL = round((paper.width - PRINT.MARGIN - L.FRAME_MIN - winW) - L.GLUE_END, 2);
+  } else {
+    // Picket-fence grille (original): window width snaps to an ODD column count,
+    // each picture shows through the gaps only (≈ half), throw = one column w.
+    travel = round(w, 2);
+    coverPad = round(w + L.SAFETY_PAD, 2);                  // > travel (coverage proof)
+    const whiteWidthLimit =
+      whitespaceW - 2 * L.OUTER_PAD - (3 * w + 2 * L.SAFETY_PAD) - gripLen - 1;
+    const wCap = Math.max(L.COLS_MIN * w, Math.min(winWtarget, frontWidthLimit, whiteWidthLimit));
+    cols = toOdd(Math.round(winWtarget / w));
+    cols = Math.max(L.COLS_MIN, cols);
+    while (cols > L.COLS_MIN && cols * w > wCap) cols -= 2; // shrink to fit (stay odd)
+    winW = round(cols * w, 2);
+    gaps = (cols - 1) / 2;
+    bars = (cols + 1) / 2;
+    sliderW = round(winW + travel + 2 * coverPad, 2);      // = W + 3w + 2·SAFETY
+    sliderRestX = round((paper.width - PRINT.MARGIN - L.FRAME_MIN - winW) - coverPad, 2);
+    stopSlotCx = round(coverPad + winW / 2, 2);            // aligned to window centre
+    guideL = round(sliderRestX - L.GLUE_END, 2);
+  }
+
+  // ── Front-face placement (right-biased so the grip pokes past the right edge) ─
+  // Left frame border ≥ FRAME_MIN for every clamped winW (grille: winW ≤ faceW −
+  // 2·FRAME_MIN; swap: winW ≤ (faceW − FRAME_MIN − m)/2 ⇒ even more slack).
+  const windowX0 = round(paper.width - PRINT.MARGIN - L.FRAME_MIN - winW, 2);
   const windowY0 = round(PRINT.MARGIN + L.TOP_RESERVE, 2);
   const windowCx = round(windowX0 + winW / 2, 2);
   const windowCy = round(windowY0 + winH / 2, 2);
 
-  // ── Slider field ────────────────────────────────────────────────────────────
-  const sliderW = round(winW + travel + 2 * coverPad, 2); // = W + 3w + 2·SAFETY
+  // ── Slider field height + stop-slot (shared) ────────────────────────────────
   const sliderH = round(L.COVER_PAD_Y + winH + L.STOP_ZONE, 2);
-  const sliderRestX = round(windowX0 - coverPad, 2);       // slider left @ u=0 (shows ①)
-
-  // Stop-slot (slider-local coords: origin at slider top-left).
   const stopSlotLen = round(travel + L.PIN_FOOT, 2);
   const stopSlotH = round(L.PIN_ACROSS + L.LAT_CLEAR, 2);
-  const stopSlotCx = round(coverPad + winW / 2, 2);        // aligned to window centre
   const stopZoneCy = round(L.COVER_PAD_Y + winH + L.STOP_ZONE / 2, 2);
-
   const channelH = round(sliderH + L.LAT_CLEAR, 2);
-  const guideLen = round(sliderW + travel + 2 * L.GLUE_END, 2);
+  // Guide bridge length: grille bridges the full stroke; swap only needs to span
+  // the window (the slider is always wider than the window, so its edge is always
+  // under the lip near the aperture — the far ends may lift harmlessly).
+  const guideLen =
+    revealStyle === 'swap'
+      ? round(winW + 2 * L.GLUE_END, 2)
+      : round(sliderW + travel + 2 * L.GLUE_END, 2);
 
   // ── Fixed stop-PIN placement (see file header "Registration" & "Pin reach") ──
-  // pinCx (card-front world-x): the ONLY x at which the closed slot bottoms on the
-  // pin at u=0 (① aligned) AND u=travel (② aligned). Both stops shift together if
-  // the pin is off, so this is load-bearing (the 3D preview draws the pin here too).
-  //   slot right end @u=0     = sliderRestX + stopSlotCx + stopSlotLen/2
-  //   pin right edge          = pinCx + PIN_FOOT/2, and stopSlotLen/2 − PIN_FOOT/2 = travel/2
-  //   ⇒ pinCx = sliderRestX + stopSlotCx + travel/2
+  // Generic in travel: the closed slot bottoms on the pin at u=0 (① aligned) AND
+  // u=travel (② aligned) iff pinCx = sliderRestX + stopSlotCx + travel/2. Both
+  // stops shift together if the pin is off, so this x is load-bearing (the 3D
+  // preview draws the pin here too).
   const pinCx = round(sliderRestX + stopSlotCx + travel / 2, 2);
-  // Part-local x of the pin on the bottom-stop leg. ASSEMBLY CONVENTION: every
-  // back-mounted part (slider + both legs) is placed PRINTED-FACE-DOWN against the
-  // card back (glue marks kiss the card; slider pictures face the window). The
-  // card panel is itself mirrored when flipped face-down, so the two x-mirrors
-  // cancel → a part's printed-local x maps 1:1 to card-front world-x with the
-  // part's LEFT edge on the target's left edge (guideL = sliderRestX − GLUE_END):
-  //   pinLocalX = pinCx − guideL = stopSlotCx + travel/2 + GLUE_END
-  const pinLocalX = round(stopSlotCx + travel / 2 + L.GLUE_END, 2);
+  // Part-local x on the bottom-stop leg. ASSEMBLY CONVENTION: every back-mounted
+  // part is placed PRINTED-FACE-DOWN, so its printed-local x maps 1:1 to card-front
+  // world-x with the leg's LEFT edge on guideL → pinLocalX = pinCx − guideL.
+  const pinLocalX = round(pinCx - guideL, 2);
   // Front-face y of the stop-slot band and the pin (fold up, thread, cap down).
   const slotTopY = round(windowY0 + winH + L.STOP_ZONE / 2 - stopSlotH / 2, 2); // far edge
   const slotBotY = round(windowY0 + winH + L.STOP_ZONE / 2 + stopSlotH / 2, 2); // near edge
@@ -356,12 +423,14 @@ export function resolveMagicShutter(opts = {}) {
 
   return {
     paperSize,
+    windowShape,
+    revealStyle,
     spineY: round(spineY, 2),
     faceW: round(faceW, 2),
     faceH: round(faceH, 2),
     whitespaceH: round(whitespaceH, 2),
     pitch: round(w, 2),
-    travel: round(travel, 2),
+    travel,
     cols,
     bars,
     gaps,
@@ -376,6 +445,8 @@ export function resolveMagicShutter(opts = {}) {
     sliderW,
     sliderH,
     sliderRestX,
+    panel1X0,
+    panel2X0,
     gripLen: round(gripLen, 2),
     gripH: L.GRIP_H,
     stopSlotLen,
@@ -384,13 +455,14 @@ export function resolveMagicShutter(opts = {}) {
     stopZoneCy,
     channelH,
     guideLen,
+    guideL,
     pinCx,
     pinLocalX,
     slotTopY,
     slotBotY,
     pinRootY,
     pinTipY,
-    restOffsets: [0, round(travel, 2)],
+    restOffsets: [0, travel],
   };
 }
 
@@ -402,29 +474,56 @@ function drawFrontWindow(g, geo, isColor) {
   const L = MAGIC_SHUTTER_LIMITS;
   const CUT = getLineStyle('CUT', isColor);
   const SCORE = getLineStyle('SCORE', isColor);
-  const { windowX0, windowY0, winW, winH, pitch, cols } = geo;
+  const { windowX0, windowY0, winW, winH, pitch, cols, windowShape, revealStyle,
+    windowCx, windowCy } = geo;
+  const rx = winW / 2, ry = winH / 2;
 
-  // Decorative frame border (score guide, clamped inside the trim).
+  // Decorative frame border (score guide) — a rounded ellipse or a rectangle,
+  // matched to the aperture shape, clamped inside the trim.
   const fb = L.FRAME_MIN;
-  const fx = round(Math.max(PRINT.MARGIN, windowX0 - fb));
-  const fy = round(Math.max(PRINT.MARGIN, windowY0 - fb));
-  const fr = round(Math.min(PAPER_SIZES[geo.paperSize].width - PRINT.MARGIN, windowX0 + winW + fb));
-  const fbBot = round(windowY0 + winH + fb);
-  addRect(g, fx, fy, round(fr - fx), round(fbBot - fy), SCORE);
+  if (windowShape === 'ellipse') {
+    addPath(g, ellipsePath(windowCx, windowCy, rx + fb, ry + fb), SCORE);
+  } else {
+    const fx = round(Math.max(PRINT.MARGIN, windowX0 - fb));
+    const fy = round(Math.max(PRINT.MARGIN, windowY0 - fb));
+    const fr = round(Math.min(PAPER_SIZES[geo.paperSize].width - PRINT.MARGIN, windowX0 + winW + fb));
+    const fbBot = round(windowY0 + winH + fb);
+    addRect(g, fx, fy, round(fr - fx), round(fbBot - fy), SCORE);
+  }
 
-  // Picket grille: cut the GAP columns (odd indices); BARS (even) stay joined to
-  // the frame top & bottom. Slots are strictly inside the frame, so every bar is
-  // anchored at both ends and the grille cannot come apart.
-  for (let k = 1; k < cols; k += 2) {
-    const gx = round(windowX0 + k * pitch);
-    addRect(g, gx, round(windowY0), round(pitch), round(winH), CUT);
+  if (revealStyle === 'swap') {
+    // SWAP: a single clean aperture (the whole picture slides behind it). The
+    // child may draw decorative "창살" bars on it — they are not cut.
+    if (windowShape === 'ellipse') {
+      addPath(g, ellipsePath(windowCx, windowCy, rx, ry), CUT);
+    } else {
+      addRect(g, round(windowX0), round(windowY0), round(winW), round(winH), CUT);
+    }
+    addText(g, round(windowCx), round(windowY0 + winH + 3.4),
+      '창 전체가 통째로 바뀜 (창살은 원하면 직접 그리기 · 자르지 않음)', 1.9, 'middle');
+  } else {
+    // GRILLE: cut the GAP columns (odd indices); BARS (even) stay joined to the
+    // frame top & bottom so the grille cannot come apart. In an ellipse the slots
+    // are shortened to the ellipse's height at the column's OUTER edge, so no cut
+    // ever crosses the elliptical rim.
+    for (let k = 1; k < cols; k += 2) {
+      const gx = round(windowX0 + k * pitch);
+      if (windowShape === 'ellipse') {
+        const xFar = (gx + pitch / 2 <= windowCx) ? gx : gx + pitch; // edge farther from cx
+        const hHalf = ellipseHalfH(xFar, windowCx, rx, ry);
+        if (hHalf <= 0.5) continue;                                   // column outside ellipse
+        addRect(g, gx, round(windowCy - hHalf), round(pitch), round(2 * hHalf), CUT);
+      } else {
+        addRect(g, gx, round(windowY0), round(pitch), round(winH), CUT);
+      }
+    }
   }
 
   // Back-guide placement guides (score targets). The slider (behind the front)
   // extends coverPadY above the window and STOP_ZONE below it, so the guides glue
   // to the FRAME just above the slider's top edge and just below its bottom edge —
   // never onto the slider itself.
-  const guideL = round(geo.sliderRestX - L.GLUE_END);
+  const guideL = round(geo.guideL);
   const guideW = geo.guideLen;
   const sliderTopFront = round(windowY0 - geo.coverPadY);
   const sliderBotFront = round(windowY0 + winH + L.STOP_ZONE);   // = sliderTop + sliderH
@@ -447,7 +546,8 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
   const L = MAGIC_SHUTTER_LIMITS;
   const CUT = getLineStyle('CUT', isColor);
   const SCORE = getLineStyle('SCORE', isColor);
-  const { sliderW, sliderH, gripLen, gripH, pitch, cols, coverPad, winH, coverPadY } = geo;
+  const { sliderW, sliderH, gripLen, gripH, pitch, cols, coverPad, winH, coverPadY,
+    revealStyle, panel1X0, panel2X0, winW } = geo;
 
   // Single outline: body + right-side grip bump.
   const gy0 = round(oy + sliderH / 2 - gripH / 2);
@@ -462,19 +562,29 @@ function drawSliderPiece(g, ox, oy, geo, isColor) {
     `L ${round(ox)} ${round(oy + sliderH)} Z`;
   addPath(g, outline, CUT);
 
-  // ①/② strip dividers over the window-visible band, labelled.
   const bandTop = round(oy + coverPadY);
   const bandBot = round(oy + coverPadY + winH);
-  for (let k = 0; k <= cols; k += 1) {
-    const sx = round(ox + coverPad + k * pitch);
-    addPath(g, `M ${sx} ${bandTop} L ${sx} ${bandBot}`, SCORE);
+  if (revealStyle === 'swap') {
+    // Two full-window picture panels side by side. Panel ① rests behind the
+    // window; a one-window push slides panel ② in wholesale.
+    const p1L = round(ox + panel1X0), p2L = round(ox + panel2X0);
+    addRect(g, p1L, bandTop, round(winW), round(winH), SCORE);
+    addRect(g, p2L, bandTop, round(winW), round(winH), SCORE);
+    addText(g, round(p1L + winW / 2), round((bandTop + bandBot) / 2), '① 그림 전체', 3, 'middle');
+    addText(g, round(p2L + winW / 2), round((bandTop + bandBot) / 2), '② 그림 전체', 3, 'middle');
+  } else {
+    // ①/② strip dividers over the window-visible band, labelled.
+    for (let k = 0; k <= cols; k += 1) {
+      const sx = round(ox + coverPad + k * pitch);
+      addPath(g, `M ${sx} ${bandTop} L ${sx} ${bandBot}`, SCORE);
+    }
+    // Label one ① strip (odd k, under a gap at rest) and one ② strip (even k).
+    const midOdd = Math.max(1, cols - 2 - ((cols - 2) % 2 === 0 ? 0 : 1));  // an odd index
+    const oddK = (midOdd % 2 === 1) ? midOdd : midOdd - 1;
+    const evenK = oddK + 1;
+    addText(g, round(ox + coverPad + (oddK + 0.5) * pitch), round((bandTop + bandBot) / 2), '①', 3, 'middle');
+    addText(g, round(ox + coverPad + (evenK + 0.5) * pitch), round((bandTop + bandBot) / 2), '②', 3, 'middle');
   }
-  // Label one ① strip (odd k, under a gap at rest) and one ② strip (even k).
-  const midOdd = Math.max(1, cols - 2 - ((cols - 2) % 2 === 0 ? 0 : 1));  // an odd index
-  const oddK = (midOdd % 2 === 1) ? midOdd : midOdd - 1;
-  const evenK = oddK + 1;
-  addText(g, round(ox + coverPad + (oddK + 0.5) * pitch), round((bandTop + bandBot) / 2), '①', 3, 'middle');
-  addText(g, round(ox + coverPad + (evenK + 0.5) * pitch), round((bandTop + bandBot) / 2), '②', 3, 'middle');
 
   // Lower STOP-SLOT (cut) — the fixed pin threads this; both ends = the two
   // register stops (u=0 → ①, u=w → ②).
@@ -563,6 +673,8 @@ function drawBottomStopGuide(g, ox, oy, geo, isColor) {
  * @param {number} [options.windowHeight=60]
  * @param {number} [options.pitch=6]
  * @param {number} [options.grip=24]
+ * @param {'rect'|'ellipse'} [options.windowShape='rect']
+ * @param {'grille'|'swap'} [options.revealStyle='grille']
  * @param {boolean} [options.isColor=true]
  * @returns {SVGGElement}
  */
@@ -583,8 +695,11 @@ export const generateMagicShutter = (svg, options = {}) => {
     g,
     round(paper.width / 2),
     PRINT.MARGIN - 1.5,
-    `매직 셔터 — 창문 ${geo.winW}×${geo.winH}mm, 세로살 ${geo.cols}칸(살폭 ${geo.pitch}mm) · ` +
-    `손잡이를 ${geo.travel}mm 밀면 그림 ①↔② 전환 · 뒷면에 슬라이더 + 위/아래 안내다리`,
+    `매직 셔터 — ${geo.windowShape === 'ellipse' ? '원/타원' : '사각'} 창문 ${geo.winW}×${geo.winH}mm · ` +
+    (geo.revealStyle === 'swap'
+      ? `통째 전환형(창 전체 그림 ①↔②) · 손잡이를 ${geo.travel}mm 밀면 그림 전체 교체`
+      : `빗살형 세로살 ${geo.cols}칸(살폭 ${geo.pitch}mm) · 손잡이를 ${geo.travel}mm 밀면 그림 ①↔② 전환`) +
+    ` · 뒷면에 슬라이더 + 위/아래 안내다리`,
     2.2,
     'middle',
   );
