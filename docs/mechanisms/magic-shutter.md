@@ -95,9 +95,24 @@ S_x = W + travel + 2·coverPad = W + 3w + 2·SAFETY_PAD
 - **빗살이 떨어짐** → cols 홀수 + 틈 슬롯을 프레임 안쪽에만 내어 모든 살이 위·아래로 프레임에 붙어 있게 함.
 - **NaN/쓰레기/극단 입력** → `numOr(v,d)`로 흡수, 모든 파라미터 clamp, 9999/0/NaN/undefined 프로브 안전.
 
+## 창 모양 · 전환 방식 (windowShape / revealStyle)
+
+두 개의 열거형(enum) 파라미터로 창의 모양과 그림이 바뀌는 방식을 고른다. (예시 카드: 거북이 자동차 창·유령 눈 — 둘 다 창 전체 그림이 통째로 바뀜.)
+
+- **`windowShape`**: `'rect'`(사각형, 기본) | `'ellipse'`(원/타원). 앞면 프레임 테두리와 창 구멍(aperture)이 이 모양을 따른다.
+  - `ellipse` + `swap`: 창을 한 개의 타원 구멍(`ellipsePath`)으로 오려낸다 — 가장 깔끔(유령 눈처럼).
+  - `ellipse` + `grille`: 각 틈(gap) 칸을 그 x에서 타원 높이(칸의 **바깥쪽 x**에서 `ellipseHalfH`, 즉 더 짧은 반높이)로 잘라 넣어 어떤 절선도 타원 테두리를 넘지 않게 한다(보수적으로 안쪽에 들어옴).
+- **`revealStyle`**: `'grille'`(빗살형, 기본) | `'swap'`(통째 전환형).
+  - **grille**(기존): 창 폭이 홀수 cols로 스냅, throw = 한 살 폭 w, 각 그림은 틈으로 **절반만** 보임. 슬라이더는 w폭 조각 인터리브.
+  - **swap**(신규): 창은 한 개의 구멍, 슬라이더에 그림 ①·②를 **창 폭만큼** 두 판(panel)으로 나란히 싣는다. throw = **창 폭 전체**(travel = winW)라 손잡이를 창 폭만큼 밀면 그림 **전체**가 통째로 바뀐다. 살(창살)은 구조가 아니라 원하면 앞면에 직접 그리는 장식.
+
+**swap 기하(핵심 식)**. 바깥 여백 `m = SWAP_MARGIN`(3mm). 슬라이더 로컬: `[m, m+winW]`=②판, `[m+winW, m+2winW]`=①판. `sliderW = 2·winW + 2m`, `travel = winW`, `sliderRestX = windowX0 − m − winW`(u=0에서 ①판이 창 뒤). 멈춤 슬롯 중심 `stopSlotCx = m + 1.5·winW`(=창 중심의 슬라이더-로컬). 핀 정합식은 travel에 대해 **일반식** 그대로: `pinCx = sliderRestX + stopSlotCx + travel/2`, `pinLocalX = pinCx − guideL`. 안내다리는 스트로크 전체가 아니라 **창 폭만**(`guideLen = winW + 2·GLUE_END`) 덮으면 된다(슬라이더가 창보다 항상 넓어 창 근처에서 늘 립 아래에 있음; 먼 끝은 들려도 무해). 클램프: 앞면 `winW ≤ (faceW − FRAME_MIN − m)/2`, 여백 `winW ≤ (whitespaceW − 2·OUTER − 2m − grip − 1)/2` — A4 기본에서 winW≈80mm로 묶임.
+
+> **검증**: `resolveMagicShutter`를 A4/Letter × grille/swap × rect/ellipse × 극단폭·높이·쓰레기 입력 122케이스로 프로브해, (1) 창·슬라이더·안내다리가 인쇄면 안, (2) 두 정합 스톱(u=0·u=travel)에서 슬롯 끝이 핀에 정확히 물림을 확인했다(모두 통과).
+
 ## 파라미터 / 지오메트리
 
-**사용자 파라미터(defaultParams와 1:1)**: `windowWidth`(창문 목표 폭, 기본 96 → cols·w로 스냅), `windowHeight`(창문 높이, 기본 60), `pitch`(살/틈 폭 w = travel, 기본 6), `grip`(튀어나온 손잡이 길이, 기본 24).
+**사용자 파라미터(defaultParams와 1:1)**: `windowWidth`(창문 목표 폭, 기본 96 → grille는 cols·w로 스냅, swap은 fit-클램프), `windowHeight`(창문 높이, 기본 60), `pitch`(살/틈 폭 w = travel, grille 전용, 기본 6), `grip`(튀어나온 손잡이 길이, 기본 24), `windowShape`(기본 `'rect'`), `revealStyle`(기본 `'grille'`).
 
 **resolver가 반환하는 geometry**(3D 프리뷰 flatScenes 빌더가 부품 배치에 그대로 사용): `windowX0/windowY0/windowCx/windowCy`, `winW/winH`, `pitch/cols/bars/gaps/travel`, `coverPad/coverPadY`, `sliderW/sliderH/sliderRestX`(offset 0에서 슬라이더 왼쪽 world x = 그림 ① 상태), `gripLen/gripH`, `stopSlotLen/stopSlotH/stopSlotCx/stopZoneCy`, `channelH/guideLen`, `restOffsets = [0, w]`(두 정합 스톱). 3D에서 슬라이더를 `sliderRestX + u`로 놓고 u를 0↔w로 보간하면 그림이 전환된다.
 

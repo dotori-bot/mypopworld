@@ -1590,8 +1590,12 @@ function buildMagicShutter(params, defaults, paperSize, driveRaw) {
   const H = geo.spineY;
   const u = (drive / 100) * geo.travel;
 
-  const PX = 330 / (W + geo.gripLen + geo.travel);
+  // Scale so the full swept extent (slider + travel + grip, wider in swap mode)
+  // fits the preview box.
+  const rightExtent = Math.max(W, geo.sliderRestX + geo.travel + geo.sliderW + geo.gripLen);
+  const PX = 330 / rightExtent;
   const px = (mm) => mm * PX;
+  const isSwap = geo.revealStyle === 'swap';
 
   const sliderX = geo.sliderRestX + u;           // slider left edge, world x
   const sliderTopY = geo.windowY0 - geo.coverPadY;
@@ -1604,26 +1608,33 @@ function buildMagicShutter(params, defaults, paperSize, driveRaw) {
   // Front-face guide rows (same rows the flat pattern prints as glue targets).
   const topGuideY = sliderTopY - L.RET_GAP - L.RET_W;
   const botGuideY = geo.windowY0 + geo.winH + L.STOP_ZONE + L.RET_GAP;
-  const guideX = geo.sliderRestX - L.GLUE_END;
+  const guideX = geo.guideL;
 
-  // Picture strips on the slider: local column k over the window band.
-  // Odd k = ① (under the gaps at u=0), even k = ② (revealed at u=travel).
+  // Picture on the slider. Swap: two full-window panels (① at rest, ② after a
+  // full-window push). Grille: interleaved w-wide strips (odd k = ①, even k = ②).
   const strips = [];
-  for (let k = 0; k < geo.cols; k += 1) {
-    const isOne = k % 2 === 1;
+  if (isSwap) {
     strips.push(
-      <span
-        key={`strip-${k}`}
-        style={{
-          position: 'absolute',
-          left: px(geo.coverPad + k * geo.pitch),
-          top: px(geo.coverPadY),
-          width: px(geo.pitch),
-          height: px(geo.winH),
-          background: isOne ? 'rgba(245, 158, 11, 0.9)' : 'rgba(59, 130, 246, 0.9)',
-        }}
-      />,
+      <span key="panel-1" style={{ position: 'absolute', left: px(geo.panel1X0), top: px(geo.coverPadY), width: px(geo.winW), height: px(geo.winH), background: 'rgba(245, 158, 11, 0.9)' }} />,
+      <span key="panel-2" style={{ position: 'absolute', left: px(geo.panel2X0), top: px(geo.coverPadY), width: px(geo.winW), height: px(geo.winH), background: 'rgba(59, 130, 246, 0.9)' }} />,
     );
+  } else {
+    for (let k = 0; k < geo.cols; k += 1) {
+      const isOne = k % 2 === 1;
+      strips.push(
+        <span
+          key={`strip-${k}`}
+          style={{
+            position: 'absolute',
+            left: px(geo.coverPad + k * geo.pitch),
+            top: px(geo.coverPadY),
+            width: px(geo.pitch),
+            height: px(geo.winH),
+            background: isOne ? 'rgba(245, 158, 11, 0.9)' : 'rgba(59, 130, 246, 0.9)',
+          }}
+        />,
+      );
+    }
   }
 
   // Card-front pieces: 4 frame bands + the grille bars (even window columns).
@@ -1641,8 +1652,29 @@ function buildMagicShutter(params, defaults, paperSize, driveRaw) {
     facePiece('band-left', 0, geo.windowY0, geo.windowX0, geo.winH),
     facePiece('band-right', geo.windowX0 + geo.winW, geo.windowY0, W - geo.windowX0 - geo.winW, geo.winH),
   ];
-  for (let k = 0; k < geo.cols; k += 2) {
-    frame.push(facePiece(`bar-${k}`, geo.windowX0 + k * geo.pitch, geo.windowY0, geo.pitch, geo.winH));
+  // Grille bars stay only in grille mode; swap mode is a single open aperture.
+  if (!isSwap) {
+    for (let k = 0; k < geo.cols; k += 2) {
+      frame.push(facePiece(`bar-${k}`, geo.windowX0 + k * geo.pitch, geo.windowY0, geo.pitch, geo.winH));
+    }
+  }
+  // Elliptical aperture rim hint (the printed cut is a true ellipse).
+  if (geo.windowShape === 'ellipse') {
+    frame.push(
+      <div
+        key="ellipse-rim"
+        style={{
+          position: 'absolute',
+          left: px(geo.windowX0),
+          top: px(geo.windowY0),
+          width: px(geo.winW),
+          height: px(geo.winH),
+          borderRadius: '50%',
+          border: '1.5px dashed rgba(100,116,139,0.8)',
+          boxShadow: '0 0 0 100px rgba(255,255,255,0.0)',
+        }}
+      />,
+    );
   }
 
   const guide = (y, key) => (
@@ -1711,18 +1743,26 @@ function buildMagicShutter(params, defaults, paperSize, driveRaw) {
       </div>
       <Tag side="back" x={px(sliderX + geo.sliderW / 2)} y={px(sliderTopY - 5)}>슬라이더 (① 노랑 / ② 파랑 줄무늬)</Tag>
 
-      {/* ── FRONT: frame bands + picket grille bars ── */}
+      {/* ── FRONT: frame bands + (grille only) picket bars ── */}
       {frame}
-      <Tag x={px(geo.windowCx)} y={px(geo.windowY0 - 6)}>빗살 창문 (살은 자르지 않음)</Tag>
+      <Tag x={px(geo.windowCx)} y={px(geo.windowY0 - 6)}>
+        {isSwap
+          ? `${geo.windowShape === 'ellipse' ? '원/타원' : '사각'} 창문 (통째 전환)`
+          : '빗살 창문 (살은 자르지 않음)'}
+      </Tag>
       <Tag x={px(sliderX + geo.sliderW + geo.gripLen / 2)} y={px(sliderTopY + gy0 - 6)}>손잡이 ↔ 밀기</Tag>
     </div>
   );
 
   const state =
     u < geo.travel * 0.25 ? '그림 ① 표시' : u > geo.travel * 0.75 ? '그림 ② 표시' : '전환 중…';
+  const shapeKo = geo.windowShape === 'ellipse' ? '원/타원' : '사각';
+  const styleKo = isSwap
+    ? '통째 전환형(창 전체)'
+    : `빗살형 ${geo.cols}칸(살폭 ${geo.pitch}mm)`;
   return {
     node,
-    readout: `손잡이 ${u.toFixed(1)} / ${geo.travel}mm · ${state} · 창문 ${geo.winW}×${geo.winH}mm · 세로살 ${geo.cols}칸(살폭 ${geo.pitch}mm)`,
+    readout: `손잡이 ${u.toFixed(1)} / ${geo.travel}mm · ${state} · ${shapeKo} 창문 ${geo.winW}×${geo.winH}mm · ${styleKo}`,
     slider,
     value: drive,
   };

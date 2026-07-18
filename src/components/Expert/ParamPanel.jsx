@@ -107,7 +107,34 @@ export default function ParamPanel({ element, onCommit }) {
     );
   };
 
+  const renderEnumField = (field, value, onChange) => {
+    const current = value ?? field.options?.[0]?.value;
+    return (
+      <div className="param-field" key={field.key}>
+        <div className="fold-slider-labels">
+          <span>{field.labelKo}</span>
+        </div>
+        <div className="param-enum-options">
+          {(field.options || []).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`param-enum-option${current === opt.value ? ' is-active' : ''}`}
+              aria-pressed={current === opt.value}
+              onClick={() => onChange(opt.value)}
+            >
+              {opt.labelKo}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderField = (field) => {
+    if (field.type === 'enum') {
+      return renderEnumField(field, shown[field.key], (v) => update({ [field.key]: v }));
+    }
     if (field.type === 'group') {
       const groupVal = shown[field.key];
       return (
