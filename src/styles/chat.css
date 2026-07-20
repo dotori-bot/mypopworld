@@ -15,6 +15,87 @@
   scroll-behavior: smooth;
 }
 
+/* First-run onboarding — the hero of the kids flow. A single card with clear
+   hierarchy (badge → title → one support line → labelled form → primary CTA)
+   instead of a form crammed into a chat bubble. */
+.chat-onboarding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, var(--tint-primary-weak), transparent 60%),
+    var(--bg-surface);
+  border: 1px solid var(--border-primary-weak);
+  box-shadow: var(--shadow-md);
+  animation: slideUp var(--transition-normal);
+}
+
+.onboarding-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a2c07;
+  background: var(--warm-main);
+  box-shadow: var(--press-warm);
+  margin-bottom: var(--space-sm);
+}
+
+.onboarding-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-lg);
+  line-height: var(--lh-title-lg);
+  font-weight: 400; /* Do Hyeon carries its own weight */
+  color: var(--text-primary);
+}
+
+.onboarding-sub {
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.onboarding-label {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+.onboarding-optional {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.onboarding-field .chat-input {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+}
+
+.onboarding-cta {
+  margin-top: var(--space-xs);
+  width: 100%;
+  font-weight: 600;
+}
+
 .chat-message {
   display: flex;
   gap: var(--space-sm);
@@ -64,8 +145,8 @@
 }
 
 .chat-message.ai .message-bubble {
-  background: rgba(108, 92, 231, 0.1);
-  border: 1px solid rgba(108, 92, 231, 0.2);
+  background: var(--tint-primary);
+  border: 1px solid var(--border-primary-weak);
   border-top-left-radius: 4px;
 }
 
@@ -89,8 +170,8 @@
 }
 
 .quick-action-btn:hover {
-  background: rgba(108, 92, 231, 0.2);
-  border-color: rgba(108, 92, 231, 0.5);
+  background: var(--tint-primary-strong);
+  border-color: rgba(var(--primary-rgb), 0.5);
   color: var(--text-primary);
   transform: translateY(-2px);
 }
@@ -100,7 +181,7 @@
   align-items: center;
   gap: 4px;
   padding: 12px 16px;
-  background: rgba(108, 92, 231, 0.1);
+  background: var(--tint-primary);
   border-radius: var(--radius-lg);
   width: max-content;
 }
@@ -146,8 +227,8 @@
 
 .chat-input:focus {
   outline: none;
-  border-color: var(--primary-light);
-  box-shadow: 0 0 0 2px rgba(111, 195, 223, 0.2);
+  border-color: var(--primary-400);
+  box-shadow: var(--focus-ring);
 }
 
 select.chat-input option {

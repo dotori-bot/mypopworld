@@ -27,7 +27,7 @@
   gap: var(--space-sm);
   font-family: var(--font-heading);
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .logo-button {
@@ -43,14 +43,18 @@
 }
 
 .logo-icon {
-  color: var(--accent-secondary);
+  filter: drop-shadow(1.5px 2px 0 rgba(46, 36, 25, 0.14));
 }
 
 .logo-text {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-family: var(--font-display);
+  font-weight: 400; /* Do Hyeon is single-weight; 400 is its natural boldness */
+  color: var(--primary-main);
+  letter-spacing: 0.01em;
+}
+
+.logo-text-accent {
+  color: var(--warm-700);
 }
 
 .print-settings {

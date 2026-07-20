@@ -3,7 +3,7 @@ import useCardStore from '../../store/useCardStore';
 import { getMechanism, buildElementParams, getDecorationSlots, INSTRUCTION_TEXT } from '../../generators/registry';
 import { getElements, isMultiElement, withElements } from '../../store/cardModel';
 import PartEditOverlay from './PartEditOverlay';
-import { Wrench } from 'lucide-react';
+import { Wrench, Sparkles } from 'lucide-react';
 import { renderAssemblyMap, CIRCLED_NUMBERS } from '../../generators/assemblyMap';
 import { PAPER_SIZES, PRINT } from '../../generators/constants';
 import { createSVG, svgToString, getLineStyle, addPath, addRect, addText } from '../../generators/svgBuilder';
@@ -486,10 +486,16 @@ export default function SVGPreview() {
             <div>{isGenerating ? '도안과 일러스트를 새로 그리고 있어요...' : 'AI가 도안과 일러스트를 열심히 설계하고 있어요...'}</div>
           </div>
         ) : pages.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)' }}>
-            {appMode === 'expert'
-              ? '왼쪽에서 메커니즘을 선택하면 이곳에 도안이 표시됩니다.'
-              : '채팅을 통해 만들고 싶은 작품을 결정하면 이곳에 도안이 표시됩니다.'}
+          <div className="preview-empty">
+            <div className="preview-empty-icon">
+              <Sparkles size={32} />
+            </div>
+            <h3 className="preview-empty-title">도안이 여기에 나타나요</h3>
+            <p className="preview-empty-text">
+              {appMode === 'expert'
+                ? '왼쪽에서 메커니즘을 선택하면 인쇄용 도안이 이곳에 그려집니다.'
+                : '채팅으로 만들고 싶은 작품을 정하면 인쇄용 도안이 이곳에 그려집니다.'}
+            </p>
           </div>
         ) : (
           <div className="svg-paper" style={{ width: `${paper.width}mm`, height: `${paper.height}mm`, position: 'relative' }}>

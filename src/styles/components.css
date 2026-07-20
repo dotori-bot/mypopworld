@@ -30,26 +30,52 @@
   border-radius: 50%;
 }
 
+/* Flat, "pressable paper" buttons — solid fill + a solid darker bottom edge
+   (no gradient, no glow). Pressing sinks the button onto its edge. */
 .btn-primary {
-  background: var(--accent-gradient);
-  color: white;
+  background: var(--primary-main);
+  color: var(--text-inverse);
   border: none;
+  box-shadow: var(--press-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-gradient-hover);
-  box-shadow: var(--shadow-glow);
+  background: var(--primary-600);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--press-primary-active);
 }
 
 .btn-secondary {
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   color: var(--text-primary);
-  border: 1px solid var(--border-glass);
+  border: 2px solid var(--neutral-300);
+  box-shadow: var(--press-neutral);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-glass-hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--neutral-100);
+  border-color: var(--neutral-400);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--press-neutral-active);
+}
+
+/* Sunny secondary action (marigold) */
+.btn-warm {
+  background: var(--warm-main);
+  color: #3a2c07;
+  border: none;
+  box-shadow: var(--press-warm);
+}
+
+.btn-warm:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--warm-700);
 }
 
 /* Toggle Group — segmented control: unselected segments are "weak" (plain
@@ -79,7 +105,8 @@
 .toggle-btn.active {
   background: var(--primary-main);
   color: var(--text-inverse);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 0 var(--primary-700);
+  font-weight: 700;
 }
 
 .toggle-group-sm {

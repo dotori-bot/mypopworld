@@ -70,6 +70,47 @@
   background: radial-gradient(circle at center, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
 }
 
+/* Empty state — a warm, guiding placeholder instead of a bare sentence in a
+   large white void, so the primary canvas feels intentional before any design
+   exists. */
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm);
+  max-width: 340px;
+  padding: var(--space-xl);
+  animation: fadeIn var(--transition-slow);
+}
+
+.preview-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-main);
+  background: var(--primary-50);
+  border: 1.5px solid var(--primary-100);
+  box-shadow: 0 4px 0 var(--primary-100);
+  margin-bottom: var(--space-sm);
+}
+
+.preview-empty-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 400; /* Do Hyeon carries its own weight */
+  color: var(--text-primary);
+}
+
+.preview-empty-text {
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+}
+
 .svg-paper {
   background: white;
   box-shadow: var(--shadow-lg);
@@ -398,7 +439,7 @@
   transform-origin: right center;  /* pivot O = spine centre */
   /* triangle O(100% 50%) – T(100% 0) – P(0 50%) */
   clip-path: polygon(100% 0, 100% 50%, 0 50%);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 .preview3d-arm-right {
@@ -406,7 +447,7 @@
   transform-origin: left center;   /* pivot O = spine centre */
   /* triangle O(0 50%) – T(0 0) – P(100% 50%) */
   clip-path: polygon(0 0, 0 50%, 100% 50%);
-  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(225deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 /* An optional armExtension wedge (tongue/horn/tail/...) glued at the mouth
@@ -414,7 +455,7 @@
    left/right (whichever it's paired with), just a distinct tint so it reads
    as a separate glued-on piece. See Preview3D.jsx for how it's nested. */
 .preview3d-arm-extension {
-  background: linear-gradient(135deg, rgba(244, 114, 182, 0.75), rgba(217, 70, 239, 0.75));
+  background: linear-gradient(135deg, rgba(246, 168, 33, 0.75), rgba(220, 62, 30, 0.75));
 }
 
 /* Box-popup's flap is a plain rectangle (not a narrowing triangle like the
@@ -429,13 +470,13 @@
 .preview3d-boxflap-left {
   right: 0;
   transform-origin: right center;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 .preview3d-boxflap-right {
   left: 0;
   transform-origin: left center;
-  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(225deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 /* Parallel-fold staircase: each level is a plain rectangle, nested inside the
@@ -446,17 +487,17 @@
   position: absolute;
   transform-style: preserve-3d;
   backface-visibility: visible;
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(246, 168, 33, 0.35);
 }
 
 .preview3d-step-left {
   transform-origin: right center;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.55), rgba(246, 168, 33, 0.55));
 }
 
 .preview3d-step-right {
   transform-origin: left center;
-  background: linear-gradient(225deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
+  background: linear-gradient(225deg, rgba(220, 62, 30, 0.55), rgba(246, 168, 33, 0.55));
 }
 
 /* Flap-clap: a rigid triangular flap hinged INSET from the spine (not flush
@@ -473,13 +514,13 @@
 .preview3d-flap-left {
   transform-origin: right center;
   clip-path: polygon(100% 0%, 100% 100%, 0% 50%);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 .preview3d-flap-right {
   transform-origin: left center;
   clip-path: polygon(0% 0%, 0% 100%, 100% 50%);
-  background: linear-gradient(225deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(225deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
 }
 
 .preview3d-readout {
@@ -497,15 +538,15 @@
   height: 6px;
   margin: -3px;
   border-radius: 50%;
-  background: rgba(236, 72, 153, 0.8);
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
+  background: rgba(220, 62, 30, 0.8);
+  box-shadow: 0 0 0 3px rgba(220, 62, 30, 0.25);
 }
 
 .preview3d-slide-strip {
   position: absolute;
   border-radius: 4px;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(99, 102, 241, 0.5));
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.5), rgba(246, 168, 33, 0.5));
+  border: 1px solid rgba(246, 168, 33, 0.35);
 }
 
 .preview3d-slide-msg {
@@ -527,7 +568,7 @@
 .preview3d-slide-window {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid rgba(99, 102, 241, 0.7);
+  border: 2px solid rgba(246, 168, 33, 0.7);
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.08);
   pointer-events: none;
@@ -556,7 +597,7 @@
   top: 0;
   left: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(99, 102, 241, 0.6));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.6), rgba(246, 168, 33, 0.6));
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   backface-visibility: visible;
 }
@@ -566,7 +607,7 @@
   top: 0;
   left: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(236, 72, 153, 0.7));
+  background: radial-gradient(circle at 35% 30%, #fde68a, rgba(220, 62, 30, 0.7));
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   backface-visibility: visible;
 }
@@ -574,8 +615,8 @@
 .preview3d-spring-hub {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.15));
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: radial-gradient(circle, rgba(246, 168, 33, 0.25), rgba(220, 62, 30, 0.15));
+  border: 1px solid rgba(246, 168, 33, 0.35);
 }
 
 /* ------------------------------------------------------------------ */
@@ -594,7 +635,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 242, 247, 0.96) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 238, 228, 0.96) 100%);
   border: 1px solid rgba(0, 0, 0, 0.14);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   backface-visibility: visible;
@@ -603,16 +644,16 @@
 /* Printed scene area on the card front (rising-slide's light-beam art). */
 .preview3d-flat-scene {
   position: absolute;
-  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border: 1px dashed rgba(246, 168, 33, 0.4);
   border-radius: 3px;
   background:
-    linear-gradient(180deg, rgba(253, 224, 71, 0.28) 0%, rgba(147, 197, 253, 0.18) 55%, rgba(99, 102, 241, 0.14) 100%);
+    linear-gradient(180deg, rgba(253, 224, 71, 0.28) 0%, rgba(250, 205, 130, 0.18) 55%, rgba(246, 168, 33, 0.14) 100%);
 }
 
 /* A through-cut slot in the card. */
 .preview3d-flat-slot {
   position: absolute;
-  background: rgba(15, 23, 42, 0.82);
+  background: rgba(46, 36, 25, 0.82);
   border-radius: 2px;
 }
 
@@ -620,14 +661,14 @@
 .preview3d-flat-hole {
   position: absolute;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.82);
+  background: rgba(46, 36, 25, 0.82);
 }
 
 /* Slider strips / moving paper bodies. */
 .preview3d-flat-strip {
   position: absolute;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.55), rgba(99, 102, 241, 0.55));
-  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.55), rgba(246, 168, 33, 0.55));
+  border: 1px solid rgba(246, 168, 33, 0.45);
   border-radius: 2px;
   backface-visibility: visible;
 }
@@ -635,24 +676,24 @@
 /* The grip/handle zone of a strip (the part fingers actually hold). */
 .preview3d-flat-grip {
   position: absolute;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.85), rgba(190, 24, 93, 0.85));
-  border: 1px solid rgba(190, 24, 93, 0.6);
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.85), rgba(153, 39, 18, 0.85));
+  border: 1px solid rgba(153, 39, 18, 0.6);
   border-radius: 3px;
 }
 
 /* Stop flange: the wider band that jams against a retainer/guide end. */
 .preview3d-flat-flange {
   position: absolute;
-  background: rgba(249, 115, 22, 0.8);
-  border: 1px solid rgba(194, 65, 12, 0.7);
+  background: rgba(246, 168, 33, 0.8);
+  border: 1px solid rgba(201, 125, 6, 0.7);
   border-radius: 2px;
 }
 
 /* Retainer bridges / guide strips glued across a slider's path. */
 .preview3d-flat-retainer {
   position: absolute;
-  background: rgba(226, 232, 240, 0.92);
-  border: 1px solid rgba(100, 116, 139, 0.5);
+  background: rgba(237, 226, 210, 0.92);
+  border: 1px solid rgba(147, 130, 107, 0.5);
   border-radius: 2px;
   backface-visibility: visible;
 }
@@ -673,7 +714,7 @@
 /* Stop nubs on the pull-tab slider corners. */
 .preview3d-flat-stopnub {
   position: absolute;
-  background: rgba(249, 115, 22, 0.85);
+  background: rgba(246, 168, 33, 0.85);
   border-radius: 1px;
 }
 
@@ -689,22 +730,22 @@
 .preview3d-flat-handle {
   position: absolute;
   clip-path: polygon(0 0, 100% 14%, 100% 86%, 0 100%);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.85), rgba(190, 24, 93, 0.85));
+  background: linear-gradient(135deg, rgba(220, 62, 30, 0.85), rgba(153, 39, 18, 0.85));
   backface-visibility: visible;
 }
 
 /* Slide-to-swing post (arm) and its pin tab. */
 .preview3d-flat-post {
   position: absolute;
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.75), rgba(67, 56, 202, 0.75));
-  border: 1px solid rgba(67, 56, 202, 0.6);
+  background: linear-gradient(180deg, rgba(246, 168, 33, 0.75), rgba(153, 39, 18, 0.75));
+  border: 1px solid rgba(153, 39, 18, 0.6);
   border-radius: 3px;
   backface-visibility: visible;
 }
 
 .preview3d-flat-pin {
   position: absolute;
-  background: rgba(249, 115, 22, 0.9);
+  background: rgba(246, 168, 33, 0.9);
   border-radius: 1px;
 }
 
@@ -713,8 +754,8 @@
 .preview3d-flat-roller {
   position: absolute;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(203, 213, 225, 0.95));
-  border: 1px solid rgba(100, 116, 139, 0.55);
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.95), rgba(230, 216, 196, 0.95));
+  border: 1px solid rgba(147, 130, 107, 0.55);
   backface-visibility: visible;
 }
 
@@ -722,8 +763,8 @@
 .preview3d-flat-cap {
   position: absolute;
   border-radius: 50%;
-  background: rgba(148, 163, 184, 0.9);
-  border: 1px solid rgba(71, 85, 105, 0.6);
+  background: rgba(201, 183, 160, 0.9);
+  border: 1px solid rgba(110, 93, 72, 0.6);
   backface-visibility: visible;
 }
 
@@ -733,7 +774,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(236, 72, 153, 0.95);
+  color: rgba(220, 62, 30, 0.95);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   line-height: 1;
   backface-visibility: visible;
@@ -743,7 +784,7 @@
 .preview3d-flat-volplate {
   position: absolute;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 242, 247, 0.96));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 238, 228, 0.96));
   border: 1px solid rgba(0, 0, 0, 0.14);
   backface-visibility: visible;
 }
@@ -769,7 +810,7 @@
   transform: translate(-50%, -50%);
   font-size: 11px;
   font-weight: 700;
-  color: rgba(30, 41, 59, 0.85);
+  color: rgba(46, 36, 25, 0.85);
 }
 
 .preview3d-flat-volcover {
@@ -817,8 +858,8 @@
 
 .preview3d-flat-hinge {
   position: absolute;
-  background: rgba(148, 163, 184, 0.85);
-  border: 1px solid rgba(71, 85, 105, 0.5);
+  background: rgba(201, 183, 160, 0.85);
+  border: 1px solid rgba(110, 93, 72, 0.5);
   backface-visibility: visible;
 }
 
@@ -829,14 +870,14 @@
   transform: translate(-50%, -50%);
   font-size: 13px;
   font-weight: 700;
-  color: rgba(30, 41, 59, 0.8);
+  color: rgba(46, 36, 25, 0.8);
 }
 
 .preview3d-flat-nub {
   position: absolute;
   border-radius: 50%;
-  background: rgba(249, 115, 22, 0.9);
-  border: 1px solid rgba(194, 65, 12, 0.6);
+  background: rgba(246, 168, 33, 0.9);
+  border: 1px solid rgba(201, 125, 6, 0.6);
 }
 
 /* Straw rocket. */
@@ -845,7 +886,7 @@
   border-radius: 4px;
   background: repeating-linear-gradient(
     45deg,
-    rgba(248, 113, 113, 0.85) 0 6px,
+    rgba(232, 98, 63, 0.85) 0 6px,
     rgba(255, 255, 255, 0.9) 6px 12px
   );
   border: 1px solid rgba(0, 0, 0, 0.15);
@@ -855,13 +896,13 @@
 .preview3d-flat-tube {
   position: absolute;
   border-radius: 3px 3px 0 0;
-  background: rgba(99, 102, 241, 0.4);
-  border: 1px solid rgba(67, 56, 202, 0.55);
+  background: rgba(246, 168, 33, 0.4);
+  border: 1px solid rgba(153, 39, 18, 0.55);
   backface-visibility: visible;
 }
 
 .preview3d-flat-tube-back {
-  background: rgba(67, 56, 202, 0.45);
+  background: rgba(153, 39, 18, 0.45);
 }
 
 .preview3d-flat-tubecap {
@@ -870,7 +911,7 @@
   top: 0;
   width: 100%;
   height: 22%;
-  background: rgba(67, 56, 202, 0.85);
+  background: rgba(153, 39, 18, 0.85);
   border-radius: 3px 3px 0 0;
 }
 
@@ -895,7 +936,7 @@
   line-height: 1.2;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(30, 30, 55, 0.72);
+  background: rgba(46, 36, 25, 0.72);
   color: #fff;
   white-space: nowrap;
   pointer-events: none;
@@ -911,13 +952,13 @@
   position: absolute;
   border-radius: 50% 50% 12% 12% / 65% 65% 12% 12%;
   background: linear-gradient(180deg, #ffffff, #e2e8f0);
-  border: 1px solid rgba(100, 116, 139, 0.5);
+  border: 1px solid rgba(147, 130, 107, 0.5);
   backface-visibility: visible;
 }
 
 .preview3d-flat-petal-rot {
   background: linear-gradient(180deg, #ffffff, #fde68a);
-  border-color: rgba(217, 119, 6, 0.6);
+  border-color: rgba(201, 125, 6, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -927,7 +968,7 @@
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fde047, #f59e0b);
-  border: 1px solid rgba(180, 83, 9, 0.6);
+  border: 1px solid rgba(201, 125, 6, 0.6);
   backface-visibility: visible;
 }
 
@@ -939,8 +980,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  border: 1px dashed rgba(99, 102, 241, 0.5);
-  background: rgba(224, 231, 255, 0.5);
+  border: 1px dashed rgba(246, 168, 33, 0.5);
+  background: rgba(251, 225, 207, 0.5);
   font-size: 11px;
   transition: opacity 0.2s ease;
   backface-visibility: visible;
@@ -985,7 +1026,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(30, 30, 55, 0.85);
+  background: rgba(46, 36, 25, 0.85);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -994,7 +1035,7 @@
 
 .user-art-error {
   font-size: 0.72rem;
-  color: #e11d48;
+  color: #c0392b;
 }
 
 /* Upload chip overlaying the 3D stage (top-left; reset button owns top-right). */
@@ -1030,7 +1071,7 @@
 .has-user-art .preview3d-step-right,
 .has-user-art .preview3d-flap-left,
 .has-user-art .preview3d-flap-right {
-  background-image: var(--user-art), linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 242, 247, 0.94));
+  background-image: var(--user-art), linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(245, 238, 228, 0.94));
   background-size: cover, auto;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
