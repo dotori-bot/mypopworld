@@ -87,6 +87,28 @@
   --color-success: var(--success-500);
   --color-danger: var(--danger-500);
 
+  /* Accent as raw channels — lets tints/rings/washes derive from the ONE
+     brand accent instead of hardcoding off-palette rgba() at call sites. */
+  --primary-rgb: 99, 102, 241;      /* = --primary-500 */
+  --secondary-rgb: 14, 165, 233;    /* = --secondary-500 */
+  --warm-rgb: 236, 72, 153;         /* = --warm-500 */
+
+  /* Soft accent surfaces + focus ring — a single source so every hover tint,
+     highlighted bubble, and focus state reads as the same accent system. */
+  --tint-primary-weak: rgba(var(--primary-rgb), 0.08);
+  --tint-primary: rgba(var(--primary-rgb), 0.12);
+  --tint-primary-strong: rgba(var(--primary-rgb), 0.2);
+  --border-primary-weak: rgba(var(--primary-rgb), 0.18);
+  --focus-ring: 0 0 0 3px rgba(var(--primary-rgb), 0.35);
+
+  /* Ambient, crafted backdrop — soft accent washes over the neutral base so
+     the product feels warm/handmade rather than flat corporate white. */
+  --bg-app-gradient:
+    radial-gradient(1100px 620px at 12% -12%, rgba(var(--primary-rgb), 0.10), transparent 60%),
+    radial-gradient(1000px 640px at 100% 0%, rgba(var(--secondary-rgb), 0.08), transparent 55%),
+    radial-gradient(900px 720px at 50% 118%, rgba(var(--warm-rgb), 0.06), transparent 60%),
+    var(--neutral-100);
+
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);

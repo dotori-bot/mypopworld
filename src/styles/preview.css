@@ -70,6 +70,48 @@
   background: radial-gradient(circle at center, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
 }
 
+/* Empty state — a warm, guiding placeholder instead of a bare sentence in a
+   large white void, so the primary canvas feels intentional before any design
+   exists. */
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm);
+  max-width: 340px;
+  padding: var(--space-xl);
+  animation: fadeIn var(--transition-slow);
+}
+
+.preview-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-main);
+  background:
+    radial-gradient(circle at 30% 25%, var(--tint-primary-strong), transparent 70%),
+    var(--tint-primary-weak);
+  border: 1px solid var(--border-primary-weak);
+  margin-bottom: var(--space-xs);
+}
+
+.preview-empty-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.preview-empty-text {
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+}
+
 .svg-paper {
   background: white;
   box-shadow: var(--shadow-lg);
