@@ -87,16 +87,15 @@
 .preview-empty-icon {
   width: 72px;
   height: 72px;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary-main);
-  background:
-    radial-gradient(circle at 30% 25%, var(--tint-primary-strong), transparent 70%),
-    var(--tint-primary-weak);
-  border: 1px solid var(--border-primary-weak);
-  margin-bottom: var(--space-xs);
+  background: var(--primary-50);
+  border: 1.5px solid var(--primary-100);
+  box-shadow: 0 4px 0 var(--primary-100);
+  margin-bottom: var(--space-sm);
 }
 
 .preview-empty-title {

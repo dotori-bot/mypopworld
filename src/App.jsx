@@ -5,7 +5,7 @@ import SVGPreview from './components/Preview/SVGPreview';
 import Instructions from './components/Preview/Instructions';
 import Preview3D from './components/Preview/Preview3D';
 import useCardStore from './store/useCardStore';
-import { Sparkles } from 'lucide-react';
+import Logo from './components/Logo';
 import './styles/index.css';
 import './styles/layout.css';
 
@@ -78,8 +78,7 @@ function App() {
           onClick={handleLogoClick}
           aria-label="MyPopWorld 처음 화면으로 이동"
         >
-          <Sparkles className="logo-icon" />
-          <span className="logo-text">MyPopWorld</span>
+          <Logo />
         </button>
         <div className="toggle-group toggle-group-sm app-mode-toggle" role="group" aria-label="사용 모드">
           {[{ id: 'kids', label: '어린이 모드' }, { id: 'expert', label: '전문가 모드' }].map((m) => (

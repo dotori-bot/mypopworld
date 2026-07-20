@@ -91,13 +91,13 @@
 }
 
 .mechanism-badge-book {
-  background: rgba(124, 92, 255, 0.14);
-  color: var(--accent-primary, #7c5cff);
+  background: var(--primary-50);
+  color: var(--primary-700);
 }
 
 .mechanism-badge-flat {
-  background: rgba(24, 160, 120, 0.14);
-  color: var(--color-success, #18a078);
+  background: var(--secondary-100);
+  color: var(--secondary-700);
 }
 
 /* --- Parameter panel --- */
