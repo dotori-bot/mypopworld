@@ -46,10 +46,10 @@
 }
 
 .onboarding-title {
-  font-family: var(--font-heading);
+  font-family: var(--font-display);
   font-size: var(--fs-title-lg);
   line-height: var(--lh-title-lg);
-  font-weight: 700;
+  font-weight: 400; /* Do Hyeon carries its own weight */
   color: var(--text-primary);
 }
 
