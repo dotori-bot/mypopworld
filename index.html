@@ -1,19 +1,114 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MyPopWorld</title>
+
+    <!-- Primary SEO -->
+    <title>MyPopWorld — 아이와 함께 만드는 팝업카드·종이공예 도안 메이커</title>
+    <meta
+      name="description"
+      content="AI와 대화하며 아이 눈높이에 맞는 팝업카드와 종이공예 도안을 만들고 A4·Letter로 바로 인쇄하세요. V-폴드부터 돌림판까지 17종의 움직이는 카드 메커니즘과 3D 미리보기, 조립 설명서를 무료로 제공합니다."
+    />
+    <link rel="canonical" href="https://gracesheetkids.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#e2543a" />
+    <meta name="author" content="MyPopWorld" />
+
+    <!-- Open Graph (Facebook / KakaoTalk / etc.) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MyPopWorld" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:url" content="https://gracesheetkids.com/" />
+    <meta property="og:title" content="MyPopWorld — 아이와 함께 만드는 팝업카드·종이공예 도안 메이커" />
+    <meta
+      property="og:description"
+      content="AI와 대화하며 팝업카드·종이공예 도안을 만들고 A4·Letter로 바로 인쇄하세요. 17종 움직이는 카드 메커니즘, 3D 미리보기, 조립 설명서 무료 제공."
+    />
+    <meta property="og:image" content="https://gracesheetkids.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MyPopWorld 팝업카드 도안 메이커" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MyPopWorld — 아이와 함께 만드는 팝업카드·종이공예 도안 메이커" />
+    <meta
+      name="twitter:description"
+      content="AI와 대화하며 팝업카드·종이공예 도안을 만들고 바로 인쇄하세요. 17종 움직이는 카드 메커니즘, 3D 미리보기, 조립 설명서 무료 제공."
+    />
+    <meta name="twitter:image" content="https://gracesheetkids.com/og-image.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Structured data: 검색결과에 서비스 성격을 명확히 전달 -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MyPopWorld",
+        "url": "https://gracesheetkids.com/",
+        "description": "AI와 대화하며 아이 눈높이에 맞는 팝업카드와 종이공예 도안을 만들고 A4·Letter로 바로 인쇄할 수 있는 무료 도안 메이커. 17종의 움직이는 카드 메커니즘, 3D 미리보기, 조립 설명서 제공.",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "ko",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "KRW"
+        },
+        "audience": {
+          "@type": "Audience",
+          "audienceType": "어린이, 부모, 교사"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "MyPopWorld",
+          "url": "https://gracesheetkids.com/",
+          "logo": "https://gracesheetkids.com/favicon.svg"
+        }
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        SPA는 자바스크립트로 콘텐츠를 그리므로, 크롤러와 JS 비활성 환경이
+        읽을 수 있도록 핵심 내용을 정적으로 제공한다. 앱이 마운트되면 이 내용은
+        React가 대체한다.
+      -->
+      <noscript>
+        <h1>MyPopWorld — 아이와 함께 만드는 팝업카드·종이공예 도안 메이커</h1>
+        <p>
+          MyPopWorld는 AI와 대화하며 아이 눈높이에 맞는 팝업카드와 종이공예 도안을
+          만들고, A4 또는 Letter 용지로 바로 인쇄할 수 있는 무료 도안 메이커입니다.
+        </p>
+        <h2>제공하는 카드 메커니즘 (17종)</h2>
+        <ul>
+          <li>V-폴드 팝업 — 카드를 열면 삼각형이 솟아오르는 기본 팝업</li>
+          <li>박스 팝업 — 사각 상자가 입체적으로 펼쳐지는 팝업</li>
+          <li>평행 접기(계단식) 팝업</li>
+          <li>당기는 손잡이(풀탭) 슬라이더</li>
+          <li>빨대 로켓, 아코디언 팝업, 돌림판(볼벨), 뒤집기 원판</li>
+          <li>스프링 팝업, 올라오는 슬라이드, 층층이 솟는 무대 팝업</li>
+          <li>자동 슬라이드 창문 액자, 밀어서 흔들리는 장치, 박수치는 플랩</li>
+          <li>카메라 사진 뽑기, 게이트 커튼, 매직 셔터 액자</li>
+        </ul>
+        <p>
+          어린이 모드에서는 AI 선생님과 대화하며 만들기 아이디어를 얻고,
+          전문가 모드에서는 모든 파라미터를 직접 조절해 도안을 만들 수 있습니다.
+          완성된 도안은 조립 설명서와 3D 미리보기로 확인한 뒤 PDF로 내려받아 인쇄하세요.
+        </p>
+        <p>이 앱을 사용하려면 자바스크립트를 켜 주세요.</p>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
